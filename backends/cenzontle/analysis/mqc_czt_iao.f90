@@ -311,46 +311,83 @@ contains
       end do
    end subroutine ibo_populations
 
-   subroutine print_ibo_report(populations, charges, element_symbols, exponent, sweeps)
+   subroutine print_ibo_report(populations, charges, element_symbols, exponent, sweeps, &
+                               spin_populations, populations_beta)
       !! The IAO charges, then each bond orbital and the atoms it sits on
+      !!
+      !! With `populations_beta` the two sets are an unrestricted reference's,
+      !! printed one after the other, and a share is in electrons of one spin.
       real(dp), intent(in) :: populations(:, :)   !! (natoms, n_orb)
       real(dp), intent(in) :: charges(:)
       character(len=*), intent(in) :: element_symbols(:)
       integer, intent(in) :: exponent, sweeps
+      real(dp), intent(in), optional :: spin_populations(:)   !! (natoms)
+      real(dp), intent(in), optional :: populations_beta(:, :)   !! (natoms, n_beta)
+
+      character(len=LINE_LEN) :: line
+      character(len=16) :: label
+      integer :: natm, iatom
+
+      natm = size(populations, 1)
+      call logger%info("")
+      call logger%info("  ==== intrinsic atomic and bond orbitals ====")
+      call logger%info("")
+      if (present(spin_populations)) then
+         call logger%info("     atom      IAO charge        spin")
+      else
+         call logger%info("     atom      IAO charge")
+      end if
+      do iatom = 1, natm
+         write (label, "(a,i0)") trim(adjustl(element_symbols(iatom)))//" ", iatom
+         if (present(spin_populations)) then
+            write (line, "(4x,a8,2f12.6)") label, charges(iatom), spin_populations(iatom)
+         else
+            write (line, "(4x,a8,f12.6)") label, charges(iatom)
+         end if
+         call logger%info(trim(line))
+      end do
+      call logger%info("")
+      ! The same share of an orbital either way, which is half as many
+      ! electrons when the orbital holds one.
+      write (line, "(a,i0,a,i0,a,f4.2,a)") "    bond orbitals, exponent ", exponent, ", ", &
+         sweeps, " sweeps; electrons per atom, where above ", &
+         merge(0.05_dp, 0.10_dp, present(populations_beta)), ":"
+      call logger%info(trim(line))
+      if (present(populations_beta)) then
+         call logger%info("    alpha")
+         call print_orbital_set(populations, element_symbols, 1.0_dp)
+         call logger%info("    beta")
+         call print_orbital_set(populations_beta, element_symbols, 1.0_dp)
+      else
+         call print_orbital_set(populations, element_symbols, 2.0_dp)
+      end if
+      call logger%info("")
+   end subroutine print_ibo_report
+
+   subroutine print_orbital_set(populations, element_symbols, occupation)
+      !! One line per orbital: how many centres, and its electrons on each
+      real(dp), intent(in) :: populations(:, :)   !! (natoms, n_orb)
+      character(len=*), intent(in) :: element_symbols(:)
+      real(dp), intent(in) :: occupation   !! Electrons an orbital holds
 
       real(dp), parameter :: SHOWN = 0.05_dp
          !! Smallest atomic share of an orbital that is printed
       character(len=LINE_LEN) :: line
       character(len=16) :: label
-      integer :: natm, n_orb, i, iatom, centres
+      integer :: i, iatom, centres
 
-      natm = size(populations, 1)
-      n_orb = size(populations, 2)
-      call logger%info("")
-      call logger%info("  ==== intrinsic atomic and bond orbitals ====")
-      call logger%info("")
-      call logger%info("     atom      IAO charge")
-      do iatom = 1, natm
-         write (label, "(a,i0)") trim(adjustl(element_symbols(iatom)))//" ", iatom
-         write (line, "(4x,a8,f12.6)") label, charges(iatom)
-         call logger%info(trim(line))
-      end do
-      call logger%info("")
-      write (line, "(a,i0,a,i0,a)") "    bond orbitals, exponent ", exponent, ", ", &
-         sweeps, " sweeps; electrons per atom, where above 0.10:"
-      call logger%info(trim(line))
-      do i = 1, n_orb
+      do i = 1, size(populations, 2)
          centres = count(populations(:, i) > SHOWN)
          write (line, "(i8,a,i0,a)") i, "   ", centres, "-centre:"
-         do iatom = 1, natm
+         do iatom = 1, size(populations, 1)
             if (populations(iatom, i) <= SHOWN) cycle
             write (label, "(a,i0)") trim(adjustl(element_symbols(iatom))), iatom
-            write (line, "(a,2x,a,f6.3)") trim(line), trim(label), 2.0_dp*populations(iatom, i)
+            write (line, "(a,2x,a,f6.3)") trim(line), trim(label), &
+               occupation*populations(iatom, i)
          end do
          call logger%info(trim(line))
       end do
-      call logger%info("")
-   end subroutine print_ibo_report
+   end subroutine print_orbital_set
 
    subroutine symmetric_inverse(matrix, inverse, error)
       !! The inverse of a symmetric positive matrix, near-null directions dropped

@@ -675,8 +675,9 @@ four.
   alone determines it. ``properties.charges``.
 - **Intrinsic atomic and bond orbitals** (Knizia's IAO/IBO): basis-set
   insensitive atomic charges, and the occupied orbitals localised into cores,
-  lone pairs and bonds with each one's share per atom. Closed-shell
-  Hartree-Fock or Kohn-Sham. ``properties.intrinsic_orbitals``; see
+  lone pairs and bonds with each one's share per atom. Hartree-Fock or
+  Kohn-Sham; an unrestricted reference is analysed one spin at a time and
+  gets spin populations too. ``properties.intrinsic_orbitals``; see
   :doc:`intrinsic_orbitals`.
 - **Natural orbitals**: the occupations of the orbitals that diagonalise the
   most complete one-particle density the method has -- the spin-summed density

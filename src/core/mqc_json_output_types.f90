@@ -264,6 +264,8 @@ module mqc_json_output_types
       ! Intrinsic atomic orbital charges and bond orbital populations.
       real(dp), allocatable :: iao_charges(:)
       real(dp), allocatable :: ibo_populations(:, :)
+      real(dp), allocatable :: iao_spin_populations(:)
+      real(dp), allocatable :: ibo_populations_beta(:, :)
       integer :: ibo_exponent = 0
       logical :: has_intrinsic_orbitals = .false.
       ! Natural occupations, with the name of the density they belong to.

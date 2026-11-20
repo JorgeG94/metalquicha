@@ -140,6 +140,13 @@ module mqc_result_types
       real(dp), allocatable :: ibo_populations(:, :)
          !! (natoms, n_occ) the share of each intrinsic bond orbital on each
          !! atom; a column sums to one
+      real(dp), allocatable :: iao_spin_populations(:)
+         !! (natoms) alpha minus beta intrinsic populations; allocated only
+         !! for an unrestricted reference
+      real(dp), allocatable :: ibo_populations_beta(:, :)
+         !! (natoms, n_beta) the beta bond orbitals of an unrestricted
+         !! reference, `ibo_populations` then holding alpha's. Each orbital
+         !! holds one electron there and two otherwise.
       integer :: ibo_exponent = 0
          !! The localisation exponent those orbitals were found with
       logical :: has_intrinsic_orbitals = .false.

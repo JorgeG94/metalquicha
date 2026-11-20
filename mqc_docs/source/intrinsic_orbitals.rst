@@ -30,7 +30,7 @@ G. Knizia, *J. Chem. Theory Comput.* **9**, 4834 (2013).
   charges. Nothing else is accepted.
 
 Like everything under ``properties`` it changes no energy. It needs a
-closed-shell Hartree-Fock or Kohn-Sham reference.
+Hartree-Fock or Kohn-Sham reference, restricted or unrestricted.
 
 What it reports
 ---------------
@@ -63,7 +63,50 @@ The output file carries the charges and the whole table under
 ``bond_orbital_populations``, one row per orbital with one entry per atom,
 each row summing to one. The ``1-centre`` and ``2-centre`` labels in the log
 count the atoms holding more than 0.05 of an orbital; the file has the numbers
-and leaves the threshold to the reader.
+and leaves the threshold to the reader. ``orbital_occupation`` says how many
+electrons a row stands for: 2 here, 1 for an unrestricted reference.
+
+An unrestricted reference
+-------------------------
+
+The IAOs are built from an occupied space, and an unrestricted wave function
+has two. So with ``model.unrestricted`` the analysis is done once per spin:
+alpha's occupied orbitals give alpha's IAOs and are localised among
+themselves, and beta's likewise. The charges are the two spins' populations
+added and taken from the nuclear charge; their difference is a spin
+population per atom, which a restricted reference does not have.
+
+The hydroxyl radical at Hartree-Fock/cc-pVDZ::
+
+       atom      IAO charge        spin
+      O 1        -0.362761    1.043722
+      H 2         0.362761   -0.043722
+
+      bond orbitals, exponent 4, 3 sweeps; electrons per atom, where above 0.05:
+      alpha
+         1   1-centre:  O1 1.000
+         2   2-centre:  O1 0.703  H2 0.297
+         3   1-centre:  O1 1.000
+         4   1-centre:  O1 1.000
+         5   1-centre:  O1 1.000
+      beta
+         1   1-centre:  O1 1.000
+         2   2-centre:  O1 0.660  H2 0.340
+         3   1-centre:  O1 1.000
+         4   1-centre:  O1 1.000
+
+Each orbital now holds one electron. Alpha has one more orbital on oxygen than
+beta, which is the unpaired electron, and the O--H bond is not the same
+orbital in the two spins: beta's leans further toward hydrogen, which is where
+the small negative spin population on hydrogen comes from.
+
+The output file gains ``spin_populations`` and
+``bond_orbital_populations_beta``; ``bond_orbital_populations`` holds alpha's.
+Alpha and beta orbitals are localised independently and listed in no common
+order, so row *n* of one is not the partner of row *n* of the other.
+
+A closed shell run unrestricted gives the restricted charges, zero spin
+populations and the same orbitals twice.
 
 The charges do not move with the basis
 --------------------------------------
@@ -120,6 +163,15 @@ within :math:`5\times10^{-9}`. The orbitals themselves are determined only up
 to order and sign, and two lone pairs on one atom only up to a rotation
 between them, so it is the functional and the populations that are compared.
 
+Unrestricted, the suite pins the water cation's charges, spin populations and
+each spin's functional to the same two PySCF routines given one spin's
+occupied orbitals at a time, and checks that a closed shell run unrestricted
+reproduces the restricted analysis. Through the program, the hydroxyl and
+methyl radicals, triplet oxygen and the water cation at Hartree-Fock, methyl at
+B3LYP and hydroxyl at exponent 2 agree with PySCF to
+:math:`1.2\times10^{-8}` in the charges and spin populations and
+:math:`4\times10^{-9}` in the functional.
+
 The same suite holds what needs no reference: the IAOs are orthonormal under
 the overlap, the occupied orbitals lie inside their span, localising leaves
 the density unchanged and does not lower the functional, and every bond
@@ -128,9 +180,8 @@ orbital's atomic shares sum to one.
 Limits
 ------
 
-- **Closed-shell Hartree-Fock or Kohn-Sham only.** An unrestricted reference
-  would need one set of IAOs per spin, and a correlated one has no single set
-  of occupied orbitals; both are refused.
+- **Hartree-Fock or Kohn-Sham only.** A correlated wave function has no set
+  of occupied orbitals to build the IAOs from, and is refused.
 - **No effective core potentials.** The minimal basis would still describe the
   core electrons the potential replaced.
 - **Hydrogen to krypton, without potassium.**

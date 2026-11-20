@@ -662,13 +662,15 @@ contains
       !!
       !! One row per bond orbital, one entry per atom, each row summing to one.
       !! The whole matrix is written: which shares count as a bond is the
-      !! reader's threshold to set.
+      !! reader's threshold to set. An unrestricted reference has two sets,
+      !! alpha's under the plain name and beta's beside it, and
+      !! `orbital_occupation` says how many electrons a row stands for.
       type(json_core), intent(inout) :: json
       type(json_value), pointer, intent(in) :: parent
       type(json_output_data_t), intent(in) :: data
 
-      type(json_value), pointer :: section, arr, row
-      integer :: i, iatom
+      type(json_value), pointer :: section
+      logical :: unrestricted
 
       if (.not. data%has_intrinsic_orbitals) return
       if (.not. allocated(data%iao_charges)) return
@@ -678,16 +680,37 @@ contains
       call json%add(section, "minimal_basis", "minao")
       call json%add(section, "charges", data%iao_charges)
       call json%add(section, "exponent", data%ibo_exponent)
-      if (.not. allocated(data%ibo_populations)) return
-      call json%create_array(arr, "bond_orbital_populations")
-      call json%add(section, arr)
-      do i = 1, size(data%ibo_populations, 2)
-         call json%create_array(row, "")
-         call json%add(arr, row)
-         do iatom = 1, size(data%ibo_populations, 1)
-            call json%add(row, "", data%ibo_populations(iatom, i))
+      unrestricted = allocated(data%iao_spin_populations)
+      if (unrestricted) call json%add(section, "spin_populations", data%iao_spin_populations)
+      call json%add(section, "orbital_occupation", merge(1, 2, unrestricted))
+      if (allocated(data%ibo_populations)) then
+         call add_orbital_rows("bond_orbital_populations", data%ibo_populations)
+      end if
+      if (allocated(data%ibo_populations_beta)) then
+         call add_orbital_rows("bond_orbital_populations_beta", data%ibo_populations_beta)
+      end if
+
+   contains
+
+      subroutine add_orbital_rows(name, populations)
+         !! One array per orbital, of its share on each atom
+         character(len=*), intent(in) :: name
+         real(dp), intent(in) :: populations(:, :)   !! (natoms, n_orb)
+
+         type(json_value), pointer :: arr, row
+         integer :: i, iatom
+
+         call json%create_array(arr, name)
+         call json%add(section, arr)
+         do i = 1, size(populations, 2)
+            call json%create_array(row, "")
+            call json%add(arr, row)
+            do iatom = 1, size(populations, 1)
+               call json%add(row, "", populations(iatom, i))
+            end do
          end do
-      end do
+      end subroutine add_orbital_rows
+
    end subroutine write_intrinsic_orbitals_section
 
    subroutine write_natural_orbitals_section(json, parent, data)

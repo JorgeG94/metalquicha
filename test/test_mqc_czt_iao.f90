@@ -11,12 +11,18 @@ module test_mqc_czt_iao
    !!     their span -- the property that makes the charges add up exactly;
    !!   * localising rotates the occupied orbitals among themselves, so the
    !!     density must come out unchanged and the functional must not fall;
-   !!   * every bond orbital's atomic shares sum to one.
+   !!   * every bond orbital's atomic shares sum to one;
+   !!   * a closed shell run unrestricted has two identical spins, so each
+   !!     spin's analysis must reproduce the restricted one and the spin
+   !!     populations must vanish.
+   !!
+   !! The open-shell numbers are the water cation's, each spin's occupied
+   !! orbitals given to `pyscf.lo.iao` and `pyscf.lo.ibo` on their own.
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp
    use mqc_error, only: error_t
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
-   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
+   use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf, run_czt_uhf
    use mqc_czt_iao, only: build_iao, iao_charges, ibo_localize, ibo_populations
    implicit none
    private
@@ -30,6 +36,13 @@ module test_mqc_czt_iao
    real(dp), parameter :: L4_REF = 3.4371735678_dp
    real(dp), parameter :: L2_REF = 4.1222858200_dp
    ! The oxygen share of each O-H bond orbital, both exponents.
+   ! PySCF, the water cation as an unrestricted doublet in 6-31G: its energy
+   ! (so a different SCF solution is not mistaken for a wrong analysis), the
+   ! IAO charges, the alpha-minus-beta populations and each spin's functional.
+   real(dp), parameter :: E_CATION = -75.5805935893_dp
+   real(dp), parameter :: Q_CATION(3) = [0.00729764_dp, 0.49637891_dp, 0.49632346_dp]
+   real(dp), parameter :: SPIN_CATION(3) = [1.08127361_dp, -0.04068703_dp, -0.04058658_dp]
+   real(dp), parameter :: L4_CATION(2) = [3.7033122946_dp, 2.5722836687_dp]
    real(dp), parameter :: BOND_ON_O(2) = [0.674932_dp, 0.674769_dp]
 
 contains
@@ -43,7 +56,10 @@ contains
                   new_unittest("iao_charges_match_pyscf", test_charges), &
                   new_unittest("ibos_match_pyscf_and_keep_the_density", test_ibo), &
                   new_unittest("exponent_two_is_pipek_mezey", test_exponent_two), &
-                  new_unittest("an_unknown_exponent_is_refused", test_bad_exponent) &
+                  new_unittest("an_unknown_exponent_is_refused", test_bad_exponent), &
+                  new_unittest("unrestricted_closed_shell_is_the_restricted_analysis", &
+                               test_unrestricted_closed_shell), &
+                  new_unittest("unrestricted_doublet_matches_pyscf", test_doublet) &
                   ]
    end subroutine collect_mqc_czt_iao_tests
 
@@ -235,6 +251,109 @@ contains
       call check(error, err%has_error(), "an exponent of three must be refused")
       call mol%destroy()
    end subroutine test_bad_exponent
+
+   subroutine one_spin(mol, occupied, density, population, l4, err)
+      !! One spin's intrinsic populations per atom and its localised functional
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: occupied(:, :), density(:, :)
+      real(dp), allocatable, intent(out) :: population(:)
+         !! (natoms) electrons of this spin on each atom
+      real(dp), intent(out) :: l4
+      type(error_t), intent(inout) :: err
+
+      real(dp), allocatable :: iao(:, :), q(:), localized(:, :), pops(:, :)
+      integer, allocatable :: owner(:)
+
+      l4 = 0.0_dp
+      call build_iao(mol, occupied, iao, owner, err)
+      call iao_charges(mol, density, iao, owner, q, err)
+      call ibo_localize(mol, occupied, iao, owner, localized, err)
+      call ibo_populations(mol, localized, iao, owner, pops, err)
+      if (err%has_error()) return
+      ! `iao_charges` returns the nuclear charge less the population.
+      population = mol%charges - q
+      l4 = functional(pops, 4)
+   end subroutine one_spin
+
+   subroutine test_unrestricted_closed_shell(error)
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol
+      type(rhf_result_t) :: scf, u
+      type(error_t) :: err
+      real(dp), allocatable :: s(:, :), n_a(:), n_b(:)
+      real(dp) :: l_a, l_b
+
+      call water(mol, scf, s, err)
+      call check(error,.not. err%has_error() .and. scf%converged, "water must converge")
+      if (allocated(error)) return
+      call run_czt_uhf(mol, 10, 1, 200, 1.0e-13_dp, 1.0e-11_dp, .false., u, err)
+      call check(error,.not. err%has_error() .and. u%converged, &
+                 "unrestricted water must converge: "//err%get_full_trace())
+      if (allocated(error)) return
+
+      call one_spin(mol, u%orbitals(:, 1:5), u%density, n_a, l_a, err)
+      call one_spin(mol, u%orbitals_beta(:, 1:5), u%density_beta, n_b, l_b, err)
+      call check(error,.not. err%has_error(), "per-spin analysis: "//err%get_full_trace())
+      if (allocated(error)) return
+
+      call check(error, maxval(abs(n_a - n_b)) < 1.0e-8_dp, &
+                 "a closed shell must have no intrinsic spin population")
+      if (allocated(error)) return
+      call check(error, maxval(abs(mol%charges - n_a - n_b - Q_REF)) < 1.0e-6_dp, &
+                 "the two spins' charges do not add up to the restricted ones")
+      if (allocated(error)) return
+      call check(error, abs(l_a - L4_REF) < 1.0e-6_dp .and. abs(l_b - L4_REF) < 1.0e-6_dp, &
+                 "each spin's bond orbitals must be the restricted ones")
+      call mol%destroy()
+   end subroutine test_unrestricted_closed_shell
+
+   subroutine test_doublet(error)
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol
+      type(rhf_result_t) :: scf, u
+      type(error_t) :: err
+      real(dp), allocatable :: s(:, :), n_a(:), n_b(:)
+      real(dp) :: l_a, l_b
+
+      ! `water` builds the molecule; its closed-shell SCF is not used.
+      call water(mol, scf, s, err)
+      call check(error,.not. err%has_error(), "water: "//err%get_full_trace())
+      if (allocated(error)) return
+      call run_czt_uhf(mol, 9, 2, 200, 1.0e-13_dp, 1.0e-11_dp, .false., u, err)
+      call check(error,.not. err%has_error() .and. u%converged, &
+                 "the cation must converge: "//err%get_full_trace())
+      if (allocated(error)) return
+      call check(error, abs(u%energy - E_CATION) < 1.0e-8_dp, &
+                 "the cation converged to a different state than the reference's")
+      if (allocated(error)) return
+
+      call one_spin(mol, u%orbitals(:, 1:5), u%density, n_a, l_a, err)
+      call one_spin(mol, u%orbitals_beta(:, 1:4), u%density_beta, n_b, l_b, err)
+      call check(error,.not. err%has_error(), "per-spin analysis: "//err%get_full_trace())
+      if (allocated(error)) return
+      write (*, "(a,3f14.8)") "    IAO charges ", mol%charges - n_a - n_b
+      write (*, "(a,3f14.8)") "    IAO spin    ", n_a - n_b
+      write (*, "(a,2f16.10)") "    L4 alpha, beta ", l_a, l_b
+
+      ! Five alpha electrons and four beta, exactly: each spin's occupied
+      ! space lies inside that spin's intrinsic orbitals.
+      call check(error, abs(sum(n_a) - 5.0_dp) < 1.0e-9_dp &
+                 .and. abs(sum(n_b) - 4.0_dp) < 1.0e-9_dp, &
+                 "each spin's populations must add up to its electron count")
+      if (allocated(error)) return
+      call check(error, maxval(abs(mol%charges - n_a - n_b - Q_CATION)) < 1.0e-6_dp, &
+                 "the cation's IAO charges do not match PySCF's")
+      if (allocated(error)) return
+      call check(error, maxval(abs(n_a - n_b - SPIN_CATION)) < 1.0e-6_dp, &
+                 "the cation's IAO spin populations do not match PySCF's")
+      if (allocated(error)) return
+      call check(error, abs(l_a - L4_CATION(1)) < 1.0e-6_dp &
+                 .and. abs(l_b - L4_CATION(2)) < 1.0e-6_dp, &
+                 "a spin's localisation functional does not match PySCF's")
+      call mol%destroy()
+   end subroutine test_doublet
 
 end module test_mqc_czt_iao
 

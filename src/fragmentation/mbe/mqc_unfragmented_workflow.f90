@@ -464,6 +464,12 @@ contains
             if (result%has_intrinsic_orbitals) then
                json_data%iao_charges = result%iao_charges
                json_data%ibo_populations = result%ibo_populations
+               if (allocated(result%iao_spin_populations)) then
+                  json_data%iao_spin_populations = result%iao_spin_populations
+               end if
+               if (allocated(result%ibo_populations_beta)) then
+                  json_data%ibo_populations_beta = result%ibo_populations_beta
+               end if
                json_data%ibo_exponent = result%ibo_exponent
                json_data%has_intrinsic_orbitals = .true.
             end if

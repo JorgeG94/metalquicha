@@ -1257,15 +1257,15 @@ contains
       ! relaxed density, and only closed-shell RI-MP2 builds one here; the
       ! rest are refused rather than handed the reference's numbers under a
       ! correlated heading.
-      ! Intrinsic orbitals are built from one set of doubly occupied orbitals.
+      ! Intrinsic orbitals are built from a set of occupied orbitals: one for a
+      ! closed shell, one per spin for an unrestricted reference.
       if (settings%intrinsic_orbitals) then
-         if (unrestricted .or. settings%run_mp2 .or. settings%run_cc) then
+         if (settings%run_mp2 .or. settings%run_cc) then
             call result%error%set(ERROR_VALIDATION, "properties.intrinsic_orbitals is "// &
-                                  "implemented for a closed-shell Hartree-Fock or "// &
-                                  "Kohn-Sham reference: the intrinsic atomic orbitals "// &
-                                  "are built from its occupied orbitals, and an "// &
-                                  "unrestricted or correlated wave function has no "// &
-                                  "single such set.")
+                                  "implemented for a Hartree-Fock or Kohn-Sham "// &
+                                  "reference: the intrinsic atomic orbitals are built "// &
+                                  "from its occupied orbitals, and a correlated wave "// &
+                                  "function has no such set.")
             result%has_error = .true.
             return
          end if
@@ -3709,31 +3709,73 @@ contains
    contains
 
       subroutine report_intrinsic_orbitals()
-         !! IAO charges and intrinsic bond orbitals of the closed-shell reference
+         !! IAO charges and intrinsic bond orbitals of the reference
          !!
-         !! A failure is a warning, as for every analysis here.
-         real(dp), allocatable :: iao(:, :), q(:), localized(:, :), pops(:, :)
-         integer, allocatable :: owner(:)
+         !! An unrestricted reference is done one spin at a time -- each spin's
+         !! occupied orbitals give their own intrinsic atomic orbitals and are
+         !! localised among themselves -- and the charges are the two spins'
+         !! populations added. A failure is a warning, as for every analysis
+         !! here.
+         real(dp), allocatable :: q(:), q_beta(:), spin(:), pops(:, :), pops_beta(:, :)
          type(error_t) :: iao_error
-         integer :: sweeps, n_occ
+         integer :: sweeps, sweeps_beta
 
-         n_occ = scf%n_occupied
-         call build_iao(mol, scf%orbitals(:, 1:n_occ), iao, owner, iao_error)
-         call iao_charges(mol, scf%density, iao, owner, q, iao_error)
-         call ibo_localize(mol, scf%orbitals(:, 1:n_occ), iao, owner, localized, &
-                           iao_error, exponent=settings%intrinsic_exponent, sweeps=sweeps)
-         call ibo_populations(mol, localized, iao, owner, pops, iao_error)
+         sweeps_beta = 0
+         if (allocated(scf%density_beta)) then
+            call intrinsic_one_spin(scf%orbitals(:, 1:scf%n_occupied), scf%density, q, &
+                                    pops, sweeps, iao_error)
+            call intrinsic_one_spin(scf%orbitals_beta(:, 1:scf%n_occupied_beta), &
+                                    scf%density_beta, q_beta, pops_beta, sweeps_beta, &
+                                    iao_error)
+         else
+            call intrinsic_one_spin(scf%orbitals(:, 1:scf%n_occupied), scf%density, q, &
+                                    pops, sweeps, iao_error)
+         end if
          if (iao_error%has_error()) then
             call logger%warning("  intrinsic orbitals could not be computed: "// &
                                 iao_error%get_message())
             return
          end if
-         call print_ibo_report(pops, q, symbols, settings%intrinsic_exponent, sweeps)
+         if (allocated(q_beta)) then
+            ! Each spin's charge is Z minus its population, so the nuclear
+            ! charge is counted twice in the sum and not at all in the
+            ! difference.
+            spin = q_beta - q
+            q = q + q_beta - mol%charges
+            call print_ibo_report(pops, q, symbols, settings%intrinsic_exponent, &
+                                  max(sweeps, sweeps_beta), spin_populations=spin, &
+                                  populations_beta=pops_beta)
+            call move_alloc(spin, result%iao_spin_populations)
+            call move_alloc(pops_beta, result%ibo_populations_beta)
+         else
+            call print_ibo_report(pops, q, symbols, settings%intrinsic_exponent, sweeps)
+         end if
          call move_alloc(q, result%iao_charges)
          call move_alloc(pops, result%ibo_populations)
          result%ibo_exponent = settings%intrinsic_exponent
          result%has_intrinsic_orbitals = .true.
       end subroutine report_intrinsic_orbitals
+
+      subroutine intrinsic_one_spin(occupied, density, charges, populations, n_sweeps, iao_error)
+         !! The whole analysis for one set of occupied orbitals
+         real(dp), intent(in) :: occupied(:, :)   !! (n_ao, n_occ)
+         real(dp), intent(in) :: density(:, :)    !! The density they make
+         real(dp), allocatable, intent(out) :: charges(:)
+            !! (natoms) nuclear charge minus this density's population
+         real(dp), allocatable, intent(out) :: populations(:, :)
+         integer, intent(out) :: n_sweeps
+         type(error_t), intent(inout) :: iao_error
+
+         real(dp), allocatable :: iao(:, :), localized(:, :)
+         integer, allocatable :: owner(:)
+
+         n_sweeps = 0
+         call build_iao(mol, occupied, iao, owner, iao_error)
+         call iao_charges(mol, density, iao, owner, charges, iao_error)
+         call ibo_localize(mol, occupied, iao, owner, localized, iao_error, &
+                           exponent=settings%intrinsic_exponent, sweeps=n_sweeps)
+         call ibo_populations(mol, localized, iao, owner, populations, iao_error)
+      end subroutine intrinsic_one_spin
 
       subroutine report_relaxed_bond_orders(total_density)
          !! Mayer bond orders of a closed-shell correlated density
