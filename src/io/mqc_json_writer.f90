@@ -1532,6 +1532,7 @@ contains
       call json%add(thermo_obj, "symmetry_number", data%thermo%symmetry_number)
       call json%add(thermo_obj, "spin_multiplicity", data%thermo%spin_multiplicity)
       call json%add(thermo_obj, "is_linear", data%thermo%is_linear)
+      call json%add(thermo_obj, "is_atom", data%thermo%is_atom)
       call json%add(thermo_obj, "n_real_frequencies", data%thermo%n_real_freqs)
       call json%add(thermo_obj, "n_imaginary_frequencies", data%thermo%n_imag_freqs)
 

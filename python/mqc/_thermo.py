@@ -193,12 +193,10 @@ def free_energy_correction(
     harmonic one -- quasi-RRHO interpolates the entropy only.
 
     **The electronic entropy is computed here, as ``R ln(multiplicity)``, and
-    the Fortran block's own value is not used.** The Fortran thermochemistry
-    has the term but no caller passes it the multiplicity (every
-    ``compute_thermochemistry`` call leaves ``spin_multiplicity`` at its
-    default of 1), so for a radical its ``S_elec`` is 0 and its
-    ``spin_multiplicity`` reads 1. ``multiplicity=None`` takes whatever the
-    block reports, which is the old behaviour and is right for a closed shell.
+    the Fortran block's own value is not used.** The block carries the same
+    term for the system's multiplicity; computing it here keeps the number
+    tied to the species the caller named. ``multiplicity=None`` takes whatever
+    the block reports.
 
     ``imaginary`` is ``"drop"`` (an imaginary mode contributes nothing, which is
     what the Fortran thermochemistry does) or ``"flip"`` (taken at its absolute
