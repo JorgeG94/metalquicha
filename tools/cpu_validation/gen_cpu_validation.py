@@ -4295,6 +4295,118 @@ def pyscf_ump2(atoms, basis, method, frozen, multiplicity, aux="", fitted_refere
     return float(escf + ecorr), mol.nao
 
 
+# The unrestricted RI-MP2 gradient: (molecule, basis, auxiliary, frozen,
+# multiplicity). PySCF has no analytic gradient for its fitted unrestricted
+# MP2, so the reference is that energy differenced: central differences at two
+# steps, extrapolated. Independent of this program in every number, and good
+# to about 1e-9 hartree/bohr, which is why these carry a bound of 2e-8 and not
+# the analytic references' tighter one.
+UMP2_GRADIENT_CASES = [
+    ("oh", "cc-pvdz", "cc-pvdz-rifit", 0, 2),
+    ("oh", "cc-pvdz", "cc-pvdz-rifit", 1, 2),
+    ("ch3", "cc-pvdz", "cc-pvdz-rifit", 1, 2),
+    ("o2", "cc-pvdz", "cc-pvdz-rifit", 2, 3),
+]
+UMP2_GRADIENT_STEP = 2.0e-3   # bohr; halved for the second difference
+UMP2_GRADIENT_TOLERANCE = 2.0e-8
+
+
+def pyscf_uri_mp2_gradient(atoms, basis, aux, frozen, multiplicity):
+    """Total energy and differenced gradient of PySCF's fitted unrestricted MP2.
+
+    Richardson extrapolation of central differences at `UMP2_GRADIENT_STEP`
+    and half of it, which removes the term quadratic in the step. The SCF is
+    converged past the usual bound, because a difference of energies divides
+    its noise by the step.
+    """
+    from pyscf import gto, scf
+    from pyscf.data.nist import BOHR
+    from pyscf.mp import dfump2
+
+    symbols = {a[0] for a in atoms}
+    form = molecule_form(basis, symbols) == CARTESIAN
+    orbital = {s: bse_to_pyscf(basis, s) for s in symbols}
+    auxbasis = {s: bse_to_pyscf(aux, s) for s in symbols}
+    start = [[x/BOHR, y/BOHR, z/BOHR] for _, x, y, z in atoms]
+    nao = [0]
+
+    def energy(coords):
+        mol = gto.Mole()
+        mol.atom = [(a[0], tuple(c)) for a, c in zip(atoms, coords)]
+        mol.unit = "Bohr"
+        mol.basis = orbital
+        mol.charge = 0
+        mol.spin = multiplicity - 1
+        mol.cart = form
+        mol.verbose = 0
+        mol.build()
+        nao[0] = mol.nao
+        mf = scf.UHF(mol)
+        mf.conv_tol = 1e-13
+        mf.conv_tol_grad = 1e-10
+        mf.max_cycle = 200
+        escf = mf.kernel()
+        if not mf.converged:
+            raise SystemExit(f"PySCF UHF did not converge for {basis}")
+        pt = dfump2.DFUMP2(mf, frozen=frozen)
+        pt.with_df = pt.with_df.__class__(mol, auxbasis=auxbasis)
+        pt.kernel()
+        return float(escf + pt.e_corr)
+
+    def difference(iatom, comp, step):
+        values = []
+        for sign in (1.0, -1.0):
+            coords = [list(c) for c in start]
+            coords[iatom][comp] += sign*step
+            values.append(energy(coords))
+        return (values[0] - values[1])/(2.0*step)
+
+    gradient = []
+    for iatom in range(len(atoms)):
+        row = []
+        for comp in range(3):
+            coarse = difference(iatom, comp, UMP2_GRADIENT_STEP)
+            fine = difference(iatom, comp, 0.5*UMP2_GRADIENT_STEP)
+            row.append((4.0*fine - coarse)/3.0)
+        gradient.append(row)
+    return energy(start), gradient, nao[0]
+
+
+def ump2_gradient_entries(written, dry_run):
+    """Write the unrestricted RI-MP2 gradient decks and return their entries.
+
+    A function for the reason `cosx_entries` is: it is also what splices these
+    cases into an existing manifest without regenerating the rest.
+    """
+    entries = []
+    for name, basis, aux, frozen, mult in UMP2_GRADIENT_CASES:
+        mol = MOLECULES[name]
+        energy, gradient, nao = pyscf_uri_mp2_gradient(mol.atoms, basis, aux, frozen, mult)
+        tag = f"{normalize_basis_name(basis)}_rimp2_f{frozen}_m{mult}_grad"
+        deck = deck_for(f"{CPU_MQC}/ri-mp2", f"cpu_{name}_{tag}")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+        if not dry_run:
+            d = deck_json(xyz_for(mol), basis, method="ri-mp2", aux=aux, aux_only=True,
+                          multiplicity=mult,
+                          correlation={"freeze_core": frozen > 0,
+                                       "n_frozen_core": frozen})
+            d["driver"] = "Gradient"
+            _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
+        entries.append({
+            "name": f"RI-MP2 gradient over UHF/{aux} {mol.label} {basis} "
+                    f"multiplicity {mult} frozen {frozen} (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "expected_gradient": [[round(c, 10) for c in atom] for atom in gradient],
+            "gradient_tolerance": UMP2_GRADIENT_TOLERANCE,
+            "check_translation": True,
+            "type": "unfragmented",
+        })
+        print(f"{mol.label:6s} {basis:12s} URI-MP2 gradient mult={mult} frozen={frozen} "
+              f"nao={nao:4d} E={energy:.12f}", flush=True)
+    return entries
+
+
 def ump2_entries(written, dry_run):
     """Write the unrestricted MP2 decks and return their manifest entries.
 
@@ -4677,6 +4789,10 @@ def main():
                     help="write only the gradient decks over an ECP and splice "
                          "their entries into the existing manifest, leaving "
                          "every other entry and deck untouched")
+    ap.add_argument("--only-ump2-gradient", action="store_true",
+                    help="write only the unrestricted RI-MP2 gradient decks "
+                         "and splice their entries into the existing manifest, "
+                         "leaving every other entry and deck untouched")
     ap.add_argument("--only-ump2", action="store_true",
                     help="write only the unrestricted MP2 decks and splice "
                          "their entries into the existing manifest, leaving "
@@ -4784,6 +4900,24 @@ def main():
                 if not args.dry_run and not (INPUTS / mol.xyz).exists():
                     write_xyz(INPUTS / mol.xyz, mol)
         entries = ecp_gradient_entries(set(), args.dry_run)
+        if args.dry_run:
+            return 0
+        manifest = json.loads(MANIFEST.read_text())
+        new_inputs = {e["input"] for e in entries}
+        manifest["tests"] = [t for t in manifest["tests"]
+                             if t["input"] not in new_inputs] + entries
+        MANIFEST.write_text(json.dumps(manifest, indent=4) + "\n")
+        print(f"\nspliced {len(entries)} entries into {MANIFEST}")
+        return 0
+
+    if args.only_ump2_gradient:
+        for name in {c[0] for c in UMP2_GRADIENT_CASES}:
+            mol = MOLECULES[name]
+            if mol.xyz:
+                mol.atoms = read_xyz(INPUTS / mol.xyz)
+            else:
+                mol.xyz = f"sample_inputs/{name}.xyz"
+        entries = ump2_gradient_entries(set(), args.dry_run)
         if args.dry_run:
             return 0
         manifest = json.loads(MANIFEST.read_text())
@@ -6044,6 +6178,7 @@ def main():
     tests.extend(df_unrestricted_entries(written, args.dry_run))
     tests.extend(rohf_entries(written, args.dry_run))
     tests.extend(ump2_entries(written, args.dry_run))
+    tests.extend(ump2_gradient_entries(written, args.dry_run))
     tests.extend(ri_hessian_entries(written, args.dry_run))
     tests.extend(df_ri_hessian_entries(written, args.dry_run))
     tests.extend(cosx_entries(written, args.dry_run))
