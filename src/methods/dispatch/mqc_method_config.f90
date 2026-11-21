@@ -338,6 +338,14 @@ module mqc_method_config
          !! named, not defaulted per backend. Only the CPU path reads it;
          !! cuEST's solver is fixed and refuses "iefpcm" rather than
          !! substituting.
+      character(len=16) :: correlation = "none"
+         !! How a correlated method meets the continuum. "none" refuses the
+         !! combination. "pte": the reference is solvated and the correlation
+         !! runs on its orbitals, the reaction field staying the reference's.
+         !! "ptd": reference and correlation run in the gas phase, and the
+         !! solvation free energy is then evaluated once with the relaxed
+         !! correlated density. Two different energies; only the CPU path
+         !! reads it.
       real(dp) :: dielectric = -1.0_dp
          !! Solvent dielectric. No solvent-name table on this path, on purpose:
          !! see `mqc_config_types`.
@@ -376,6 +384,17 @@ module mqc_method_config
          !! form, Hartree-Fock only; Kohn-Sham takes "field" in its place.
          !! "field": the gradient differenced over electric fields.
          !! "displacements": the polarizability over nuclear positions.
+      logical :: natural_orbitals = .false.
+         !! `properties.natural_orbitals` asked for natural occupations
+      logical :: intrinsic_orbitals = .false.
+         !! `properties.intrinsic_orbitals` asked for IAO charges and IBOs
+      integer :: intrinsic_exponent = 4
+         !! The localisation exponent for the bond orbitals, 2 or 4
+      character(len=16) :: density = "scf"
+         !! Which density `charges` and `bond_orders` partition. "scf" is the
+         !! reference's, whatever method runs on top of it. "relaxed" is the
+         !! correlated method's relaxed density, which exists for closed-shell
+         !! `ri-mp2` only.
       character(len=:), allocatable :: bond_order_scheme
          !! Allocated when `properties.bond_orders` asked for bond orders over
          !! the converged density; "mayer". Unallocated means none, for the
