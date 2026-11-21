@@ -195,10 +195,10 @@ with the Sackur-Tetrode translational entropy
 
 26.015 cal/(mol K) for hydrogen at 298.15 K and 1 atm, and
 :math:`R\ln 2 = 1.377` cal/(mol K) of spin degeneracy, 27.39 in all. :math:`5/2\,RT`
-is 1.481 kcal/mol at 298.15 K. This is why the Hessian is skipped and not merely believed: the Fortran
-thermochemistry decides a molecule is linear when its smallest moment of inertia
-vanishes, which all three do for one atom, and would then add a linear rotor's
-:math:`RT` of rotational energy that an atom does not have.
+is 1.481 kcal/mol at 298.15 K. The Hessian is skipped because there is nothing to
+differentiate. The Fortran thermochemistry gives the same enthalpy for an atom
+(``is_atom`` in its block, and no rotational term); it once counted an atom as a
+linear rotor and added :math:`RT` it does not have.
 **Spin-orbit coupling is ignored**: a halogen atom's ground state is
 :math:`^2P_{3/2}`, a four-fold level with a second one a few kcal/mol above it
 (about 2.5 kcal/mol for Cl, 10 for Br, 22 for I), and the 2S+1 degeneracy of 2 is the
@@ -209,18 +209,14 @@ The electronic entropy
 ======================
 
 The Fortran thermochemistry has a spin term, :math:`S_\mathrm{elec} = R\ln(2S+1)`,
-and **no caller gives it the multiplicity**: every call to
-``compute_thermochemistry`` leaves it at its default of 1. So for a radical the
-JSON block reports ``spin_multiplicity: 1`` and an electronic entropy of zero.
+and its block reports it for the system's multiplicity.
 The workflow computes the term itself, from the species' own multiplicity, and does
 not use the block's value, for every species -- molecules, radicals and atoms
 alike -- so :math:`\Delta G` and each free energy carry :math:`R\ln 2` per doublet.
 :math:`D_e`, :math:`D_0` and :math:`\mathrm{BDE}(298)` are enthalpies and do not
 see it. For the two doublets of a homolysis it is :math:`-2RT\ln 2 = -0.82`
 kcal/mol in :math:`\Delta G` at 298 K. (For a closed shell the term is zero and
-nothing changed in ``mqc.pka``.) Fixing it in ``mqc_thermochemistry.f90`` and its
-callers is a one-line change per call, and when it lands the Python value agrees
-with it.
+nothing changed in ``mqc.pka``.) The Fortran block's value agrees with it.
 
 Scanning many bonds
 ===================

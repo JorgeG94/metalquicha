@@ -323,6 +323,11 @@ if(MQC_ENABLE_CZT)
   addtest(mqc_czt_uhf)
   target_link_libraries(test_mqc_czt_uhf PRIVATE ${MQC_INTEGRALS_LIBS})
 
+  # The restricted open-shell SCF: PySCF's energies, the shared orbital spaces,
+  # and the stationary conditions on the effective Fock matrix.
+  addtest(mqc_czt_rohf)
+  target_link_libraries(test_mqc_czt_rohf PRIVATE ${MQC_INTEGRALS_LIBS})
+
   # A fragment potential written and read back. The format is GAMESS's, so
   # writer and reader are two halves of one thing and a round trip is what pins
   # them.
@@ -619,6 +624,22 @@ if(MQC_ENABLE_CZT)
   addtest(mqc_mayer_bond_orders)
   target_link_libraries(test_mqc_mayer_bond_orders
                         PRIVATE ${MQC_INTEGRALS_LIBS})
+
+  # Natural orbitals of a one-particle density: occupations of two and zero for
+  # a closed shell, one per unpaired electron for a high-spin determinant, and
+  # orbitals that are orthonormal under the overlap and rebuild the density they
+  # diagonalise. The occupations themselves are compared with PySCF end to end;
+  # these are the properties that need no other program.
+  addtest(mqc_czt_natural_orbitals)
+  target_link_libraries(test_mqc_czt_natural_orbitals
+                        PRIVATE ${MQC_INTEGRALS_LIBS})
+
+  # Intrinsic atomic and bond orbitals. Charges, the localisation functional and
+  # the bond orbitals' atomic shares are pinned to pyscf.lo.iao and
+  # pyscf.lo.ibo; beside them, that the IAOs are orthonormal and span the
+  # occupied space, and that localising leaves the density alone.
+  addtest(mqc_czt_iao)
+  target_link_libraries(test_mqc_czt_iao PRIVATE ${MQC_INTEGRALS_LIBS})
 
   # The multipole matrices every distributed multipole and every localization
   # centroid is built from. Origin shifts, symmetry, and the redundancy in the

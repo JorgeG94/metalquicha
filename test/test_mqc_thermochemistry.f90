@@ -32,7 +32,8 @@ contains
                   new_unittest("electronic_entropy", test_electronic_entropy), &
                   new_unittest("full_thermochemistry_h2o", test_full_thermochemistry_h2o), &
                   new_unittest("linear_rotational_thermo", test_linear_rotational), &
-                  new_unittest("imaginary_frequencies_are_skipped", test_imaginary_skipped) &
+                  new_unittest("imaginary_frequencies_are_skipped", test_imaginary_skipped), &
+                  new_unittest("an_atom_does_not_rotate", test_atom) &
                   ]
    end subroutine collect_mqc_thermochemistry_tests
 
@@ -363,6 +364,11 @@ contains
                                      e_lin, s_lin, cv_lin)
       call check(error, abs(s_lin) < 1.0e-12_dp, &
                  "an atom was given a rotational entropy")
+      if (allocated(error)) return
+      ! Nor an energy or a heat capacity. The linear flag is true for it,
+      ! because its smallest moment vanishes, and must not be what decides.
+      call check(error, abs(e_lin) < 1.0e-15_dp .and. abs(cv_lin) < 1.0e-12_dp, &
+                 "an atom was given a linear rotor's energy and heat capacity")
    end subroutine test_linear_rotational
 
    subroutine test_imaginary_skipped(error)
@@ -391,6 +397,71 @@ contains
       if (allocated(error)) return
       call check(error, with_imaginary > 0.0_dp, "the zero-point energy is not positive")
    end subroutine test_imaginary_skipped
+
+   subroutine test_atom(error)
+      !! A hydrogen atom through the whole driver. It translates and nothing
+      !! else, so its enthalpy correction is 5/2 RT and its entropy is the
+      !! Sackur-Tetrode value plus R ln 2 for the doublet: 1.481 kcal/mol and
+      !! 26.015 + 1.377 cal/(mol K) at 298.15 K and 1 atm.
+      !!
+      !! All three moments of inertia of one atom vanish, which is also how a
+      !! linear molecule is recognised, and an atom was once given a linear
+      !! rotor's RT on the strength of that: 0.59 kcal/mol too much enthalpy
+      !! in every reaction with an atom on one side, a bond dissociation among
+      !! them.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(thermochemistry_result_t) :: atom
+      real(dp) :: coords(3, 1), frequencies(3)
+      real(dp), parameter :: T = 298.15_dp
+      real(dp), parameter :: FIVE_HALVES_RT_KCAL = 1.481_dp
+      real(dp), parameter :: SACKUR_TETRODE_H = 26.015_dp
+      real(dp), parameter :: R_LN_2 = 1.377_dp
+
+      coords = 0.0_dp
+      frequencies = 0.0_dp
+      call compute_thermochemistry(coords, [1], frequencies, 1, 3, atom, &
+                                   temperature=T, pressure=1.0_dp, spin_multiplicity=2)
+
+      call check(error, atom%is_atom, "one atom was not recognised as an atom")
+      if (allocated(error)) return
+      call check(error, abs(atom%E_rot) < 1.0e-15_dp .and. abs(atom%S_rot) < 1.0e-12_dp &
+                 .and. abs(atom%Cv_rot) < 1.0e-12_dp, "an atom was given rotation")
+      if (allocated(error)) return
+      call check(error, abs(atom%zpe_hartree) < 1.0e-15_dp .and. abs(atom%E_vib) < 1.0e-15_dp, &
+                 "an atom was given vibration")
+      if (allocated(error)) return
+      call check(error, abs(atom%thermal_correction_enthalpy - 2.5_dp*KB_HARTREE*T) < 1.0e-9_dp, &
+                 "an atom's enthalpy correction is not 5/2 RT")
+      if (allocated(error)) return
+      call check(error, abs(atom%thermal_correction_enthalpy*HARTREE_TO_KCALMOL &
+                            - FIVE_HALVES_RT_KCAL) < tol_loose, &
+                 "an atom's enthalpy correction is not 1.481 kcal/mol")
+      if (allocated(error)) return
+      call check(error, abs(atom%S_trans - SACKUR_TETRODE_H) < 5.0e-3_dp, &
+                 "hydrogen's translational entropy is not the Sackur-Tetrode value")
+      if (allocated(error)) return
+      call check(error, abs(atom%S_elec - R_LN_2) < tol_loose, &
+                 "a doublet's electronic entropy is not R ln 2")
+      if (allocated(error)) return
+
+      ! A diatomic still rotates as a linear molecule: the fix must not have
+      ! taken the rotor away from everything with a vanishing moment.
+      block
+         type(thermochemistry_result_t) :: h2
+         real(dp) :: c2(3, 2)
+
+         c2 = 0.0_dp
+         c2(3, 2) = 0.74_dp*ANGSTROM_TO_BOHR
+         call compute_thermochemistry(c2, [1, 1], [0.0_dp, 0.0_dp, 0.0_dp, 0.0_dp, 0.0_dp, &
+                                                   4400.0_dp], 2, 6, h2, temperature=T)
+         call check(error, h2%is_linear .and. .not. h2%is_atom, &
+                    "H2 must be linear and not an atom")
+         if (allocated(error)) return
+         call check(error, abs(h2%E_rot - KB_HARTREE*T) < 1.0e-9_dp, &
+                    "a diatomic's rotational energy is not RT")
+      end block
+   end subroutine test_atom
 
 end module test_mqc_thermochemistry
 

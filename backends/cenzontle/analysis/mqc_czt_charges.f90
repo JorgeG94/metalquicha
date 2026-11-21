@@ -28,7 +28,8 @@ module mqc_czt_charges
    use mqc_physical_constants, only: ANGSTROM_TO_BOHR
    use mqc_czt_integrals, only: czt_molecule_t, shell_dim
    use mqc_population_analysis, only: mulliken_atomic_charges, &
-                                      mulliken_atomic_spin_populations
+                                      mulliken_atomic_spin_populations, &
+                                      lowdin_density, identity_overlap
    use mqc_czt_esp, only: esp_contract
    use libcint_fortran, only: LIBCINT_BAS_SLOTS, LIBCINT_ATOM_OF
    implicit none
@@ -37,6 +38,8 @@ module mqc_czt_charges
    public :: ao_to_atom
    public :: mulliken_charges
    public :: mulliken_spin_populations
+   public :: lowdin_charges
+   public :: lowdin_spin_populations
    public :: chelpg_charges
    public :: chelpg_grid
 
@@ -87,6 +90,47 @@ contains
       call ao_to_atom(mol, owner)
       call mulliken_atomic_charges(owner, mol%charges, density, overlap, charges, error)
    end subroutine mulliken_charges
+
+   subroutine lowdin_charges(mol, density, overlap, charges, error)
+      !! q_A = Z_A - sum_{mu in A} (S^1/2 D S^1/2)_mu,mu
+      !!
+      !! Mulliken's partition in Lowdin's orthonormal basis, where there is no
+      !! overlap population to divide: each function's population is its own.
+      !! Less basis-set dependent than Mulliken's and never negative per
+      !! function, at the price of mixing each atom's functions with its
+      !! neighbours' before counting.
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: density(:, :), overlap(:, :)
+      real(dp), allocatable, intent(out) :: charges(:)
+      type(error_t), intent(inout) :: error
+
+      integer, allocatable :: owner(:)
+      real(dp), allocatable :: lowdin(:, :)
+
+      call lowdin_density(density, overlap, lowdin, error)
+      if (error%has_error()) return
+      call ao_to_atom(mol, owner)
+      call mulliken_atomic_charges(owner, mol%charges, lowdin, &
+                                   identity_overlap(size(lowdin, 1)), charges, error)
+   end subroutine lowdin_charges
+
+   subroutine lowdin_spin_populations(mol, spin_density, overlap, populations, error)
+      !! Lowdin's partition applied to P_alpha - P_beta
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: spin_density(:, :), overlap(:, :)
+      real(dp), allocatable, intent(out) :: populations(:)
+      type(error_t), intent(inout) :: error
+
+      integer, allocatable :: owner(:)
+      real(dp), allocatable :: lowdin(:, :)
+
+      call lowdin_density(spin_density, overlap, lowdin, error)
+      if (error%has_error()) return
+      call ao_to_atom(mol, owner)
+      call mulliken_atomic_spin_populations(owner, mol%natm, lowdin, &
+                                            identity_overlap(size(lowdin, 1)), &
+                                            populations, error)
+   end subroutine lowdin_spin_populations
 
    subroutine mulliken_spin_populations(mol, spin_density, overlap, populations, error)
       !! The Mulliken partition applied to P_alpha - P_beta

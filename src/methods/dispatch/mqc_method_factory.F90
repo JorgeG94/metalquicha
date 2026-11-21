@@ -204,6 +204,7 @@ contains
       options%cosx_grid = config%scf%cosx_grid
       options%cosx_final_grid = config%scf%cosx_final_grid
       options%unrestricted = config%scf%unrestricted
+      options%restricted_open = config%scf%restricted_open
       options%guess = config%scf%guess
       if (allocated(config%scf%guess_steps)) options%guess_steps = config%scf%guess_steps
       options%max_iter = config%scf%max_iter

@@ -299,6 +299,64 @@ broken-symmetry singlet has its own energy. A deck using the old
 ``keywords.scf.unrestricted`` spelling is refused with a message naming the new
 one rather than being silently ignored.
 
+Restricted open shell
+^^^^^^^^^^^^^^^^^^^^^
+
+``restricted_open`` asks for restricted open-shell Hartree-Fock or Kohn-Sham
+(ROHF, ROKS) on an open shell (default: false):
+
+.. code-block:: json
+
+   "model": {"method": "hf", "basis": "cc-pVDZ", "restricted_open": true}
+
+Both spins then share one set of orbitals, some doubly occupied and
+``multiplicity - 1`` of them singly, with the unpaired electrons all alpha. The
+wavefunction is an eigenfunction of spin -- :math:`\langle S^2\rangle` is
+exactly :math:`S(S+1)`, where an unrestricted one is contaminated -- and its
+energy is higher than the unrestricted one for the same state, because it is the
+same energy expression minimised under a constraint. For the water cation in
+6-31G that is -75.57847 hartree against -75.58059, with
+:math:`\langle S^2\rangle` of 0.7500 against 0.7553.
+
+On a closed shell the keyword changes nothing, and it cannot be combined with
+``unrestricted``.
+
+What runs:
+
+- Hartree-Fock and Kohn-Sham energies, from LDA to global and range-separated
+  hybrids, with the exact, in-core or density-fitted Fock build, and in a
+  continuum solvent.
+- Analytic gradients, and therefore geometry optimisation and the
+  semi-numerical Hessian with its frequencies and thermochemistry.
+- The analyses that read a density: charges, bond orders, natural orbitals.
+
+What is refused by name: MP2, coupled cluster and double hybrids (over this
+reference they need single excitations that are not built), excited states, the
+stability analysis, Fukui functions, ``keywords.scf.gdm`` and
+``keywords.scf.second_order`` (both rotate the two spins independently), the
+energy-based SCF accelerators, and the cuEST and terco backends.
+
+Three things to know when reading the output:
+
+- **The orbital energies are not unique.** A restricted open-shell energy fixes
+  the three orbital spaces and nothing inside them, so every program makes a
+  choice. What is reported here is, for each spin, the orbitals that diagonalise
+  that spin's own Fock matrix within its occupied and within its virtual block.
+  Alpha's and beta's orbitals therefore span the same spaces and are not the
+  same vectors, and their energies are not the eigenvalues another program
+  prints for the same state. Energies, densities and gradients are unaffected.
+- **The SCF diagonalises Roothaan's effective Fock matrix.** That choice affects
+  how the iterations go and not where they end.
+- **A singly occupied orbital in a degenerate pair may not converge under a
+  functional.** The hydroxyl radical with PBE is the example: its unpaired
+  electron is in one of two degenerate :math:`\pi` orbitals, and the iterations
+  swap between them. PySCF's ROKS fails on it the same way. It converges at
+  Hartree-Fock, and unrestricted.
+
+References are PySCF's ``scf.ROHF`` and ``dft.ROKS``: fourteen validation cases
+under ``validation/inputs/cpu/mqc/rohf/``, energies to :math:`10^{-11}` hartree
+and gradients to :math:`5\times10^{-9}`.
+
 Effective core potentials
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -587,6 +645,13 @@ succeed. This section is the keyword reference.
 Naming the block is what turns solvation on -- there is no separate flag, because
 a deck that states a dielectric wants solvent and two switches could disagree.
 
+- ``correlation``: how an MP2 method meets the continuum, ``"pte"`` or
+  ``"ptd"``. There is no default: MP2 with ``keywords.pcm`` and no scheme is
+  refused, because the two give different energies. ``"pte"`` solvates the
+  reference and leaves the reaction field at the Hartree-Fock level;
+  ``"ptd"`` runs the reference and ``ri-mp2`` in the gas phase and evaluates
+  the solvation once with the relaxed MP2 density. CPU backend only. See
+  :doc:`continuum_solvation`.
 - ``method``: which continuum model the surface charges solve. ``"cpcm"``
   (conductor-like, the default) or ``"iefpcm"`` (the integral equation
   formalism) on the CPU backend. They are different models with different

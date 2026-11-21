@@ -20,12 +20,14 @@ module test_mqc_mayer_bond_orders
    use pic_types, only: dp
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
    use mqc_czt_rhf, only: run_czt_rhf, run_czt_uhf, rhf_result_t
-   use mqc_czt_charges, only: ao_to_atom
+   use mqc_czt_charges, only: ao_to_atom, lowdin_charges, mulliken_charges
    use mqc_czt_bond_orders, only: mayer_bond_orders, mayer_bond_orders_open_shell, &
-                                  mayer_valences
+                                  mayer_valences, wiberg_bond_orders, &
+                                  wiberg_bond_orders_open_shell
    use mqc_population_analysis, only: mayer_atomic_bond_orders, &
                                       mayer_atomic_bond_orders_open_shell, &
-                                      mayer_atomic_valences
+                                      mayer_atomic_valences, lowdin_density, &
+                                      identity_overlap
    use mqc_error, only: error_t
    implicit none
    private
@@ -56,7 +58,14 @@ contains
                   new_unittest("matrix_is_symmetric_with_no_diagonal", test_shape), &
                   new_unittest("valence_is_the_row_sum", test_valence), &
                   new_unittest("an_ao_reordering_changes_nothing", test_reordering), &
-                  new_unittest("mismatched_shapes_are_refused", test_refusal) &
+                  new_unittest("mismatched_shapes_are_refused", test_refusal), &
+                  new_unittest("lowdin_density_is_the_density_in_an_orthonormal_basis", &
+                               test_lowdin_density), &
+                  new_unittest("lowdin_charges_sum_to_the_molecular_charge", &
+                               test_lowdin_charges), &
+                  new_unittest("wiberg_open_shell_reduces_to_closed_shell", &
+                               test_wiberg_equal_spins), &
+                  new_unittest("wiberg_is_not_mayer", test_wiberg_is_not_mayer) &
                   ]
    end subroutine collect_mqc_mayer_bond_orders_tests
 
@@ -138,6 +147,138 @@ contains
       call mol%overlap(overlap)
       call mayer_bond_orders(mol, scf%density, overlap, orders, err)
    end subroutine closed_shell_orders
+
+   subroutine test_lowdin_density(error)
+      !! `S^1/2 D S^1/2`: same electron count, idempotent for a determinant,
+      !! and the density itself when the basis is already orthonormal
+      !!
+      !! A closed-shell density satisfies `D S D = 2 D`, which in Lowdin's
+      !! basis reads `P P = 2 P`. That holds only for the symmetric square
+      !! root: `S D S`, `S^-1/2 D S^-1/2` and a one-sided product all fail it.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      type(error_t) :: err
+      real(dp), allocatable :: s(:, :), p(:, :), same(:, :)
+      integer :: i, n
+      real(dp) :: trace
+
+      call water(mol, err, "6-31g")
+      call check(error,.not. err%has_error(), "water must build")
+      if (allocated(error)) return
+      call mol%overlap(s)
+      call run_czt_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, in_core=.true.)
+      call lowdin_density(scf%density, s, p, err)
+      call check(error,.not. err%has_error(), "Lowdin density: "//err%get_full_trace())
+      if (allocated(error)) return
+      n = size(p, 1)
+      trace = 0.0_dp
+      do i = 1, n
+         trace = trace + p(i, i)
+      end do
+      call check(error, abs(trace - 10.0_dp) < 1.0e-9_dp, &
+                 "the Lowdin density must hold the same ten electrons")
+      if (allocated(error)) return
+      call check(error, maxval(abs(matmul(p, p) - 2.0_dp*p)) < 1.0e-8_dp, &
+                 "a closed-shell Lowdin density must satisfy P P = 2 P")
+      if (allocated(error)) return
+
+      call lowdin_density(p, identity_overlap(n), same, err)
+      call check(error, maxval(abs(same - p)) < 1.0e-12_dp, &
+                 "over an orthonormal basis the Lowdin density is the density")
+      call mol%destroy()
+   end subroutine test_lowdin_density
+
+   subroutine test_lowdin_charges(error)
+      !! Lowdin charges conserve charge and are not Mulliken's
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      type(error_t) :: err
+      real(dp), allocatable :: s(:, :), q_l(:), q_m(:)
+
+      call water(mol, err, "6-31g")
+      call check(error,.not. err%has_error(), "water must build")
+      if (allocated(error)) return
+      call mol%overlap(s)
+      call run_czt_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, in_core=.true.)
+      call lowdin_charges(mol, scf%density, s, q_l, err)
+      call mulliken_charges(mol, scf%density, s, q_m, err)
+      call check(error,.not. err%has_error(), "charges: "//err%get_full_trace())
+      if (allocated(error)) return
+      call check(error, abs(sum(q_l)) < 1.0e-9_dp, "Lowdin charges must sum to zero on water")
+      if (allocated(error)) return
+      call check(error, q_l(1) < 0.0_dp .and. q_l(2) > 0.0_dp, &
+                 "oxygen must come out negative and hydrogen positive")
+      if (allocated(error)) return
+      ! The two partitions differ by design; equal numbers would mean one
+      ! scheme had been answered with the other.
+      call check(error, abs(q_l(1) - q_m(1)) > 1.0e-3_dp, &
+                 "Lowdin and Mulliken charges must not be the same numbers")
+      call mol%destroy()
+   end subroutine test_lowdin_charges
+
+   subroutine test_wiberg_equal_spins(error)
+      !! The spin-resolved Wiberg index on a closed shell is the closed-shell one
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      type(error_t) :: err
+      real(dp), allocatable :: s(:, :), closed(:, :), open_shell(:, :)
+
+      call water(mol, err, "6-31g")
+      call check(error,.not. err%has_error(), "water must build")
+      if (allocated(error)) return
+      call mol%overlap(s)
+      call run_czt_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, in_core=.true.)
+      call wiberg_bond_orders(mol, scf%density, s, closed, err)
+      call wiberg_bond_orders_open_shell(mol, 0.5_dp*scf%density, 0.5_dp*scf%density, s, &
+                                         open_shell, err)
+      call check(error,.not. err%has_error(), "Wiberg: "//err%get_full_trace())
+      if (allocated(error)) return
+      call check(error, maxval(abs(closed - open_shell)) < 1.0e-10_dp, &
+                 "equal spin densities must give the closed-shell Wiberg index")
+      if (allocated(error)) return
+      call check(error, maxval(abs(closed - transpose(closed))) < 1.0e-12_dp, &
+                 "the Wiberg matrix must be symmetric")
+      call mol%destroy()
+   end subroutine test_wiberg_equal_spins
+
+   subroutine test_wiberg_is_not_mayer(error)
+      !! Two definitions, two numbers, both near one for a single bond
+      !!
+      !! The reason 'wiberg' was once refused: over non-orthogonal AOs the only
+      !! thing that could answer it was Mayer's formula. If these two ever
+      !! agree to rounding, one scheme is being computed as the other.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      type(error_t) :: err
+      real(dp), allocatable :: s(:, :), wiberg(:, :), mayer(:, :)
+
+      call water(mol, err, "6-31g")
+      call check(error,.not. err%has_error(), "water must build")
+      if (allocated(error)) return
+      call mol%overlap(s)
+      call run_czt_rhf(mol, 10, 100, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err, in_core=.true.)
+      call wiberg_bond_orders(mol, scf%density, s, wiberg, err)
+      call mayer_bond_orders(mol, scf%density, s, mayer, err)
+      call check(error,.not. err%has_error(), "bond orders: "//err%get_full_trace())
+      if (allocated(error)) return
+      call check(error, abs(wiberg(1, 2) - mayer(1, 2)) > 1.0e-3_dp, &
+                 "Wiberg and Mayer orders must not be the same numbers")
+      if (allocated(error)) return
+      call check(error, wiberg(1, 2) > 0.7_dp .and. wiberg(1, 2) < 1.3_dp, &
+                 "the O-H Wiberg index must be that of a single bond")
+      if (allocated(error)) return
+      ! The two hydrogens are not bonded in either scheme.
+      call check(error, wiberg(2, 3) < 0.1_dp, "H-H must come out unbonded")
+      call mol%destroy()
+   end subroutine test_wiberg_is_not_mayer
 
    subroutine test_water(error)
       !! Water, STO-3G, against PySCF

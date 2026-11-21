@@ -49,6 +49,7 @@ contains
                   new_unittest("angular_form_moves_it", test_cartesian), &
                   new_unittest("root_count_moves_it", test_excited_roots), &
                   new_unittest("an_absent_excited_block_does_not", test_excited_absent), &
+                  new_unittest("restricted_open_moves_it", test_restricted_open), &
                   new_unittest("a_fixed_calculation_keeps_its_hash", test_golden_hash), &
                   new_unittest("counterpoise_scheme_moves_it", test_counterpoise_scheme), &
                   new_unittest("counterpoise_level_moves_it", test_counterpoise_level), &
@@ -336,6 +337,24 @@ contains
       b%excited%spin = "triplet"
       call differ(error, sys, sys, a, b, "asking for triplets instead of singlets")
    end subroutine test_excited_roots
+
+   subroutine test_restricted_open(error)
+      !! A restricted open-shell reference is a different wavefunction
+      !!
+      !! Same molecule, basis and functional, a different energy: a checkpoint
+      !! written unrestricted must not be read into a restricted open-shell
+      !! run. That a deck without the keyword hashes as it always did is
+      !! `a_fixed_calculation_keeps_its_hash`'s to hold.
+      type(error_type), allocatable, intent(out) :: error
+      type(system_geometry_t) :: sys
+      type(method_config_t) :: a, b
+
+      call water_dimer(sys)
+      call dft(a)
+      call dft(b)
+      b%scf%restricted_open = .true.
+      call differ(error, sys, sys, a, b, "asking for a restricted open-shell reference")
+   end subroutine test_restricted_open
 
    subroutine test_excited_absent(error)
       !! No excited states asked for hashes as it always did
