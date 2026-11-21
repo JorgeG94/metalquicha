@@ -54,6 +54,9 @@ module mqc_thermochemistry
       integer :: symmetry_number = DEFAULT_SYMMETRY_NUMBER  !! Rotational symmetry number
       integer :: spin_multiplicity = DEFAULT_SPIN_MULTIPLICITY  !! Electronic spin multiplicity
       logical :: is_linear = .false.                    !! True if molecule is linear
+      logical :: is_atom = .false.
+         !! True when no moment of inertia is above the threshold: one atom,
+         !! which translates and does not rotate. `is_linear` is true as well.
 
       ! Molecular properties
       real(dp) :: total_mass = 0.0_dp                   !! Total mass in amu
@@ -305,12 +308,21 @@ contains
 
    end subroutine compute_translational_thermo
 
+   pure function has_rotation(moments) result(rotates)
+      !! Whether a body with these principal moments has any rotational motion
+      real(dp), intent(in) :: moments(3)   !! In amu*Angstrom^2
+      logical :: rotates
+
+      rotates = maxval(moments) > LINEAR_THRESHOLD
+   end function has_rotation
+
    pure subroutine compute_rotational_thermo(moments, temperature, symmetry_number, is_linear, E, S, Cv)
       !! Compute rotational contributions to thermodynamic properties.
       !!
       !! Uses rigid rotor approximation (classical limit, high T).
       !! For nonlinear: E = 3/2 RT, Cv = 3/2 R
       !! For linear: E = RT, Cv = R
+      !! With no moment above the threshold, a single atom: all three zero.
       real(dp), intent(in) :: moments(3)      !! Principal moments in amu*Angstrom^2
       real(dp), intent(in) :: temperature     !! Temperature in K
       integer, intent(in) :: symmetry_number  !! Rotational symmetry number
@@ -341,7 +353,14 @@ contains
          end if
       end do
 
-      if (is_linear) then
+      if (.not. has_rotation(moments)) then
+         ! One atom has nothing to rotate. Counting it as a linear rotor adds
+         ! RT to its energy, 0.59 kcal/mol at 298 K, which goes straight into
+         ! the enthalpy of any reaction that makes or consumes an atom.
+         E = 0.0_dp
+         S = 0.0_dp
+         Cv = 0.0_dp
+      else if (is_linear) then
          ! Linear molecule: 2 rotational degrees of freedom
          E = R_HARTREE*T
          Cv = R_CALMOLK
@@ -569,6 +588,8 @@ contains
                                       center_of_mass, result%moments, principal_axes, &
                                       result%is_linear, result%total_mass)
 
+      result%is_atom = .not. has_rotation(result%moments)
+
       ! Compute rotational constants
       call compute_rotational_constants(result%moments, result%is_linear, result%rot_const)
 
@@ -676,7 +697,9 @@ contains
          write (line, "(A,I6,A)") "  Imaginary freqs:   ", result%n_imag_freqs, " (skipped)"
          call logger%large_info(trim(line))
       end if
-      if (result%is_linear) then
+      if (result%is_atom) then
+         call logger%large_info("  Single atom:       no rotation")
+      else if (result%is_linear) then
          call logger%large_info("  Linear molecule:   yes")
       else
          call logger%large_info("  Linear molecule:   no")

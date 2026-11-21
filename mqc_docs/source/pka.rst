@@ -321,11 +321,9 @@ Open shells and single atoms
 ============================
 
 Two things the thermochemistry does for every species and that only matter off a
-closed shell, both shared with :doc:`bde`. The Fortran thermochemistry has an
-electronic entropy :math:`R\ln(2S+1)` but no caller gives it the multiplicity, so
-its block reports multiplicity 1 and a zero term for a radical; the workflow
-computes the term from the microstate's own ``multiplicity``, and for a closed
-shell the number is the same as before. A one-atom microstate (a chloride, say) has
+closed shell, both shared with :doc:`bde`. The workflow computes the electronic entropy :math:`R\ln(2S+1)` from the
+microstate's own ``multiplicity`` rather than reading it from the Fortran
+thermochemistry block, which reports the same term. A one-atom microstate (a chloride, say) has
 no vibrations to ask a Hessian for: it is one single point plus the analytic
 :math:`H = E + \tfrac52 RT` and the Sackur-Tetrode entropy.
 
