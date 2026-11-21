@@ -413,7 +413,12 @@ too**: `compute_mbe` sets `compute_raman` when the dipole derivatives are
 being assembled and every term carries `polarizability_derivatives`, and they
 go through `redistribute_cap_dipole_derivatives`, which moves whole columns
 and so takes six rows as it takes three. Over MPI they follow the dipole
-derivatives in both sends and both receives. The full expansion of a water
+derivatives in both sends and both receives. **The MPI coordinator ordinarily
+flattens a fragmented Hessian into displaced gradients, and a queue of
+gradients never computes a polarizability derivative**: the activities were
+silently absent on more than one rank until `expand_displacements` learned to
+stand down for `properties%raman`, leaving each fragment whole on one rank.
+Found by running it under `mpirun`, not by reading it. The full expansion of a water
 trimer reproduces the unfragmented activities to 8e-10; at the pair level a
 *band's* total is within a per cent while single modes are off by half,
 because the assembled Hessian mixes near-degenerate stretches differently --

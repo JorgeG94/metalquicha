@@ -443,6 +443,14 @@ moves between neighbours a few wavenumbers apart. A broadened spectrum, which
 is what :doc:`spectra` draws, shows the band and is much less affected than a
 table of modes.
 
+**Under MPI a Raman request changes how the Hessian is spread over the
+ranks.** Ordinarily each fragment's Hessian is broken into displaced gradients
+that are queued individually, which uses more ranks than there are fragments.
+The polarizability derivatives come out of a fragment's own analytic Hessian
+calculation, so with ``properties.raman`` each fragment stays whole and goes to
+one rank. On four ranks the activities are the serial ones to
+:math:`2\times10^{-7}`.
+
 The displacement method is refused for a capped fragment, which it would have
 to rebuild at every displaced geometry; the analytic and finite-field methods
 work at the one geometry the fragment was built at. Nothing is assembled with
