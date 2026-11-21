@@ -139,6 +139,20 @@ module mqc_config_types
       character(len=:), allocatable :: raman_method
          !! `properties.raman.method`: "field" or "displacements". Set to
          !! "field" before the deck is read.
+      character(len=16) :: properties_density = "scf"
+         !! `properties.density`: which one-particle density the charges and
+         !! bond orders partition, "scf" or "relaxed". See
+         !! `properties_config_t`.
+      logical :: intrinsic_orbitals = .false.
+         !! `properties.intrinsic_orbitals` is present: intrinsic atomic
+         !! orbital charges and intrinsic bond orbitals.
+      integer :: intrinsic_exponent = 4
+         !! `properties.intrinsic_orbitals.exponent`, the power in the bond
+         !! orbitals' localisation functional: 2 or 4.
+      logical :: natural_orbitals = .false.
+         !! `properties.natural_orbitals` is present: report the natural
+         !! occupations of the most complete one-particle density the method
+         !! has.
       character(len=:), allocatable :: bond_order_scheme
          !! From `properties.bond_orders.scheme`. Allocated means the deck
          !! asked for bond orders over the converged density; "mayer" is the
@@ -377,6 +391,9 @@ module mqc_config_types
       logical :: pcm_enabled = .false.
       character(len=16) :: pcm_method = "cpcm"
          !! Continuum model: "cpcm" or "iefpcm". See `pcm_config_t`.
+      character(len=16) :: pcm_correlation = "none"
+         !! `keywords.pcm.correlation`: how a correlated method meets the
+         !! continuum, "none", "pte" or "ptd". See `pcm_config_t`.
       real(dp) :: pcm_dielectric = -1.0_dp
          !! Solvent dielectric constant. Required: there is no solvent-name
          !! table on this path.
