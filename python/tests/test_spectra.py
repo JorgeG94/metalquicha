@@ -165,6 +165,35 @@ def test_missing_sections_are_refused_with_what_to_ask_for():
 # -- Raman ------------------------------------------------------------------
 
 
+def test_a_result_is_read_like_the_file_it_wrote():
+    """`spectra.ir(result)` is `spectra.ir(path)`.
+
+    The module imports nothing from the package, so it cannot ask whether it
+    was handed a `Result`; it asks whether the object can hand over its output
+    document. A stand-in with that one method is therefore the whole contract,
+    and a result that wrote nothing has to say so rather than fall through to
+    `open()` on an object.
+    """
+
+    class Wrote:
+        def _output_document(self):
+            return vibrational_output()
+
+    class WroteNothing:
+        def _output_document(self):
+            return None
+
+    from_result = spectra.ir(Wrote())
+    from_dict = spectra.ir(vibrational_output())
+    assert from_result.y == from_dict.y and from_result.x == from_dict.x
+    try:
+        spectra.ir(WroteNothing())
+    except ValueError as error:
+        assert "no output document" in str(error)
+    else:
+        raise AssertionError("a result with no output was not refused")
+
+
 def test_raman_cross_section_matches_a_hand_calculation():
     # Nitrogen-like: 2331 cm^-1, 20 A^4/amu, the 488 nm argon line, no
     # population factor. Each factor in CGS, multiplied out by hand:

@@ -25,6 +25,9 @@ plotting program.
    uv = spectra.uvvis("output_benzene.json", fwhm_ev=0.4, unit="nm")
    h1 = spectra.nmr("output_ethanol.json", "H", reference="output_tms.json")
 
+Each function takes the path of an output file, the dictionary read from one,
+or the ``Result`` of a run made in the same session.
+
 or from a shell, with no Python written:
 
 .. code-block:: bash

@@ -270,9 +270,20 @@ def _csv(label):
 
 
 def load(source):
-    """The output as a dict, from a path or from a dict already loaded."""
+    """The output as a dict: from a path, a dict already loaded, or a `Result`.
+
+    A `Result` is recognised by what it offers rather than by its type, since
+    this module imports nothing from the package: anything with an
+    ``_output_document`` method is asked for the document it wrote.
+    """
     if isinstance(source, dict):
         return source
+    document = getattr(source, "_output_document", None)
+    if callable(document):
+        loaded = document()
+        if not loaded:
+            raise ValueError("this result wrote no output document to read a spectrum from")
+        return loaded
     with open(source) as handle:
         return json.load(handle)
 
