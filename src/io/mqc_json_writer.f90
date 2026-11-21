@@ -421,6 +421,10 @@ contains
          call add_hessian(json, main_obj, data%hessian)
       end if
 
+      ! Shieldings assembled over the expansion, in the section an
+      ! unfragmented run writes them in.
+      call write_nmr_section(json, main_obj, data)
+
       ! Write to file
       call logger%info("Writing JSON output to "//trim(output_file))
       open (newunit=iunit, file=trim(output_file), status="replace", action="write", iostat=io_stat)

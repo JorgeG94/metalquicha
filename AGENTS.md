@@ -438,7 +438,18 @@ charge is put first in the atom list as a unit Gaussian nucleus and the
 integral told there is one atom -- it still finds each shell's centre further
 down the list. One pass over the shell pairs per surface point. No other
 program here does a shielding in a continuum, so **the check is translation**:
-6e-8 ppm with the term, 87 ppm without. See
+6e-8 ppm with the term, 87 ppm without.
+**In a fragmented run the shieldings are assembled like a gradient**:
+`compute_mbe` notices that every term carries `nmr_shielding`, and
+`accumulate_fragment_derivatives` folds each term's tensors onto the system
+atoms with the expansion's collapsed weights, dropping caps. Nothing asks for
+it -- the caller allocates nothing, unlike the gradient. The tensors travel
+over MPI flattened to `(9, n_atoms)` after the dipole derivatives, in both
+`send` routines and through `recv_shielding` in both receives; **the four have
+to stay in step**. On four ranks the result is the serial one to 1e-11 ppm. The check that
+needs no reference: at the level that reaches the whole system the result is
+the unfragmented one, 1e-11 ppm on a water trimer. Couplings, GMBE,
+counterpoise and embedding are not assembled. See
 `mqc_docs/source/nmr_shielding.rst`.
 
 Spin-spin couplings are `properties.spin_spin_coupling`, a separate request
