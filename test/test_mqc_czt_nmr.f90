@@ -20,6 +20,7 @@ module test_mqc_czt_nmr
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
    use mqc_czt_nmr, only: czt_nmr_shielding
+   use mqc_czt_xc, only: xc_context_t, xc_context_create, xc_available
    use mqc_nmr_summary, only: shielding_summary
    implicit none
    private
@@ -43,6 +44,33 @@ module test_mqc_czt_nmr
    real(dp), parameter :: PPM_TOL = 5.0e-5_dp
       !! The references are printed to six decimals.
 
+   ! The same molecule under two functionals, written as PySCF prints them,
+   ! a row per field direction. PBE is a pure GGA, so the field induces no
+   ! potential and the response is uncoupled; B3LYP keeps a fifth of the
+   ! exchange and with it a coupled response.
+   real(dp), parameter :: PBE_REF(3, 3, 3) = reshape( &
+                          [324.108712_dp, 0.0_dp, -12.598363_dp, &
+                           0.0_dp, 296.121611_dp, 0.0_dp, &
+                           -12.546327_dp, 0.0_dp, 331.274399_dp, &
+                           28.925377_dp, 0.0_dp, -3.116130_dp, &
+                           0.0_dp, 26.651564_dp, 0.0_dp, &
+                           -0.644932_dp, 0.0_dp, 43.899715_dp, &
+                           42.082937_dp, 0.0_dp, -4.056759_dp, &
+                           0.0_dp, 26.674670_dp, 0.0_dp, &
+                           -6.532487_dp, 0.0_dp, 30.802582_dp], [3, 3, 3])
+   real(dp), parameter :: B3LYP_REF(3, 3, 3) = reshape( &
+                          [324.452054_dp, 0.0_dp, -14.467035_dp, &
+                           0.0_dp, 297.645243_dp, 0.0_dp, &
+                           -14.414577_dp, 0.0_dp, 332.581913_dp, &
+                           28.748962_dp, 0.0_dp, -2.947949_dp, &
+                           0.0_dp, 26.515985_dp, 0.0_dp, &
+                           -0.722904_dp, 0.0_dp, 43.913947_dp, &
+                           42.108277_dp, 0.0_dp, -4.186792_dp, &
+                           0.0_dp, 26.539775_dp, 0.0_dp, &
+                           -6.415966_dp, 0.0_dp, 30.616770_dp], [3, 3, 3])
+      !! Stored column by column, so each block above is one atom's tensor
+      !! transposed: the first three numbers are its first column.
+
 contains
 
    subroutine collect_mqc_czt_nmr_tests(testsuite)
@@ -51,18 +79,23 @@ contains
       testsuite = [ &
                   new_unittest("water_tensors_match_pyscf", test_water), &
                   new_unittest("translation_leaves_the_tensors_unchanged", test_translation), &
+                  new_unittest("kohn_sham_tensors_match_pyscf", test_kohn_sham), &
+                  new_unittest("kohn_sham_translation_and_refusals", test_kohn_sham_gauge), &
                   new_unittest("summary_of_a_known_tensor", test_summary) &
                   ]
    end subroutine collect_mqc_czt_nmr_tests
 
-   subroutine shield_water(shift, sigma, dia, para, err)
+   subroutine shield_water(shift, sigma, dia, para, err, functional)
       !! Water in 6-31G, moved by `shift`, and its shielding tensors
       real(dp), intent(in) :: shift(3)
       real(dp), allocatable, intent(out) :: sigma(:, :, :), dia(:, :, :), para(:, :, :)
       type(error_t), intent(inout) :: err
+      character(len=*), intent(in), optional :: functional
+         !! Kohn-Sham with this functional; absent is Hartree-Fock
 
       type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
+      type(xc_context_t) :: xc
       real(dp) :: c(3, 3)
       integer :: i
 
@@ -74,6 +107,17 @@ contains
       end do
       call build_czt_molecule([8, 1, 1], ["O ", "H ", "H "], c, "6-31g", mol, err)
       if (err%has_error()) return
+      if (present(functional)) then
+         call xc_context_create(mol, functional, xc, err)
+         if (err%has_error()) return
+         call run_czt_rhf(mol, 10, 200, 1.0e-13_dp, 1.0e-11_dp, .false., scf, err, &
+                          grad_tol=1.0e-10_dp, xc=xc)
+         if (err%has_error()) return
+         call czt_nmr_shielding(mol, scf%orbitals, scf%orbital_energies, scf%n_occupied, &
+                                sigma, err, diamagnetic=dia, paramagnetic=para, xc=xc)
+         call mol%destroy()
+         return
+      end if
       call run_czt_rhf(mol, 10, 200, 1.0e-13_dp, 1.0e-11_dp, .false., scf, err, &
                        grad_tol=1.0e-10_dp)
       if (err%has_error()) return
@@ -132,6 +176,76 @@ contains
       call check(error, maxval(abs(there - here)) < 1.0e-6_dp, &
                  "the shielding changed when the molecule was moved")
    end subroutine test_translation
+
+   subroutine test_kohn_sham(error)
+      !! The exchange-correlation term over gauge-including orbitals, and the
+      !! scaling of exact exchange in a hybrid, against `pyscf.prop.nmr.rks`.
+      !!
+      !! That module's quadrature loop fails under the current PySCF, so the
+      !! numbers come from the same formulas run in one pass, and that copy
+      !! reproduces the values in the module's own self-test -- hydrogen
+      !! fluoride at LDA and at the B3LYP of its day -- to 1e-4 ppm.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(error_t) :: err
+      real(dp), allocatable :: sigma(:, :, :), dia(:, :, :), para(:, :, :)
+
+      if (.not. xc_available()) return
+      call shield_water([0.0_dp, 0.0_dp, 0.0_dp], sigma, dia, para, err, functional="pbe")
+      call check(error,.not. err%has_error(), "PBE shielding: "//err%get_full_trace())
+      if (allocated(error)) return
+      write (*, "(4x,a,es10.2)") "PBE, worst element against PySCF   ", &
+         maxval(abs(sigma - PBE_REF))
+      call check(error, maxval(abs(sigma - PBE_REF)) < PPM_TOL, &
+                 "the PBE shielding tensors do not match PySCF's")
+      if (allocated(error)) return
+
+      call shield_water([0.0_dp, 0.0_dp, 0.0_dp], sigma, dia, para, err, functional="b3lyp")
+      call check(error,.not. err%has_error(), "B3LYP shielding: "//err%get_full_trace())
+      if (allocated(error)) return
+      write (*, "(4x,a,es10.2)") "B3LYP, worst element against PySCF ", &
+         maxval(abs(sigma - B3LYP_REF))
+      call check(error, maxval(abs(sigma - B3LYP_REF)) < PPM_TOL, &
+                 "the B3LYP shielding tensors do not match PySCF's")
+      if (allocated(error)) return
+      ! The functional matters: correlation deshields oxygen by ten ppm.
+      call check(error, O_REF(1, 1) - sigma(1, 1, 1) > 5.0_dp, &
+                 "the Kohn-Sham tensor is Hartree-Fock's")
+   end subroutine test_kohn_sham
+
+   subroutine test_kohn_sham_gauge(error)
+      !! Moving the molecule changes nothing under a functional either,
+      !! which is the exchange-correlation term's gauge factor being right:
+      !! without it the shieldings move by ppm. And what is not built says so.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(error_t) :: err
+      real(dp), allocatable :: here(:, :, :), there(:, :, :), dia(:, :, :), para(:, :, :)
+
+      if (.not. xc_available()) return
+      call shield_water([0.0_dp, 0.0_dp, 0.0_dp], here, dia, para, err, functional="pbe")
+      call shield_water([3.0_dp, -5.0_dp, 7.0_dp], there, dia, para, err, functional="pbe")
+      call check(error,.not. err%has_error(), "shielding: "//err%get_full_trace())
+      if (allocated(error)) return
+      write (*, "(4x,a,es10.2)") "PBE, largest change on moving the molecule ", &
+         maxval(abs(there - here))
+      call check(error, maxval(abs(there - here)) < 1.0e-5_dp, &
+                 "the PBE shielding changed when the molecule was moved")
+      if (allocated(error)) return
+
+      call shield_water([0.0_dp, 0.0_dp, 0.0_dp], here, dia, para, err, functional="tpss")
+      call check(error, err%has_error(), "a meta-GGA shielding was not refused")
+      if (allocated(error)) return
+      call check(error, index(err%get_message(), "meta-GGA") > 0, &
+                 "the meta-GGA refusal does not name the reason: "//err%get_message())
+      if (allocated(error)) return
+      call err%clear()
+      call shield_water([0.0_dp, 0.0_dp, 0.0_dp], here, dia, para, err, &
+                        functional="cam-b3lyp")
+      call check(error, err%has_error() .and. &
+                 index(err%get_message(), "range-separated") > 0, &
+                 "a range-separated shielding was not refused by name")
+   end subroutine test_kohn_sham_gauge
 
    subroutine test_summary(error)
       type(error_type), allocatable, intent(out) :: error

@@ -15,6 +15,14 @@ the same way.
 
 ``properties.nmr`` is a request by its presence and takes no settings. Every
 nucleus is shielded. Like everything under ``properties`` it changes no energy.
+It runs for closed-shell Hartree-Fock and for Kohn-Sham with an LDA, a GGA or
+a global hybrid of either:
+
+.. code-block:: json
+
+   "model": {"method": "dft", "functional": "b3lyp", "basis": "cc-pVTZ"},
+   "driver": "Energy",
+   "properties": {"nmr": {}}
 
 What it computes
 ----------------
@@ -43,6 +51,32 @@ Coulomb response, and in Hartree-Fock only exchange couples the equations.
 
 Only the sum of the two parts is a physical quantity. How it divides between
 them depends on the gauge, and the split here is the GIAO one.
+
+Under a functional
+------------------
+
+Two things change, and one of them makes a pure functional *cheaper* than
+Hartree-Fock.
+
+**The exchange-correlation potential does not respond to the field.** It is a
+functional of the density, and a magnetic field induces a current, not a
+change of density, at first order. So the potential contributes to the
+first-order Fock matrix only through the gauge phase of the basis functions:
+for a function centred at :math:`\mathbf{R}` the field derivative at a point
+:math:`\mathbf{r}` is :math:`\tfrac{i}{2}(\mathbf{R}\times\mathbf{r})\chi`,
+and the matrix is the potential between one function and another's
+derivative, less its transpose, integrated on the functional's grid. A GGA
+adds the gradient of that derivative.
+
+**Exact exchange is scaled by the fraction the functional keeps**, in the
+first-order Fock matrix and in the response alike. For a pure functional that
+fraction is zero, nothing couples the three equations, and they are solved by
+the orbital-energy gaps in one step with no response iterations at all.
+
+That a functional of the density alone ignores the current is an
+approximation of the functional, not of this code: it is what every
+conventional functional does, and it is why shieldings from pure functionals
+are too deshielded for nuclei with low-lying excited states.
 
 What it reports
 ---------------
@@ -115,14 +149,26 @@ below agree with PySCF element by element.
      - cc-pVDZ
      - 1.5e-7
 
+Under a functional the reference is ``pyscf.prop.nmr.rks``. Its quadrature
+loop fails under the current PySCF, so the numbers come from the same formulas
+run in one pass, and that copy reproduces the values in the module's own
+self-test -- hydrogen fluoride at LDA/6-31G and at the B3LYP of its day in
+cc-pVDZ -- to :math:`10^{-4}` ppm. ``test_mqc_czt_nmr`` pins all three tensors
+of water in 6-31G at PBE and at B3LYP to it, agreeing to
+:math:`1.2\times10^{-6}` ppm, and checks that moving the molecule changes no
+PBE element by more than :math:`10^{-5}` ppm (measured: :math:`8\times10^{-12}`).
+LDA was checked through the program to the same.
+
 Limits
 ------
 
-- **Closed-shell Hartree-Fock with exact integrals only.** An open shell, a
-  Kohn-Sham reference, a correlated method, a density-fitted reference and a
-  continuum solvent are each refused by name. A Kohn-Sham shielding needs the
-  gauge phase carried through the exchange-correlation quadrature, which is the
-  next step and is not built.
+- **Closed shells with exact integrals only.** An open shell, a correlated
+  method, a density-fitted reference and a continuum solvent are each refused
+  by name.
+- **LDA, GGA and their global hybrids.** A meta-GGA is refused, since its
+  kinetic energy density depends on the gauge and that dependence is not
+  built; so are range-separated hybrids and functionals with non-local
+  correlation.
 - **No effective core potentials.**
 - **The two-electron GIAO term is not screened.** Every shell quartet is
   computed, so this step grows as the fourth power of the basis size and is the
@@ -130,8 +176,9 @@ Limits
   it needs integral screening before it is used on anything large.
 - **Hartree-Fock shieldings are a starting point, not a prediction.** Electron
   correlation changes them by tens of ppm for nuclei with lone pairs or multiple
-  bonds, and a basis built for energies converges them slowly. Chemical shifts,
-  being differences, are more forgiving than the shieldings themselves.
+  bonds, which is what a functional is for, and a basis built for energies
+  converges them slowly. Chemical shifts, being differences, are more
+  forgiving than the shieldings themselves.
 - **Shieldings only.** No chemical shifts against a named reference, no
   spin-spin couplings, no magnetisability.
 - **CPU backend.** The GPU and terco backends warn and skip it.

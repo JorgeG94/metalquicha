@@ -403,7 +403,8 @@ See `mqc_docs/source/excited_states.rst`.
 
 NMR shieldings are `properties.nmr` on an energy deck: the shielding tensor
 of every nucleus over gauge-including (London) orbitals, closed-shell
-Hartree-Fock with exact integrals, everything else refused by name. Two
+Hartree-Fock or Kohn-Sham (LDA, GGA, global hybrids) with exact integrals,
+everything else refused by name. Two
 modules. `mqc_czt_giao` is the integrals, through the field-derivative
 entry points `libcint_fortran` exports from libfint v0.9.0 on
 (`libcint_1e_igovlp_*` through `libcint_2e_ig1_*`). `mqc_czt_nmr` is the physics, term
@@ -416,11 +417,22 @@ transposed result passes any symmetric check. The reference is
 `pyscf.prop.nmr.RHF` from the separate `pyscf-properties` package, whose
 packaged response callback assumes three vectors a call and fails under
 current PySCF; pass it one that reshapes to any count. The two-electron
-field derivative computes every shell quartet with no screening. See
-`mqc_docs/source/nmr_shielding.rst`.
+field derivative computes every shell quartet with no screening.
+**Under a functional the potential does not respond to the field**, so a
+pure functional has no coupled equations at all and `exchange_response`
+returns zero without touching an integral; a hybrid scales exchange by
+`xc%exx_fraction` in the first-order Fock matrix and the response alike.
+What the functional adds is `giao_xc_potential`: the potential between a
+function and the gauge derivative of another, `(1/2)(R x r) chi`, less its
+transpose, on the grid, with that derivative's gradient for a GGA.
+`pyscf.prop.nmr.rks`'s own `get_vxc_giao` fails under current PySCF (a block
+size that is not a multiple of the grid's), so the reference is the same
+formulas in one pass, held to the two numbers in that module's self-test --
+and those were made with the old B3LYP, `b3lyp5` now, which is 0.02 ppm from
+today's. See `mqc_docs/source/nmr_shielding.rst`.
 
 Spin-spin couplings are `properties.spin_spin_coupling`, a separate request
-because they run under a functional and the shieldings do not.
+from the shieldings: a deck may want either without the other.
 `mqc_czt_spin_coupling` computes **the Fermi-contact term only**, term for
 term `pyscf.prop.ssc`'s `make_fc`: the right-hand side for nucleus `A` is
 `(4 pi / 3) phi_a(R_A) phi_i(R_A)`, from `eval_ao_block` at the nuclei, and

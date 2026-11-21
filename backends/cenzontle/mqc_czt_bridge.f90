@@ -1292,9 +1292,9 @@ contains
       pcm_pte = settings%pcm%enabled .and. trim(settings%pcm%correlation) == "pte"
       pcm_ptd = settings%pcm%enabled .and. trim(settings%pcm%correlation) == "ptd"
 
-      ! The shielding implemented is closed-shell Hartree-Fock's with exact
-      ! integrals. Each of these would run and return that formula's number
-      ! for a wave function it does not describe.
+      ! The shielding implemented is closed-shell Hartree-Fock's or
+      ! Kohn-Sham's with exact integrals. Each of these would run and return
+      ! that formula's number for a wave function it does not describe.
       if (settings%nmr_shielding) then
          block
             character(len=:), allocatable :: why
@@ -1303,9 +1303,6 @@ contains
             if (unrestricted) then
                why = "an open shell needs the spin-resolved response and the "// &
                      "terms the unpaired spin adds"
-            else if (len_trim(settings%functional) > 0) then
-               why = "a Kohn-Sham reference needs the gauge factor carried through "// &
-                     "the exchange-correlation quadrature"
             else if (settings%run_mp2 .or. settings%run_cc) then
                why = "a correlated shielding needs that method's own response "// &
                      "to the field"
@@ -1319,8 +1316,8 @@ contains
             end if
             if (len(why) > 0) then
                call result%error%set(ERROR_VALIDATION, "properties.nmr is implemented "// &
-                                     "for closed-shell Hartree-Fock with exact "// &
-                                     "integrals: "//why//".")
+                                     "for closed-shell Hartree-Fock and Kohn-Sham "// &
+                                     "with exact integrals: "//why//".")
                result%has_error = .true.
                return
             end if
@@ -2584,7 +2581,8 @@ contains
 
             call czt_nmr_shielding(mol, scf%orbitals, scf%orbital_energies, &
                                    scf%n_occupied, sigma, nmr_error, &
-                                   diamagnetic=sigma_dia, paramagnetic=sigma_para)
+                                   diamagnetic=sigma_dia, paramagnetic=sigma_para, &
+                                   xc=xc)
             if (nmr_error%has_error()) then
                call logger%warning("  shieldings could not be computed: "// &
                                    nmr_error%get_message())
