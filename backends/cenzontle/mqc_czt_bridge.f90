@@ -1260,9 +1260,14 @@ contains
                why = "the displaced references carry no continuum"
             else if (len_trim(settings%ecp_set) > 0) then
                why = "the displaced references carry no effective core potential"
-            else if (fragment%n_caps > 0 .or. any(fragment%ghost_mask())) then
-               why = "capped and ghosted fragments are not rebuilt at displaced "// &
-                     "geometries"
+            else if (any(fragment%ghost_mask())) then
+               why = "ghosted fragments are not handled"
+            else if (fragment%n_caps > 0 .and. &
+                     trim(settings%raman_method) == "displacements") then
+               ! The other two routes work at the one geometry the fragment
+               ! was built at, caps and all.
+               why = "a capped fragment is not rebuilt at displaced geometries; "// &
+                     "use the analytic or the finite-field method"
             else if (settings%hessian_method /= HESSIAN_METHOD_ANALYTIC) then
                why = "it accompanies the analytic Hessian"
             end if

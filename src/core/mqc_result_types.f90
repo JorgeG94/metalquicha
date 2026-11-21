@@ -335,6 +335,10 @@ module mqc_result_types
       real(dp), allocatable :: hessian(:, :)         !! Total Hessian (3*natoms, 3*natoms)
       real(dp), allocatable :: dipole(:)             !! Total dipole moment (3) (e*Bohr)
       real(dp), allocatable :: dipole_derivatives(:, :)  !! Dipole derivatives (3, 3*natoms) for IR intensities
+      real(dp), allocatable :: polarizability_derivatives(:, :)
+         !! (6, 3*natoms) polarizability derivatives for Raman activities,
+         !! components xx, yy, zz, xy, xz, yz. Allocated by `compute_mbe`
+         !! when every term carries its own.
 
       ! Computation status flags
       logical :: has_energy = .false.                !! Energy has been computed
@@ -503,6 +507,7 @@ contains
       if (allocated(this%hessian)) deallocate (this%hessian)
       if (allocated(this%dipole)) deallocate (this%dipole)
       if (allocated(this%dipole_derivatives)) deallocate (this%dipole_derivatives)
+      if (allocated(this%polarizability_derivatives)) deallocate (this%polarizability_derivatives)
       if (allocated(this%atomic_charges)) deallocate (this%atomic_charges)
       if (allocated(this%spin_populations)) deallocate (this%spin_populations)
       if (allocated(this%ieda_atom)) deallocate (this%ieda_atom)
@@ -593,6 +598,7 @@ contains
       if (allocated(this%hessian)) deallocate (this%hessian)
       if (allocated(this%dipole)) deallocate (this%dipole)
       if (allocated(this%dipole_derivatives)) deallocate (this%dipole_derivatives)
+      if (allocated(this%polarizability_derivatives)) deallocate (this%polarizability_derivatives)
       if (allocated(this%correlation_by_level)) deallocate (this%correlation_by_level)
       if (allocated(this%correlation_parts_by_level)) deallocate (this%correlation_parts_by_level)
       if (allocated(this%interaction_by_level)) deallocate (this%interaction_by_level)
@@ -731,6 +737,19 @@ contains
       end if
    end subroutine send_quao_rows
 
+   subroutine recv_polarizability_derivatives(comm, result, source, tag, status)
+      !! The polarizability derivatives, when the sender had them
+      type(comm_t), intent(in) :: comm
+      type(calculation_result_t), intent(inout) :: result
+      integer, intent(in) :: source, tag
+      type(MPI_Status), intent(inout) :: status
+
+      logical :: present_here
+
+      call recv(comm, present_here, source, tag, status)
+      if (present_here) call recv(comm, result%polarizability_derivatives, source, tag, status)
+   end subroutine recv_polarizability_derivatives
+
    subroutine recv_quao_rows(result, comm, source, tag)
       !! The bonding-analysis rows, into a result `destroy` has emptied
       type(calculation_result_t), intent(inout) :: result
@@ -811,6 +830,13 @@ contains
       call send(comm, result%has_dipole_derivatives, dest, tag)
       if (result%has_dipole_derivatives) then
          call send(comm, result%dipole_derivatives, dest, tag)
+      end if
+
+      ! Polarizability derivatives, for Raman activities: the same shape as
+      ! the dipole derivatives with six rows in place of three.
+      call send(comm, allocated(result%polarizability_derivatives), dest, tag)
+      if (allocated(result%polarizability_derivatives)) then
+         call send(comm, result%polarizability_derivatives, dest, tag)
       end if
 
       ! Excited states, every array under one flag: the solver and the
@@ -916,6 +942,13 @@ contains
       call send(comm, result%has_dipole_derivatives, dest, tag)
       if (result%has_dipole_derivatives) then
          call send(comm, result%dipole_derivatives, dest, tag)
+      end if
+
+      ! Polarizability derivatives, for Raman activities: the same shape as
+      ! the dipole derivatives with six rows in place of three.
+      call send(comm, allocated(result%polarizability_derivatives), dest, tag)
+      if (allocated(result%polarizability_derivatives)) then
+         call send(comm, result%polarizability_derivatives, dest, tag)
       end if
 
       ! Excited states, every array under one flag: the solver and the
@@ -1034,6 +1067,8 @@ contains
          ! Receive allocatable dipole derivatives array (MPI lib handles allocation)
          call recv(comm, result%dipole_derivatives, source, tag, status)
       end if
+
+      call recv_polarizability_derivatives(comm, result, source, tag, status)
 
       ! Receive excited states, every array under one flag
       call recv(comm, result%has_excited_states, source, tag, status)
@@ -1155,6 +1190,8 @@ contains
          ! Receive allocatable dipole derivatives array (MPI lib handles allocation)
          call recv(comm, result%dipole_derivatives, source, tag, status)
       end if
+
+      call recv_polarizability_derivatives(comm, result, source, tag, status)
 
       ! Receive excited states, every array under one flag
       call recv(comm, result%has_excited_states, source, tag, status)
