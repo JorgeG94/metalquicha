@@ -405,13 +405,9 @@ NMR shieldings are `properties.nmr` on an energy deck: the shielding tensor
 of every nucleus over gauge-including (London) orbitals, closed-shell
 Hartree-Fock or Kohn-Sham (LDA, GGA, global hybrids) with exact integrals,
 everything else refused by name. Two
-modules. `mqc_czt_giao` is the integrals, and **reaches libfint's generated
-functions directly** (`cint_gen_intor1`, `cint_gen_intor2`, `cint_workspace`)
-because `libcint_fortran` does not export the field-derivative integrals; it
-is the only module that does, and the one to change when libfint exports
-them. **A workspace made private by OpenMP has to have `ws%opt => null()`
-set by hand** -- gfortran does not default-initialise the copy, and the
-integral driver reads that pointer first. `mqc_czt_nmr` is the physics, term
+modules. `mqc_czt_giao` is the integrals, through the field-derivative
+entry points `libcint_fortran` exports from libfint v0.9.0 on
+(`libcint_1e_igovlp_*` through `libcint_2e_ig1_*`). `mqc_czt_nmr` is the physics, term
 for term `pyscf.prop.nmr.rhf`: the field is an imaginary antisymmetric
 perturbation, so the coupled-perturbed operator is exchange only
 (`response_mean_field` with `minus`), and the occupied-occupied block of the
@@ -890,7 +886,7 @@ under `cpu/mqc/` is deleted by the next regeneration.
 
 Validation categories under `cpu/mqc/` are `bond_orders ccsd ccsd-t charges cosx counterpoise
 df-dft df-hf df-uhf dft dh ecp efmo efp fmo fukui gdm gradient hessian interaction_energy
-makefp mcscf mp2 neo optimize pcm quao rhf ri-ccsd ri-ccsd-t ri-mp2 sapt scs-mp2
+makefp mcscf mp2 neo nmr optimize pcm quao rhf ri-ccsd ri-ccsd-t ri-mp2 sapt scs-mp2
 rohf soscf sos-mp2 tddft udft uhf` -- worth checking against before assuming
 something is untested. That list is `ls validation/inputs/cpu/mqc/`; it went stale twice
 because it was maintained by hand, so check the directory rather than this

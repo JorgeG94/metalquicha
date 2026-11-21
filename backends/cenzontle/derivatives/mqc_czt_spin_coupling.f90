@@ -21,24 +21,24 @@ module mqc_czt_spin_coupling
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use pic_logger, only: logger => global_logger
-   use mqc_error, only: error_t
-   use mqc_physical_constants, only: PI
+   use mqc_error, only: error_t, ERROR_VALIDATION
+   use mqc_physical_constants, only: PI, FINE_STRUCTURE
+   use mqc_calculation_defaults, only: PROPERTY_RESPONSE_TOL
    use mqc_czt_integrals, only: czt_molecule_t
    use mqc_czt_ao, only: eval_ao_block
    use mqc_czt_cphf, only: cphf_solve
    use mqc_czt_xc, only: xc_context_t
-   use mqc_nmr_isotopes, only: nmr_isotope, reduced_to_hertz
+   use mqc_nmr_isotopes, only: nmr_isotope, reduced_to_hertz, ISOTOPE_LABEL_LEN
    implicit none
    private
 
    public :: czt_fermi_contact
    public :: print_coupling_report
 
-   real(dp), parameter :: FINE_STRUCTURE = 7.2973525693e-3_dp
-   real(dp), parameter :: RESPONSE_TOL = 1.0e-10_dp
    integer, parameter :: RESPONSE_MAX_ITER = 200
+      !! Krylov cycles the triplet response may take
    integer, parameter :: LINE_LEN = 160
-   integer, parameter :: ISOTOPE_LEN = 8
+      !! Length of a formatted report line
 
 contains
 
@@ -69,6 +69,11 @@ contains
       natm = mol%natm
       n_mo = size(orbitals, 2)
       n_vir = n_mo - n_occ
+      if (n_occ < 1 .or. n_vir < 1) then
+         call error%set(ERROR_VALIDATION, "a spin-spin coupling needs both occupied "// &
+                        "and virtual orbitals")
+         return
+      end if
       kohn_sham = .false.
       if (present(xc)) kohn_sham = xc%active
 
@@ -89,11 +94,11 @@ contains
 
       if (kohn_sham) then
          call cphf_solve(mol, orbitals, orbital_energies, n_occ, response=u, error=error, &
-                         max_iter=RESPONSE_MAX_ITER, tol=RESPONSE_TOL, mo_rhs=rhs, &
+                         max_iter=RESPONSE_MAX_ITER, tol=PROPERTY_RESPONSE_TOL, mo_rhs=rhs, &
                          xc=xc, density=density, triplet=.true.)
       else
          call cphf_solve(mol, orbitals, orbital_energies, n_occ, response=u, error=error, &
-                         max_iter=RESPONSE_MAX_ITER, tol=RESPONSE_TOL, mo_rhs=rhs, &
+                         max_iter=RESPONSE_MAX_ITER, tol=PROPERTY_RESPONSE_TOL, mo_rhs=rhs, &
                          triplet=.true.)
       end if
       if (error%has_error()) then
@@ -122,7 +127,7 @@ contains
       character(len=*), intent(in) :: symbols(:)
 
       character(len=LINE_LEN) :: line
-      character(len=ISOTOPE_LEN) :: iso_a, iso_b
+      character(len=ISOTOPE_LABEL_LEN) :: iso_a, iso_b
       real(dp) :: g_a, g_b
       integer :: ia, ib
 

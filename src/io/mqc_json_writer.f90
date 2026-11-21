@@ -16,7 +16,8 @@ module mqc_json_writer
                                STATE_SPIN_UNRESTRICTED
    use json_module, only: json_core, json_value
    use mqc_nmr_summary, only: shielding_summary
-   use mqc_nmr_isotopes, only: nmr_isotope, reduced_to_hertz, reduced_to_si
+   use mqc_nmr_isotopes, only: nmr_isotope, reduced_to_hertz, reduced_to_si, &
+                               ISOTOPE_LABEL_LEN
    implicit none
    private
 
@@ -816,9 +817,8 @@ contains
       type(json_value), pointer, intent(in) :: parent
       type(json_output_data_t), intent(in) :: data
 
-      integer, parameter :: ISOTOPE_LEN = 8
       type(json_value), pointer :: section, atoms, atom, terms, hz, reduced
-      character(len=ISOTOPE_LEN) :: label
+      character(len=ISOTOPE_LABEL_LEN) :: label
       real(dp), allocatable :: g(:), row(:)
       integer :: natm, ia, ib
 
