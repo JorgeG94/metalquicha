@@ -104,6 +104,13 @@ module mqc_cuest_iface
          !! none were asked for.
       logical :: raman = .false.
          !! Raman activities from `properties.raman`; the CPU backend only.
+      logical :: natural_orbitals = .false.
+         !! Natural occupations from `properties.natural_orbitals`
+      logical :: intrinsic_orbitals = .false.
+         !! IAO charges and IBOs from `properties.intrinsic_orbitals`
+      integer :: intrinsic_exponent = 4
+      character(len=16) :: properties_density = "scf"
+         !! `properties.density`: "scf" or "relaxed"
       character(len=:), allocatable :: bond_order_scheme
          !! Bond orders over the converged density from
          !! `properties.bond_orders`, unallocated when none were asked for.
@@ -246,6 +253,7 @@ contains
       if (allocated(properties%fukui_guess)) then
          settings%fukui_guess = properties%fukui_guess
       end if
+      settings%raman = properties%raman
       settings%fukui_scf = properties%fukui_scf
       if (allocated(properties%charges_scheme)) then
          settings%charges_scheme = properties%charges_scheme
@@ -253,7 +261,10 @@ contains
       if (allocated(properties%bond_order_scheme)) then
          settings%bond_order_scheme = properties%bond_order_scheme
       end if
-      settings%raman = properties%raman
+      settings%natural_orbitals = properties%natural_orbitals
+      settings%intrinsic_orbitals = properties%intrinsic_orbitals
+      settings%intrinsic_exponent = properties%intrinsic_exponent
+      settings%properties_density = properties%density
    end subroutine apply_properties_settings
 
    subroutine apply_scf_settings(settings, options)
