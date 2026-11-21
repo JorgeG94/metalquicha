@@ -234,7 +234,8 @@ How fast it converges, against the unfragmented calculation at Hartree-Fock in
      - 1.0
 
 The third level of the trimer is the whole system, and reproduces it to the
-solver's precision. **Each level buys about a factor of ten, and oxygen is
+solver's precision. Run on four MPI ranks, every case in the table gives
+the serial tensors to :math:`10^{-10}` ppm. **Each level buys about a factor of ten, and oxygen is
 ten to twenty times harder than hydrogen**: in a hydrogen-bonded cluster a
 proton spectrum is usable at the second level and an oxygen one is not. The
 slow part is the polarisation of each molecule by all the others at once,

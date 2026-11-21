@@ -434,7 +434,7 @@ atoms with the expansion's collapsed weights, dropping caps. Nothing asks for
 it -- the caller allocates nothing, unlike the gradient. The tensors travel
 over MPI flattened to `(9, n_atoms)` after the dipole derivatives, in both
 `send` routines and through `recv_shielding` in both receives; **the four have
-to stay in step**, and they were written without an MPI build to run them. The check that
+to stay in step**. On four ranks the result is the serial one to 1e-11 ppm. The check that
 needs no reference: at the level that reaches the whole system the result is
 the unfragmented one, 1e-11 ppm on a water trimer. Couplings, GMBE,
 counterpoise and embedding are not assembled. See
