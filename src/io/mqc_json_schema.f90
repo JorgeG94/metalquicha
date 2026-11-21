@@ -94,6 +94,10 @@ contains
                                    charges_keys(), error)
       call check_grandchild_object(core, root, "properties", "bond_orders", &
                                    bond_orders_keys(), error)
+      call check_grandchild_object(core, root, "properties", "natural_orbitals", &
+                                   natural_orbitals_keys(), error)
+      call check_grandchild_object(core, root, "properties", "intrinsic_orbitals", &
+                                   intrinsic_orbitals_keys(), error)
       call check_bond_orders(core, root, error)
       call check_grandchild_object(core, root, "properties", "bonding_analysis", &
                                    bonding_analysis_keys(), error)
@@ -256,6 +260,9 @@ contains
       call allow(keys, "fukui")
       call allow(keys, "charges")
       call allow(keys, "bond_orders")
+      call allow(keys, "natural_orbitals")
+      call allow(keys, "intrinsic_orbitals")
+      call allow(keys, "density")
    end function properties_keys
 
    function fukui_keys() result(keys)
@@ -323,6 +330,18 @@ contains
       type(key_set_t) :: keys
       call allow(keys, "scheme")
    end function charges_keys
+
+   function intrinsic_orbitals_keys() result(keys)
+      !! `properties.intrinsic_orbitals`: the object is the request
+      type(key_set_t) :: keys
+      call allow(keys, "exponent")
+   end function intrinsic_orbitals_keys
+
+   function natural_orbitals_keys() result(keys)
+      !! `properties.natural_orbitals`: the object is the request and takes no
+      !! settings, so anything inside it is a typo
+      type(key_set_t) :: keys
+   end function natural_orbitals_keys
 
    function bond_orders_keys() result(keys)
       !! Settings for the bond orders over the converged density
@@ -526,6 +545,7 @@ contains
       !! implementations with different cavities should not share one keyword.
       type(key_set_t) :: keys
       call allow(keys, "method")
+      call allow(keys, "correlation")
       call allow(keys, "dielectric")
       call allow(keys, "angular_points")
       call allow(keys, "radii_scale")
@@ -1205,14 +1225,24 @@ contains
 
       call core%get(request, "scheme", name)
       select case (lowered(trim(adjustl(name))))
-      case ("mayer")
+      case ("mayer", "wiberg_lowdin")
+      case ("wiberg")
+         ! Refused by name and not aliased. A Wiberg index is quoted from at
+         ! least three bases -- natural atomic orbitals, Lowdin's, a
+         ! semi-empirical minimal one -- and they are different numbers, so
+         ! the scheme's name says which and the bare word is left unclaimed.
+         call error%set(ERROR_VALIDATION, "properties.bond_orders.scheme is "// &
+                        "'wiberg', which names more than one quantity. The one "// &
+                        "computed here is in Lowdin's orthonormal basis: ask for "// &
+                        "'wiberg_lowdin'. It is not the natural-atomic-orbital "// &
+                        "Wiberg index an NBO analysis prints, which is not "// &
+                        "implemented.")
       case default
          call error%set(ERROR_VALIDATION, "properties.bond_orders.scheme is '"// &
-                        trim(name)//"'. The one scheme here is 'mayer', over the "// &
-                        "converged density and the AO overlap. Wiberg's order is the "// &
-                        "same sum in an orthonormal basis and is meaningless over "// &
-                        "non-orthogonal AOs, so it is not offered under that name; "// &
-                        "the quasi-atomic bonding picture is "// &
+                        trim(name)//"'. The schemes here are 'mayer', over the "// &
+                        "converged density and the AO overlap, and 'wiberg_lowdin', "// &
+                        "the sum of squared density elements in Lowdin's orthonormal "// &
+                        "basis. The quasi-atomic bonding picture is "// &
                         "properties.bonding_analysis.type = 'gms_quao', and the "// &
                         "semi-empirical Wiberg-Mayer orders come from an xTB single "// &
                         "point through the Python interface.")

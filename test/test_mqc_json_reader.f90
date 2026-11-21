@@ -113,6 +113,9 @@ contains
                   new_unittest("system_gpu_conflicts_with_backend", test_gpu_conflict), &
                   new_unittest("cuest_method_allow_list", test_cuest_methods), &
                   new_unittest("pcm_keywords", test_pcm_keywords), &
+                  new_unittest("pcm_correlation_scheme", test_pcm_correlation), &
+                  new_unittest("natural_orbitals_property", test_natural_orbitals), &
+                  new_unittest("intrinsic_orbitals_property", test_intrinsic_orbitals), &
                   new_unittest("terco_keeps_pcm", test_terco_keeps_pcm), &
                   new_unittest("dft_keywords", test_dft_keywords), &
                   new_unittest("dft_dispersion", test_dft_dispersion), &
@@ -1649,6 +1652,144 @@ contains
                  "without the block the calculation must stay in the gas phase")
    end subroutine test_pcm_keywords
 
+   subroutine test_intrinsic_orbitals(error)
+      !! properties.intrinsic_orbitals: the object is the request, the
+      !! exponent defaults to four, and only two and four are functionals
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), '"properties": {"intrinsic_orbitals": {}}')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%intrinsic_orbitals, "naming the object must request them")
+      if (allocated(error)) return
+      call check(error, config%intrinsic_exponent, 4)
+      if (allocated(error)) return
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), '"properties": {"intrinsic_orbitals": {"exponent": 2}}')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%intrinsic_exponent, 2)
+      if (allocated(error)) return
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), '"properties": {"intrinsic_orbitals": {"exponent": 3}}')
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), "an exponent of three must be refused")
+      if (allocated(error)) return
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error,.not. config%intrinsic_orbitals, "absent, it must stay off")
+   end subroutine test_intrinsic_orbitals
+
+   subroutine test_natural_orbitals(error)
+      !! properties.natural_orbitals: the object is the request
+      !!
+      !! It takes no settings, so presence switches it on, absence leaves it
+      !! off, and a key inside it is a typo the schema must stop.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), '"properties": {"natural_orbitals": {}}')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%natural_orbitals, "naming the object must request them")
+      if (allocated(error)) return
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error,.not. config%natural_orbitals, "absent, it must stay off")
+      if (allocated(error)) return
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), '"properties": {"natural_orbitals": {"threshold": 0.02}}')
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), "an unknown key inside it must be refused")
+      if (allocated(error)) return
+
+      ! `properties.density`: which density the charges and bond orders use.
+      call write_deck('"method": "ri-mp2", "basis": "sto-3g", "aux_basis": "cc-pvdz-rifit"', &
+                      "Energy", "", "", two_atoms(), &
+                      '"properties": {"density": "Relaxed", "charges": {}}')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, trim(config%properties_density), "relaxed")
+      if (allocated(error)) return
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), '"properties": {"charges": {}}')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, trim(config%properties_density), "scf", &
+                 "unnamed, the reference density must stay the default")
+      if (allocated(error)) return
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), '"properties": {"density": "unrelaxed", "charges": {}}')
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), "an unknown density must be refused")
+   end subroutine test_natural_orbitals
+
+   subroutine test_pcm_correlation(error)
+      !! keywords.pcm.correlation: read, case-folded, defaulted, and refused
+      !!
+      !! The scheme decides which density the solvent answers, so a spelling
+      !! the reader does not know must stop the deck rather than fall back to
+      !! one of the two energies.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "ri-mp2", "basis": "sto-3g", "aux_basis": "cc-pvdz-rifit"', &
+                      "Energy", '"pcm": {"dielectric": 78.39, "correlation": "PTD"}', "", &
+                      two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, trim(config%pcm_correlation), "ptd")
+      if (allocated(error)) return
+
+      call write_deck('"method": "ri-mp2", "basis": "sto-3g", "aux_basis": "cc-pvdz-rifit"', &
+                      "Energy", '"pcm": {"dielectric": 78.39, "correlation": "pte"}', "", &
+                      two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, trim(config%pcm_correlation), "pte")
+      if (allocated(error)) return
+
+      ! Unnamed, it is "none": the combination stays refused downstream.
+      call write_deck('"method": "ri-mp2", "basis": "sto-3g", "aux_basis": "cc-pvdz-rifit"', &
+                      "Energy", '"pcm": {"dielectric": 78.39}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, trim(config%pcm_correlation), "none")
+      if (allocated(error)) return
+
+      call write_deck('"method": "ri-mp2", "basis": "sto-3g", "aux_basis": "cc-pvdz-rifit"', &
+                      "Energy", '"pcm": {"dielectric": 78.39, "correlation": "pted"}', "", &
+                      two_atoms())
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "a scheme that is not implemented must be refused by the reader")
+   end subroutine test_pcm_correlation
+
    subroutine test_terco_keeps_pcm(error)
       !! A continuum asked of terco reaches the driver
       !!
@@ -2836,13 +2977,36 @@ contains
                  "a misspelled key inside properties.bond_orders should be refused")
       if (allocated(error)) return
 
-      ! And a scheme that names a different quantity.
+      ! The Wiberg index in Lowdin's orthonormal basis is its own scheme,
+      ! stored under its own name -- never as Mayer.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), &
+                      '"properties": {"bond_orders": {"scheme": "wiberg_lowdin"}}')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, trim(config%bond_order_scheme), "wiberg_lowdin")
+      if (allocated(error)) return
+
+      ! The bare word is refused, and the refusal names the scheme to ask
+      ! for. "Wiberg" is quoted from natural atomic orbitals, from Lowdin's
+      ! basis and from semi-empirical minimal ones, three different numbers;
+      ! accepting it would hand a reader comparing against an NBO output a
+      ! value that looks wrong and is merely something else.
       call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
                       two_atoms(), '"properties": {"bond_orders": {"scheme": "wiberg"}}')
       call read_deck(config, parse_error)
+      call check(error, parse_error%has_error() .and. &
+                 index(parse_error%get_message(), "wiberg_lowdin") > 0, &
+                 "the bare scheme 'wiberg' must be refused and point at 'wiberg_lowdin'")
+      if (allocated(error)) return
+
+      ! And a scheme nobody implements.
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms(), '"properties": {"bond_orders": {"scheme": "nalewajski"}}')
+      call read_deck(config, parse_error)
       call check(error, parse_error%has_error(), &
-                 "'wiberg' names a bond order in an orthonormal basis and must be "// &
-                 "refused rather than silently run as Mayer")
+                 "an unknown bond order scheme must be refused, not run as Mayer")
    end subroutine test_bond_orders_property
 
    subroutine test_bonding_analysis(error)

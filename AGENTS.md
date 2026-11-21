@@ -560,6 +560,70 @@ Continuum solvation on the CPU ab initio path (`mqc_czt_pcm.f90`):
 Both work with Hartree-Fock and DFT, restricted and unrestricted; see
 `mqc_docs/source/continuum_solvation.rst`. 40+ solvents.
 
+**MP2 in a continuum needs `keywords.pcm.correlation`**, and without it is
+refused: `"pte"` solvates the reference and runs any MP2 on its orbitals;
+`"ptd"` runs the reference and closed-shell `ri-mp2` in the gas phase, then
+solves the continuum once against the relaxed MP2 density and adds that as
+`energy%solvation` (`solvation_energy` in the output). The context is built
+and then switched off for the SCF (`pcm_ctx%enabled = .false.`), so anything
+else that reads it under PTD sees the gas phase. The relaxed density is
+`czt_ri_mp2_gradient(..., relaxed_density=)`, which returns before any
+derivative integral, with `fit_response` following the reference: **the
+gradient's default fitted response is 2.4e-7 hartree off here** and is why an
+exact-reference case would miss PySCF. `test_mqc_czt_mp2` holds the density to
+a finite-field derivative. PTED needs the surface-charge response in the
+Z-vector and is not implemented.
+
+## Analyses on a converged wave function
+
+Under `properties`, beside `keywords`: `bonding_analysis` (the quasi-atomic
+analysis), `charges`, `bond_orders`, `fukui` and `natural_orbitals`. None
+changes an energy, and a failure in one is a warning, not an error.
+
+`properties.natural_orbitals` diagonalises the most complete one-particle
+density the method has (`mqc_czt_natural_orbitals`, density in the AO basis,
+overlap orthogonalised canonically): the spin-summed density of an
+unrestricted reference, or the relaxed density of closed-shell `ri-mp2` --
+the same `relaxed_density` PTD uses, fetched once when both ask. The name of
+the density is stored beside the occupations because occupations of different
+densities are not comparable. **A relaxed density's occupations are not bound
+to [0, 2]**; the summary clamps them for the unpaired-electron counts and the
+report says when one strays. Conventional, spin-scaled and unrestricted MP2,
+coupled cluster, and MP2 under PCM `pte` are refused by name. CASSCF reports
+its own active-space occupations and does not go through this.
+
+`properties.intrinsic_orbitals` is Knizia's IAO/IBO (`mqc_czt_iao`): IAO
+charges and the occupied orbitals localised by Jacobi rotations on
+`sum_i sum_A (Q_A^i)^p`, `p` 4 or 2, HF or KS only. Its formulas
+are `pyscf.lo.iao` and `pyscf.lo.ibo`'s and its tests are pinned to them.
+**An unrestricted reference is two separate analyses**, one per spin
+(`intrinsic_one_spin` in the bridge): the IAOs depend on the occupied space,
+so alpha's and beta's differ, and there is no one set to take a spin density
+into. Charges are the two populations added, spin populations their
+difference.
+**Its minimal basis is `basis_sets/minao/iao.json` (Knizia's MINAO, cc-pVTZ
+contractions), not `minao/minao.json`** (ANO-RCC, the initial guess's): two
+bases share the name upstream and give intrinsic charges 0.03 apart on water.
+**Two orbitals on one atom are indistinguishable to the functional**, so the
+sweep skips a pair whose `A^2 + B^2` vanishes and converges on the gradient;
+converging on the rotation angle never terminates.
+
+Charge schemes are `mulliken`, `lowdin`, `chelpg`, `hirshfeld`, `mbis`; bond
+order schemes are `mayer` and `wiberg_lowdin`. **Lowdin and Wiberg are Mulliken and
+Mayer in the symmetrically orthogonalised basis**: `lowdin_density` in
+`mqc_population_analysis` returns `S^1/2 D S^1/2`, and the existing routines
+are called with it and `identity_overlap`. **The bare `wiberg` is refused by
+the schema, by name**: an NBO analysis means the natural-atomic-orbital index
+by it, which is a different number and is not implemented, so the scheme
+here carries its basis in its name and the bare word is left for that one.
+
+`properties.density: "relaxed"` points `charges` and `bond_orders` at that
+same relaxed density; the default, `"scf"`, is the reference's whatever runs
+on top, and `result%analysis_density` (the `density` field of both output
+sections) says which. **The reference's dipole is withheld after a correlated
+method on purpose**; the relaxed density's is published whenever that density
+is built, through `publish_dipole` in the bridge.
+
 ## Dependencies
 
 | Library | Purpose |
