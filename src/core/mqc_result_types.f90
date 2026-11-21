@@ -340,6 +340,10 @@ module mqc_result_types
       real(dp), allocatable :: hessian(:, :)         !! Total Hessian (3*natoms, 3*natoms)
       real(dp), allocatable :: dipole(:)             !! Total dipole moment (3) (e*Bohr)
       real(dp), allocatable :: dipole_derivatives(:, :)  !! Dipole derivatives (3, 3*natoms) for IR intensities
+      real(dp), allocatable :: nmr_shielding(:, :, :)
+         !! (3, 3, total_atoms) shielding tensors in ppm, assembled from the
+         !! fragments' when every one of them carries its own. Allocated by
+         !! `compute_mbe`, not by the caller.
 
       ! Computation status flags
       logical :: has_energy = .false.                !! Energy has been computed
@@ -385,6 +389,9 @@ module mqc_result_types
       procedure :: allocate_hessian => mbe_result_allocate_hessian
       procedure :: allocate_dipole => mbe_result_allocate_dipole
    end type mbe_result_t
+
+   integer, parameter :: NMR_TENSOR_SIZE = 9
+      !! Elements of one shielding tensor, the leading extent it is sent with
 
 contains
 
@@ -508,6 +515,10 @@ contains
       if (allocated(this%hessian)) deallocate (this%hessian)
       if (allocated(this%dipole)) deallocate (this%dipole)
       if (allocated(this%dipole_derivatives)) deallocate (this%dipole_derivatives)
+      if (allocated(this%nmr_shielding)) deallocate (this%nmr_shielding)
+      if (allocated(this%nmr_diamagnetic)) deallocate (this%nmr_diamagnetic)
+      if (allocated(this%nmr_paramagnetic)) deallocate (this%nmr_paramagnetic)
+      if (allocated(this%spin_spin_coupling)) deallocate (this%spin_spin_coupling)
       if (allocated(this%atomic_charges)) deallocate (this%atomic_charges)
       if (allocated(this%spin_populations)) deallocate (this%spin_populations)
       if (allocated(this%ieda_atom)) deallocate (this%ieda_atom)
@@ -598,6 +609,7 @@ contains
       if (allocated(this%hessian)) deallocate (this%hessian)
       if (allocated(this%dipole)) deallocate (this%dipole)
       if (allocated(this%dipole_derivatives)) deallocate (this%dipole_derivatives)
+      if (allocated(this%nmr_shielding)) deallocate (this%nmr_shielding)
       if (allocated(this%correlation_by_level)) deallocate (this%correlation_by_level)
       if (allocated(this%correlation_parts_by_level)) deallocate (this%correlation_parts_by_level)
       if (allocated(this%interaction_by_level)) deallocate (this%interaction_by_level)
@@ -736,6 +748,22 @@ contains
       end if
    end subroutine send_quao_rows
 
+   subroutine recv_shielding(comm, result, source, tag, status)
+      !! The shielding tensors, as `send` flattened them
+      type(comm_t), intent(in) :: comm
+      type(calculation_result_t), intent(inout) :: result
+      integer, intent(in) :: source, tag
+      type(MPI_Status), intent(inout) :: status
+
+      real(dp), allocatable :: flat(:, :)
+      logical :: present_here
+
+      call recv(comm, present_here, source, tag, status)
+      if (.not. present_here) return
+      call recv(comm, flat, source, tag, status)
+      result%nmr_shielding = reshape(flat, [3, 3, size(flat, 2)])
+   end subroutine recv_shielding
+
    subroutine recv_quao_rows(result, comm, source, tag)
       !! The bonding-analysis rows, into a result `destroy` has emptied
       type(calculation_result_t), intent(inout) :: result
@@ -816,6 +844,15 @@ contains
       call send(comm, result%has_dipole_derivatives, dest, tag)
       if (result%has_dipole_derivatives) then
          call send(comm, result%dipole_derivatives, dest, tag)
+      end if
+
+      ! Shielding tensors, flattened to one column of nine per atom. The
+      ! diamagnetic and paramagnetic parts are not sent: only their sum is
+      ! assembled across fragments.
+      call send(comm, allocated(result%nmr_shielding), dest, tag)
+      if (allocated(result%nmr_shielding)) then
+         call send(comm, reshape(result%nmr_shielding, &
+                                 [NMR_TENSOR_SIZE, size(result%nmr_shielding, 3)]), dest, tag)
       end if
 
       ! Excited states, every array under one flag: the solver and the
@@ -921,6 +958,15 @@ contains
       call send(comm, result%has_dipole_derivatives, dest, tag)
       if (result%has_dipole_derivatives) then
          call send(comm, result%dipole_derivatives, dest, tag)
+      end if
+
+      ! Shielding tensors, flattened to one column of nine per atom. The
+      ! diamagnetic and paramagnetic parts are not sent: only their sum is
+      ! assembled across fragments.
+      call send(comm, allocated(result%nmr_shielding), dest, tag)
+      if (allocated(result%nmr_shielding)) then
+         call send(comm, reshape(result%nmr_shielding, &
+                                 [NMR_TENSOR_SIZE, size(result%nmr_shielding, 3)]), dest, tag)
       end if
 
       ! Excited states, every array under one flag: the solver and the
@@ -1039,6 +1085,8 @@ contains
          ! Receive allocatable dipole derivatives array (MPI lib handles allocation)
          call recv(comm, result%dipole_derivatives, source, tag, status)
       end if
+
+      call recv_shielding(comm, result, source, tag, status)
 
       ! Receive excited states, every array under one flag
       call recv(comm, result%has_excited_states, source, tag, status)
@@ -1160,6 +1208,8 @@ contains
          ! Receive allocatable dipole derivatives array (MPI lib handles allocation)
          call recv(comm, result%dipole_derivatives, source, tag, status)
       end if
+
+      call recv_shielding(comm, result, source, tag, status)
 
       ! Receive excited states, every array under one flag
       call recv(comm, result%has_excited_states, source, tag, status)
