@@ -673,6 +673,7 @@ Schema
          "symmetry_number": 2,
          "spin_multiplicity": 1,
          "is_linear": false,
+         "is_atom": false,
          "n_real_frequencies": 3,
          "n_imaginary_frequencies": 0,
          "moments_of_inertia_amu_ang2": {
