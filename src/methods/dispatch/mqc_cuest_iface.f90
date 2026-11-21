@@ -107,6 +107,13 @@ module mqc_cuest_iface
          !! backend only.
       logical :: spin_spin_coupling = .false.
          !! Fermi-contact couplings from `properties.spin_spin_coupling`
+      logical :: natural_orbitals = .false.
+         !! Natural occupations from `properties.natural_orbitals`
+      logical :: intrinsic_orbitals = .false.
+         !! IAO charges and IBOs from `properties.intrinsic_orbitals`
+      integer :: intrinsic_exponent = 4
+      character(len=16) :: properties_density = "scf"
+         !! `properties.density`: "scf" or "relaxed"
       character(len=:), allocatable :: bond_order_scheme
          !! Bond orders over the converged density from
          !! `properties.bond_orders`, unallocated when none were asked for.
@@ -250,6 +257,7 @@ contains
          settings%fukui_guess = properties%fukui_guess
       end if
       settings%fukui_scf = properties%fukui_scf
+      settings%spin_spin_coupling = properties%spin_spin_coupling
       if (allocated(properties%charges_scheme)) then
          settings%charges_scheme = properties%charges_scheme
       end if
@@ -257,7 +265,10 @@ contains
          settings%bond_order_scheme = properties%bond_order_scheme
       end if
       settings%nmr_shielding = properties%nmr_shielding
-      settings%spin_spin_coupling = properties%spin_spin_coupling
+      settings%natural_orbitals = properties%natural_orbitals
+      settings%intrinsic_orbitals = properties%intrinsic_orbitals
+      settings%intrinsic_exponent = properties%intrinsic_exponent
+      settings%properties_density = properties%density
    end subroutine apply_properties_settings
 
    subroutine apply_scf_settings(settings, options)
