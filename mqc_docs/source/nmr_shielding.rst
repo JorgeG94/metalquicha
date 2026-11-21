@@ -159,12 +159,38 @@ of water in 6-31G at PBE and at B3LYP to it, agreeing to
 PBE element by more than :math:`10^{-5}` ppm (measured: :math:`8\times10^{-12}`).
 LDA was checked through the program to the same.
 
+In a continuum solvent
+----------------------
+
+With ``keywords.pcm`` on the deck (see :doc:`continuum_solvation`) the
+shieldings are those of the solvated molecule, for C-PCM and IEF-PCM, under
+Hartree-Fock or a functional.
+
+**The surface charges do not respond to the field.** They answer the
+molecule's charge density, and a magnetic field induces a current and no
+change of density at first order, so the charges stay as the converged
+reference left them. Their potential is in the Fock matrix, though, and
+therefore its derivative through the gauge factor of the basis functions has
+to be in the first-order one: the same term the nuclei contribute, with each
+smeared surface charge standing as a nucleus. Leaving it out makes the
+shielding depend on where the molecule sits -- by 87 ppm for the oxygen of a
+water molecule moved a few bohr -- so its presence is checked that way, since
+no other program here computes a shielding in a continuum to compare with.
+
+For water at Hartree-Fock/6-31G the continuum at water's dielectric constant
+raises the oxygen shielding by 11.7 ppm and lowers the hydrogens' by 0.9.
+**A continuum is bulk polarity and nothing else.** The measured gas-to-liquid
+change of water's hydrogens is several times larger and the oxygen's has the
+opposite sign, because both are dominated by hydrogen bonds to particular
+neighbours, which a continuum does not contain. For a hydroxyl or amine
+hydrogen in a protic solvent, a few explicit solvent molecules matter more
+than the continuum around them.
+
 Limits
 ------
 
 - **Closed shells with exact integrals only.** An open shell, a correlated
-  method, a density-fitted reference and a continuum solvent are each refused
-  by name.
+  method and a density-fitted reference are each refused by name.
 - **LDA, GGA and their global hybrids.** A meta-GGA is refused, since its
   kinetic energy density depends on the gauge and that dependence is not
   built; so are range-separated hybrids and functionals with non-local

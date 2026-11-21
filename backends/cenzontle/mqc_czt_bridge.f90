@@ -1257,8 +1257,6 @@ contains
             else if (settings%density_fitting) then
                why = "a density-fitted reference needs the field derivative of "// &
                      "the fitted integrals"
-            else if (settings%pcm%enabled) then
-               why = "a continuum's reaction field is not differentiated"
             end if
             if (len(why) > 0) then
                call result%error%set(ERROR_VALIDATION, "properties.nmr is implemented "// &
@@ -1281,8 +1279,6 @@ contains
                why = "a correlated coupling needs that method's own response"
             else if (settings%density_fitting) then
                why = "the triplet response is not applied through a fitted tensor"
-            else if (settings%pcm%enabled) then
-               why = "a continuum's reaction field is not differentiated"
             else if (len_trim(settings%ecp_set) > 0) then
                why = "an effective core potential removes the core density the "// &
                      "contact term is made of"
@@ -2373,7 +2369,7 @@ contains
             call czt_nmr_shielding(mol, scf%orbitals, scf%orbital_energies, &
                                    scf%n_occupied, sigma, nmr_error, &
                                    diamagnetic=sigma_dia, paramagnetic=sigma_para, &
-                                   xc=xc)
+                                   xc=xc, pcm=pcm_ctx)
             if (nmr_error%has_error()) then
                call logger%warning("  shieldings could not be computed: "// &
                                    nmr_error%get_message())

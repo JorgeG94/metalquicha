@@ -36,9 +36,14 @@ are solved against the triplet operator, once per nucleus, and
    K_{AB} = 4\alpha^4 \sum_{ai} h^A_{ai}\, U^B_{ai},
    \qquad h^A_{ai} = \frac{4\pi}{3}\,\phi_a(\mathbf{R}_A)\,\phi_i(\mathbf{R}_A)
 
-It runs for closed-shell Hartree-Fock and Kohn-Sham with exact integrals. An
-open shell, a correlated method, density fitting, a continuum solvent, an
-effective core potential and capped or ghosted fragments are refused by name.
+It runs for closed-shell Hartree-Fock and Kohn-Sham with exact integrals, in
+the gas phase or in a continuum solvent. An open shell, a correlated method,
+density fitting, an effective core potential and capped or ghosted fragments
+are refused by name.
+
+In a continuum the couplings are those of the solvated orbitals and nothing
+else changes: the contact field polarises the electrons' spin and leaves
+their charge density alone, so the surface charges do not respond to it.
 
 Three things decide whether the numbers are worth having:
 

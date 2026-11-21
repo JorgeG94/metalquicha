@@ -18,6 +18,8 @@ module mqc_czt_giao
    use mqc_czt_integrals, only: czt_molecule_t, shell_dim
    use libcint_fortran, only: LIBCINT_PTR_RINV_ORIG
    use cint_workspace, only: cint_ws
+   use cint_bas, only: ATM_SLOTS, BAS_SLOTS, ATOM_OF, CHARGE_OF, PTR_COORD, NUC_MOD_OF, &
+                       PTR_ZETA, GAUSSIAN_NUC
    use cint_gen_intor1, only: int1e_igovlp_sph, int1e_igovlp_cart, &
                               int1e_igkin_sph, int1e_igkin_cart, &
                               int1e_ignuc_sph, int1e_ignuc_cart, &
@@ -31,6 +33,7 @@ module mqc_czt_giao
 
    public :: giao_one_electron
    public :: giao_coulomb_exchange
+   public :: giao_smeared_charges
    public :: GIAO_OVLP, GIAO_KIN, GIAO_NUC, GIAO_RXP, GIAO_A11, GIAO_A01GP, GIAO_PRINVXP
 
    integer, parameter :: GIAO_OVLP = 1     !! `int1e_igovlp`, 3 components
@@ -192,6 +195,112 @@ contains
          end select
       end if
    end function one_shell_pair
+
+   subroutine giao_smeared_charges(mol, coords, zeta, charges, matrix, error)
+      !! The field derivative of the potential of a set of Gaussian charges
+      !!
+      !! For the one-electron operator
+      !! `-sum_k q_k erf(zeta_k |r - r_k|) / |r - r_k|`, which is what a
+      !! continuum's surface charges add to the Fock matrix, the matrix of
+      !! its derivative through the gauge factor: `int1e_ignuc` with each
+      !! charge standing as a nucleus of unit charge and Gaussian width, and
+      !! the results weighted by `q_k`.
+      !!
+      !! There is no integral for one such charge at an arbitrary point, and
+      !! the nuclear one sums over every atom it is told of with integer
+      !! charges. So each charge is put first in the atom list, the basis
+      !! functions' own atoms after it, and the integral told there is one
+      !! atom: it sums over the charge alone and still finds every shell's
+      !! centre. One pass over the shell pairs per charge.
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: coords(:, :)   !! (3, n_charges), Bohr
+      real(dp), intent(in) :: zeta(:)        !! The `zeta_k` of `erf(zeta_k r)`
+      real(dp), intent(in) :: charges(:)
+      real(dp), allocatable, intent(out) :: matrix(:, :, :)   !! (n_ao, n_ao, 3)
+      type(error_t), intent(inout) :: error
+
+      integer, parameter :: N_COMP = 3
+      integer, allocatable :: atm(:), bas(:)
+      real(dp), allocatable :: env(:), buf(:), acc(:)
+      type(cint_ws) :: ws
+      integer :: dims(0:3), shls(0:3)
+      integer :: n_charges, ish, jsh, di, dj, io, jo, i, j, comp, mx, k, slot, n_env
+      logical :: have
+
+      if (error%has_error()) return
+      n_charges = size(charges)
+      if (size(coords, 2) /= n_charges .or. size(zeta) /= n_charges) then
+         call error%set(ERROR_VALIDATION, "the smeared charges, their positions and "// &
+                        "their widths differ in number")
+         return
+      end if
+      allocate (matrix(mol%nao, mol%nao, N_COMP))
+      matrix = 0.0_dp
+      if (n_charges == 0) return
+
+      ! The charge is atom zero; the molecule's atoms follow, and every
+      ! shell's atom index moves up by one to match. Four slots are added to
+      ! the end of `env` for the charge's position and width.
+      n_env = size(mol%env)
+      allocate (atm(ATM_SLOTS*(mol%natm + 1)), bas(size(mol%bas)))
+      atm = 0
+      atm(ATM_SLOTS + 1:) = reshape(mol%atm, [size(mol%atm)])
+      atm(CHARGE_OF + 1) = 1
+      atm(PTR_COORD + 1) = n_env
+      atm(NUC_MOD_OF + 1) = GAUSSIAN_NUC
+      atm(PTR_ZETA + 1) = n_env + 3
+      bas = reshape(mol%bas, [size(mol%bas)])
+      do ish = 0, mol%nbas - 1
+         bas(BAS_SLOTS*ish + ATOM_OF + 1) = bas(BAS_SLOTS*ish + ATOM_OF + 1) + 1
+      end do
+      mx = 0
+      do ish = 1, mol%nbas
+         mx = max(mx, shell_dim(mol%cartesian, ish - 1, mol%bas))
+      end do
+      slot = n_env + 1
+
+      !$omp parallel default(none) &
+      !$omp    shared(mol, matrix, atm, bas, mx, coords, zeta, charges, n_charges, n_env, slot) &
+      !$omp    private(ish, jsh, di, dj, io, jo, i, j, comp, shls, dims, buf, acc, ws, have, &
+      !$omp            env, k)
+      ! A private copy of the workspace is not default-initialised, and the
+      ! integral driver reads this pointer before anything else.
+      ws%opt => null()
+      allocate (buf(mx*mx*N_COMP), acc(mx*mx*N_COMP), env(n_env + 4))
+      env(1:n_env) = mol%env
+      !$omp do schedule(dynamic)
+      do ish = 1, mol%nbas
+         di = shell_dim(mol%cartesian, ish - 1, mol%bas)
+         io = mol%shell_offset(ish)
+         do jsh = 1, mol%nbas
+            dj = shell_dim(mol%cartesian, jsh - 1, mol%bas)
+            jo = mol%shell_offset(jsh)
+            shls = [ish - 1, jsh - 1, 0, 0]
+            dims = [di, dj, 1, 1]
+            acc(1:di*dj*N_COMP) = 0.0_dp
+            do k = 1, n_charges
+               env(slot:slot + 2) = coords(:, k)
+               ! A Gaussian nucleus of exponent `a` has the potential
+               ! `erf(sqrt(a) r) / r`.
+               env(slot + 3) = zeta(k)**2
+               have = one_shell_pair(GIAO_NUC, mol%cartesian, buf(1:di*dj*N_COMP), dims, &
+                                     shls, atm, 1, bas, mol%nbas, env, ws)
+               if (have) acc(1:di*dj*N_COMP) = acc(1:di*dj*N_COMP) &
+                                               + charges(k)*buf(1:di*dj*N_COMP)
+            end do
+            do comp = 1, N_COMP
+               do j = 1, dj
+                  do i = 1, di
+                     matrix(io + i, jo + j, comp) = acc(i + di*(j - 1 + dj*(comp - 1)))
+                  end do
+               end do
+            end do
+         end do
+      end do
+      !$omp end do
+      deallocate (buf, acc, env)
+      !$omp end parallel
+   end subroutine giao_smeared_charges
 
    subroutine giao_coulomb_exchange(mol, density, vj, vk, error)
       !! The field derivative of the two-electron integrals against a density

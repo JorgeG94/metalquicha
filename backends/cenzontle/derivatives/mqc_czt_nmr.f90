@@ -28,10 +28,12 @@ module mqc_czt_nmr
    use mqc_czt_integrals, only: czt_molecule_t, atom_ao_blocks
    use mqc_czt_ao, only: eval_ao_block, AO_POINT_BLOCK
    use mqc_czt_xc, only: xc_context_t, xc_grid_gga_quantities
+   use mqc_czt_pcm, only: pcm_context_t
    use mqc_czt_direct, only: schwarz_bounds
    use mqc_czt_response_product, only: response_mean_field
    use mqc_nmr_summary, only: shielding_summary
    use mqc_czt_giao, only: giao_one_electron, giao_coulomb_exchange, &
+                           giao_smeared_charges, &
                            GIAO_OVLP, GIAO_KIN, GIAO_NUC, GIAO_RXP, GIAO_A11, &
                            GIAO_A01GP, GIAO_PRINVXP
    implicit none
@@ -54,7 +56,7 @@ module mqc_czt_nmr
 contains
 
    subroutine czt_nmr_shielding(mol, coeff, orbital_energies, n_occ, shielding, error, &
-                                diamagnetic, paramagnetic, xc)
+                                diamagnetic, paramagnetic, xc, pcm)
       !! Shielding tensors of every nucleus, in parts per million
       type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: coeff(:, :)             !! (n_ao, n_mo), canonical
@@ -71,6 +73,9 @@ contains
       type(xc_context_t), intent(inout), optional :: xc
          !! The reference's functional. Absent or inactive is Hartree-Fock.
          !! LDA, GGA and their global hybrids.
+      type(pcm_context_t), intent(inout), optional :: pcm
+         !! The continuum the reference was converged in. Absent or not
+         !! enabled is the gas phase.
 
       real(dp), allocatable :: density(:, :), h10(:, :, :), s10(:, :, :), work(:, :, :)
       real(dp), allocatable :: vj(:, :, :), vk(:, :, :), bounds(:, :)
@@ -147,6 +152,24 @@ contains
          call giao_xc_potential(xc, mol, density, work, error)
          if (error%has_error()) return
          h10 = h10 - work
+      end if
+      ! A continuum's surface charges answer the charge density, which the
+      ! field does not change at first order: they stay as the reference
+      ! left them, and their potential enters as the nuclei's does, through
+      ! the gauge factor of the functions it is taken between.
+      if (present(pcm)) then
+         if (pcm%enabled) then
+            block
+               real(dp), allocatable :: q(:)
+
+               call pcm%surface_charges(mol, density, q, error)
+               if (error%has_error()) return
+               call giao_smeared_charges(mol, pcm%surface%coords, pcm%surface%zeta, q, &
+                                         work, error)
+               if (error%has_error()) return
+               h10 = h10 - work
+            end block
+         end if
       end if
       call giao_one_electron(mol, GIAO_NUC, work, error)
       if (error%has_error()) return

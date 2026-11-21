@@ -123,6 +123,7 @@ module mqc_czt_pcm
       procedure :: build_operators => pcm_build_operators
       procedure :: solve => pcm_solve
       procedure :: operator_matrix => pcm_operator_matrix
+      procedure :: surface_charges => pcm_surface_charges
       procedure :: destroy => pcm_destroy
    end type pcm_context_t
 
@@ -790,6 +791,31 @@ contains
 
       call surface_fock(this%groups, this%n_groups, mol, q_sym, vmat, error)
    end subroutine pcm_operator_matrix
+
+   subroutine pcm_surface_charges(this, mol, density, charges, error)
+      !! The apparent surface charges a density induces
+      !!
+      !! What `operator_matrix` solves for and then contracts away, for a
+      !! caller that needs the charges themselves: a derivative of the
+      !! operator they generate, taken with the charges held fixed. One per
+      !! surface point, in the order of `surface%coords`; each is a Gaussian
+      !! of width `surface%zeta`.
+      class(pcm_context_t), intent(inout) :: this
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: density(:, :)   !! Total density (alpha plus beta)
+      real(dp), allocatable, intent(out) :: charges(:)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: v_grids(:)
+
+      if (error%has_error()) return
+      allocate (v_grids(this%surface%n_points))
+      call surface_potential(this%groups, this%n_groups, mol, this%surface%n_points, &
+                             density, v_grids, error)
+      if (error%has_error()) return
+      v_grids = this%v_nuc - v_grids
+      call this%solve(v_grids, charges, error)
+   end subroutine pcm_surface_charges
 
    subroutine pcm_destroy(this)
       !! Release everything; the context is reusable after another `build`
