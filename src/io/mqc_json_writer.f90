@@ -188,15 +188,20 @@ contains
       if (data%has_dispersion) then
          call json%add(main_obj, "dispersion_energy", data%dispersion_energy)
       end if
+      if (data%has_solvation) then
+         call json%add(main_obj, "solvation_energy", data%solvation_energy)
+      end if
 
       call write_sapt_section(json, main_obj, data)
       call write_efmo_section(json, main_obj, data)
       call write_fmo_section(json, main_obj, data)
+      call write_nmr_section(json, main_obj, data)
+      call write_coupling_section(json, main_obj, data)
       call write_ieda_section(json, main_obj, data)
       call write_charges_section(json, main_obj, data)
       call write_bond_orders_section(json, main_obj, data)
-      call write_nmr_section(json, main_obj, data)
-      call write_coupling_section(json, main_obj, data)
+      call write_natural_orbitals_section(json, main_obj, data)
+      call write_intrinsic_orbitals_section(json, main_obj, data)
       call write_fukui_section(json, main_obj, data)
       call write_stability_section(json, main_obj, data)
       call write_excited_states_section(json, main_obj, data)
@@ -632,6 +637,9 @@ contains
       call json%create_object(section, "atomic_charges")
       call json%add(parent, section)
       call json%add(section, "scheme", trim(data%charge_scheme))
+      if (len_trim(data%analysis_density) > 0) then
+         call json%add(section, "density", trim(data%analysis_density))
+      end if
       ! What the column has to add up to, so a consumer can check rather than
       ! trust. Mulliken satisfies it as a trace identity and CHELPG as the
       ! constraint its fit is solved under, so a mismatch is a bookkeeping bug
@@ -652,6 +660,87 @@ contains
          end if
       end do
    end subroutine write_charges_section
+
+   subroutine write_intrinsic_orbitals_section(json, parent, data)
+      !! Intrinsic atomic orbital charges and the bond orbitals' atomic shares
+      !!
+      !! One row per bond orbital, one entry per atom, each row summing to one.
+      !! The whole matrix is written: which shares count as a bond is the
+      !! reader's threshold to set. An unrestricted reference has two sets,
+      !! alpha's under the plain name and beta's beside it, and
+      !! `orbital_occupation` says how many electrons a row stands for.
+      type(json_core), intent(inout) :: json
+      type(json_value), pointer, intent(in) :: parent
+      type(json_output_data_t), intent(in) :: data
+
+      type(json_value), pointer :: section
+      logical :: unrestricted
+
+      if (.not. data%has_intrinsic_orbitals) return
+      if (.not. allocated(data%iao_charges)) return
+
+      call json%create_object(section, "intrinsic_orbitals")
+      call json%add(parent, section)
+      call json%add(section, "minimal_basis", "minao")
+      call json%add(section, "charges", data%iao_charges)
+      call json%add(section, "exponent", data%ibo_exponent)
+      unrestricted = allocated(data%iao_spin_populations)
+      if (unrestricted) call json%add(section, "spin_populations", data%iao_spin_populations)
+      call json%add(section, "orbital_occupation", merge(1, 2, unrestricted))
+      if (allocated(data%ibo_populations)) then
+         call add_orbital_rows("bond_orbital_populations", data%ibo_populations)
+      end if
+      if (allocated(data%ibo_populations_beta)) then
+         call add_orbital_rows("bond_orbital_populations_beta", data%ibo_populations_beta)
+      end if
+
+   contains
+
+      subroutine add_orbital_rows(name, populations)
+         !! One array per orbital, of its share on each atom
+         character(len=*), intent(in) :: name
+         real(dp), intent(in) :: populations(:, :)   !! (natoms, n_orb)
+
+         type(json_value), pointer :: arr, row
+         integer :: i, iatom
+
+         call json%create_array(arr, name)
+         call json%add(section, arr)
+         do i = 1, size(populations, 2)
+            call json%create_array(row, "")
+            call json%add(arr, row)
+            do iatom = 1, size(populations, 1)
+               call json%add(row, "", populations(iatom, i))
+            end do
+         end do
+      end subroutine add_orbital_rows
+
+   end subroutine write_intrinsic_orbitals_section
+
+   subroutine write_natural_orbitals_section(json, parent, data)
+      !! Natural occupations, and the counts read off them
+      !!
+      !! Every occupation is written, not only the fractional ones: which
+      !! orbitals count as active is the reader's decision, and the window
+      !! behind `n_fractional` is one convention among several.
+      type(json_core), intent(inout) :: json
+      type(json_value), pointer, intent(in) :: parent
+      type(json_output_data_t), intent(in) :: data
+
+      type(json_value), pointer :: section
+
+      if (.not. data%has_natural_orbitals) return
+      if (.not. allocated(data%natural_occupations)) return
+
+      call json%create_object(section, "natural_orbitals")
+      call json%add(parent, section)
+      call json%add(section, "density", trim(data%natural_orbital_density))
+      call json%add(section, "occupations", data%natural_occupations)
+      call json%add(section, "unpaired_electrons_linear", data%natural_unpaired_linear)
+      call json%add(section, "unpaired_electrons_quadratic", &
+                    data%natural_unpaired_quadratic)
+      call json%add(section, "n_fractional", data%natural_fractional)
+   end subroutine write_natural_orbitals_section
 
    subroutine write_nmr_section(json, parent, data)
       !! Nuclear magnetic shielding per nucleus, in ppm
@@ -800,6 +889,9 @@ contains
       call json%create_object(section, "bond_orders")
       call json%add(parent, section)
       call json%add(section, "scheme", trim(data%bond_order_scheme))
+      if (len_trim(data%analysis_density) > 0) then
+         call json%add(section, "density", trim(data%analysis_density))
+      end if
 
       ! Row by row, symmetric, zero on the diagonal -- an atom is not bonded
       ! to itself and the diagonal of this matrix is a different quantity.
@@ -1372,6 +1464,9 @@ contains
       ! `dispersion_energy` in `json_output_data_t`.
       if (data%has_dispersion) then
          call json%add(main_obj, "dispersion_energy", data%dispersion_energy)
+      end if
+      if (data%has_solvation) then
+         call json%add(main_obj, "solvation_energy", data%solvation_energy)
       end if
 
       ! Only where one SCF covered one system. A fragmented run never sets

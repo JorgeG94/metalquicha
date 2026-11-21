@@ -18,12 +18,12 @@ costs no second SCF. Those are ``properties.charges`` and
 ``properties.bond_orders``, below, and they are the ones to reach for unless you
 are in the trial-partition loop.
 
-Three things called bond orders
--------------------------------
+Four things called bond orders
+------------------------------
 
-Before any of the numbers: this code computes three different quantities under
+Before any of the numbers: this code computes four different quantities under
 that name, they do not agree beyond a trend, and none of them is an
-approximation to either of the others.
+approximation to any of the others.
 
 ======================  ================================  ================================
 Quantity                Where                             What it is
@@ -34,6 +34,9 @@ Quantity                Where                             What it is
 **Mayer**               ``properties.bond_orders``, or    The same definition over the
                         ``compute_bond_orders("mayer")``  converged ab initio density and
                                                           the AO overlap
+**Wiberg (Lowdin)**     ``properties.bond_orders`` with   The sum of squared density
+                        ``"scheme": "wiberg_lowdin"``     elements between two atoms, in
+                                                          Lowdin's orthonormal basis
 **QUAO kinetic**        ``properties.bonding_analysis``   Ruedenberg's definition in the
                                                           orthonormal quasi-atomic basis,
                                                           plus an energy-like partner
@@ -46,12 +49,37 @@ bonding of a calculation you were running anyway. The QUAO analysis is for
 **taking a bonding picture apart** -- it comes with orbitals, an energy
 decomposition and a table of which quasi-atomic orbitals are involved.
 
-Wiberg's bond order, in the strict sense, is this same sum of squares in an
+Wiberg's bond order, in the strict sense, is Mayer's sum of squares in an
 *orthonormal* basis, where ``S`` is the identity and the ``D S`` product
 collapses. Over non-orthogonal atomic orbitals it is not Wiberg's quantity and
-not anyone else's, so ``properties.bond_orders`` refuses ``"wiberg"`` by name
-rather than quietly computing Mayer's. Over the quasi-atomic basis, which *is*
-orthonormal, the QUAO analysis's population bond order already is it.
+not anyone else's, so it is never computed that way.
+``"scheme": "wiberg_lowdin"`` orthogonalises the atomic orbitals symmetrically
+first -- Lowdin's :math:`S^{1/2} D S^{1/2}`.
+
+**The scheme is named for its basis, and the bare ``"wiberg"`` is refused.** A
+Wiberg index is quoted from more than one orthonormal basis and the numbers
+differ: an NBO analysis prints it over natural atomic orbitals, which is the
+one most papers mean; this one is over Lowdin's; xTB's is over its own minimal
+basis. Asking for ``"wiberg"`` returns an error naming ``"wiberg_lowdin"``
+rather than a number that would be compared against the wrong thing. The
+natural-atomic-orbital index is not implemented.
+
+The Lowdin form is:
+
+.. math::
+
+   W_{AB} = \sum_{\mu \in A} \sum_{\nu \in B}
+            \left(S^{1/2} D S^{1/2}\right)_{\mu\nu}^{2}
+
+and, for an open shell, twice the sum of the same expression over the two spin
+densities. Each orthonormal function is the closest one to the atomic function
+it came from, so it still belongs to that function's atom.
+
+It is a different number from Mayer's and neither is the right one. On water
+in cc-pVDZ at Hartree-Fock the O--H order is 1.018 by Mayer and 1.061 by
+Wiberg; on triplet O\ :sub:`2` Mayer gives 2.00 and Wiberg 2.24. Over the
+quasi-atomic basis, which is orthonormal by construction, the QUAO analysis's
+population bond order is the same sum again.
 
 Mayer bond orders
 -----------------
@@ -232,8 +260,18 @@ caution the xTB section already gives for a different reason.
 Atomic charges
 --------------
 
-Mulliken, CHELPG, Hirshfeld and MBIS partial charges. Through the Python interface,
-from an RHF density; through a deck, from whatever reference the deck converged.
+Mulliken, Lowdin, CHELPG, Hirshfeld and MBIS partial charges. Through the Python
+interface, from an RHF density; through a deck, from whatever reference the deck
+converged.
+
+**Lowdin charges** (``"scheme": "lowdin"``, deck only) are Mulliken's partition
+in the same symmetrically orthogonalised basis the Wiberg index uses:
+:math:`q_A = Z_A - \sum_{\mu \in A} (S^{1/2} D S^{1/2})_{\mu\mu}`. There is no
+overlap population to divide, so no function's population can go negative, and
+they move less with the basis than Mulliken's. The price is that each atom's
+functions are mixed with its neighbours' before anything is counted. On water
+in cc-pVDZ oxygen is -0.314 by Mulliken and -0.483 by Lowdin. An unrestricted
+reference gets Lowdin spin populations as well.
 
 From the Python interface
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -513,6 +551,64 @@ so a neutral and its ions would each be divided by their own partition and an
 index would mix a change of density with a change of partition.
 ``properties.fukui`` refuses ``"mbis"`` and points at ``"hirshfeld"``, whose
 weights are the same for every state.
+
+Which density: the reference's, or the correlated one
+-----------------------------------------------------
+
+Charges and bond orders partition a density, and after a correlated method
+there are two. By default it is the reference's -- the Hartree-Fock density
+under an MP2 deck -- and both sections of the output say so in a ``density``
+field. ``properties.density`` chooses:
+
+.. code-block:: json
+
+   "model": {"method": "ri-mp2", "basis": "cc-pvdz", "aux_basis": "cc-pvdz-rifit"},
+   "properties": {
+     "density": "relaxed",
+     "charges": {"scheme": "mulliken"},
+     "bond_orders": {}
+   }
+
+``"relaxed"`` partitions the relaxed MP2 density instead: the reference's plus
+the correlation contribution, with the orbital response from the Z-vector
+equations. It is the density whose trace with an operator is the derivative of
+the MP2 energy, and so the one a correlated charge or bond order should come
+from. Every charge scheme takes it; the bond orders are Mayer's closed-shell
+expression applied to a density that is no longer idempotent, which is the
+usual definition for a correlated wave function.
+
+Water at RI-MP2/cc-pVDZ, frozen core:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 40 30 30
+
+   * -
+     - ``scf``
+     - ``relaxed``
+   * - Mulliken charge on O
+     - -0.3145
+     - -0.2922
+   * - Mayer O--H bond order
+     - 1.0179
+     - 0.9855
+
+Correlation moves density back from oxygen toward the hydrogens and puts
+occupation into antibonding orbitals, so the molecule comes out less polar and
+its bonds a little weaker than Hartree-Fock says. Both columns agree with the
+same quantities computed from PySCF's densities, the relaxed one being
+``pyscf.mp.dfmp2_native``'s, to :math:`10^{-8}`.
+
+**The dipole comes with it.** A correlated run reports no dipole by default,
+on purpose: the reference's is the wrong one, and a missing number is noticed
+where a plausible wrong one is not. Whenever the relaxed density is built --
+for this, for :doc:`natural_orbitals`, or for PTD solvation
+(:doc:`continuum_solvation`) -- its dipole is the right one and is reported.
+
+``"relaxed"`` exists for closed-shell ``ri-mp2`` only. Conventional,
+spin-scaled and unrestricted MP2 and coupled cluster build no relaxed density
+on this path and are refused, as is a deck with no correlated method at all,
+and MP2 under ``keywords.pcm.correlation: "pte"``.
 
 Requirements
 ------------

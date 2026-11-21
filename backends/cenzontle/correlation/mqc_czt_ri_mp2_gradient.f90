@@ -99,7 +99,7 @@ contains
    subroutine czt_ri_mp2_gradient(mol, aux, coeff, orbital_energies, n_occ, &
                                   gradient, error, n_frozen, force_direct, &
                                   fitted_reference, xc, scf_density, pt2_scale, &
-                                  fit_response, fixed_grid)
+                                  fit_response, fixed_grid, relaxed_density)
       !! dE(RI-MP2)/dR for a closed-shell reference, in Hartree/Bohr
       type(czt_molecule_t), intent(in) :: mol
       type(czt_molecule_t), intent(in) :: aux   !! Auxiliary basis, same atoms
@@ -144,6 +144,10 @@ contains
          !! `n^2 n_aux` rather than `n^4`.
       real(dp), intent(in), optional :: scf_density(:, :)
          !! The converged reference density. Required with `xc`.
+      real(dp), allocatable, intent(out), optional :: relaxed_density(:, :)
+         !! Present, the routine stops once the Z-vector is solved and returns
+         !! the relaxed one-particle density; see `relaxed_fitted_gradient`.
+         !! `gradient` is then left unallocated.
       real(dp), intent(in), optional :: pt2_scale
          !! The functional's PT2 coefficient, applied once and after the
          !! Z-vector solve -- scaling a linear system's right-hand side and
@@ -453,12 +457,12 @@ contains
       inp%pt2_scale = cscale
       if (present(fixed_grid)) inp%fixed_grid = fixed_grid
       call relaxed_fitted_gradient(mol, aux, coeff, orbital_energies, n_occ, inp, &
-                                   gradient, error, xc, scf_density)
+                                   gradient, error, xc, scf_density, relaxed_density)
 
    end subroutine czt_ri_mp2_gradient
 
    subroutine relaxed_fitted_gradient(mol, aux, coeff, orbital_energies, n_occ, inp, &
-                                      gradient, error, xc, scf_density)
+                                      gradient, error, xc, scf_density, relaxed_density)
       !! Orbital relaxation and assembly for a fitted correlation energy
       !!
       !! Takes the unrelaxed one-particle density, the Lagrangian and the two
@@ -480,6 +484,13 @@ contains
          !! Present for a double hybrid's perturbative term; see
          !! `czt_ri_mp2_gradient`
       real(dp), intent(in), optional :: scf_density(:, :)
+      real(dp), allocatable, intent(out), optional :: relaxed_density(:, :)
+         !! (n_ao, n_ao). Present, the routine returns here what the gradient
+         !! contracts one-electron derivatives with -- the reference density
+         !! plus the relaxed correlation density, or the latter alone under
+         !! `xc` -- and assembles nothing: `gradient` is left unallocated. Its
+         !! trace with any one-electron operator is the derivative of the
+         !! correlated energy with respect to that operator's strength.
 
       real(dp), allocatable :: c_occ(:, :), c_vir(:, :)
       real(dp), allocatable :: hf_density(:, :), dm1(:, :), dm1_total(:, :), dm1p(:, :)
@@ -587,6 +598,16 @@ contains
 
       inp%dm1mo(n_o + 1:n_mo, 1:n_o) = inp%dm1mo(n_o + 1:n_mo, 1:n_o) + zvec(:, :, 1)
       inp%dm1mo(1:n_o, n_o + 1:n_mo) = inp%dm1mo(1:n_o, n_o + 1:n_mo) + transpose(zvec(:, :, 1))
+
+      if (present(relaxed_density)) then
+         relaxed_density = matmul(coeff, matmul(inp%dm1mo, transpose(coeff)))
+         if (dh) then
+            relaxed_density = cscale*relaxed_density
+         else
+            relaxed_density = hf_density + relaxed_density
+         end if
+         return
+      end if
 
       inp%imat(n_o + 1:n_mo, 1:n_o) = transpose(inp%imat(1:n_o, n_o + 1:n_mo))
       allocate (im1(n_ao, n_ao))
