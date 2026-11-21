@@ -6,10 +6,11 @@ whose `MBE` and `_check_label` are the *real* ones, lifted out of
 by an invented physics. So the decks the workflow writes, the settings it passes
 and the labels it chooses are the real thing; the numbers are not.
 
-The thermochemistry block it returns mimics the Fortran one's known gap: it
-reports ``spin_multiplicity: 1`` and a zero electronic entropy whatever the
-system's multiplicity, because that is what `compute_thermochemistry` does when
-no caller passes the multiplicity.
+The thermochemistry block it returns reports ``spin_multiplicity: 1`` and a zero
+electronic entropy whatever the system's multiplicity, which is what the Fortran
+block did before its callers passed the multiplicity. It is kept that way on
+purpose: the workflow computes the spin term itself, and a stand-in that
+disagrees with it is what shows the block's value is not being read.
 """
 
 import ast

@@ -724,7 +724,7 @@ contains
                                          n_atoms, ir_intensities, &
                                          coordinates, electronic_energy, &
                                          temperature, pressure, raman_activities, &
-                                         raman_depolarization)
+                                         raman_depolarization, spin_multiplicity)
       !! Print vibrational analysis results in a formatted table.
       !!
       !! Output format is similar to Gaussian, with frequencies grouped in columns.
@@ -764,6 +764,8 @@ contains
          !! Raman activities in Angstrom^4/amu
       real(dp), intent(in), optional :: raman_depolarization(:)
          !! Raman depolarization ratios
+      integer, intent(in), optional :: spin_multiplicity
+         !! The system's 2S+1, for the electronic entropy (default: 1)
 
       integer :: n_modes, n_at, n_groups, igroup, imode, iatom, icoord, k
       integer :: mode_start, mode_end, modes_in_group
@@ -945,7 +947,8 @@ contains
             type(thermochemistry_result_t) :: thermo_result
             call compute_thermochemistry(coordinates, element_numbers, frequencies, &
                                          n_at, n_modes, thermo_result, &
-                                         temperature=temperature, pressure=pressure)
+                                         temperature=temperature, pressure=pressure, &
+                                         spin_multiplicity=spin_multiplicity)
             call print_thermochemistry(thermo_result, electronic_energy)
          end block
       end if
