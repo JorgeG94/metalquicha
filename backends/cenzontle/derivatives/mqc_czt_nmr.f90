@@ -1,4 +1,4 @@
-!! Nuclear magnetic shielding tensors for a closed-shell Hartree-Fock reference
+!! Nuclear magnetic shielding tensors for a closed-shell reference
 module mqc_czt_nmr
    !! The shielding of nucleus `N` is the mixed second derivative of the
    !! energy with respect to the external field `B` and that nucleus's
@@ -21,11 +21,18 @@ module mqc_czt_nmr
    !!
    !! The working equations and their signs are `pyscf.prop.nmr.rhf`'s, and
    !! the tests are held to it.
+   use, intrinsic :: ieee_arithmetic, only: ieee_is_nan
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
+   use pic_lapack_interfaces, only: pic_getrf, pic_getrs
+   use mqc_physical_constants, only: FINE_STRUCTURE
+   use mqc_calculation_defaults, only: PROPERTY_RESPONSE_TOL
+   use mqc_scf_common, only: build_density_closed_shell
    use pic_logger, only: logger => global_logger
    use mqc_error, only: error_t, ERROR_VALIDATION
-   use mqc_czt_integrals, only: czt_molecule_t, atom_ao_blocks
+   use mqc_czt_integrals, only: czt_molecule_t
+   use mqc_czt_charges, only: ao_to_atom
+   use mqc_math_utils, only: cross_product
    use mqc_czt_ao, only: eval_ao_block, AO_POINT_BLOCK
    use mqc_czt_xc, only: xc_context_t, xc_grid_gga_quantities
    use mqc_czt_direct, only: schwarz_bounds
@@ -39,17 +46,17 @@ module mqc_czt_nmr
 
    public :: czt_nmr_shielding
    public :: print_shielding_report
-   public :: FINE_STRUCTURE
 
-   real(dp), parameter :: FINE_STRUCTURE = 7.2973525693e-3_dp
-      !! The fine-structure constant, CODATA 2018. A shielding in atomic units
-      !! is in units of its square.
-   real(dp), parameter :: TO_PPM = FINE_STRUCTURE**2*1.0e6_dp
+   real(dp), parameter :: PER_MILLION = 1.0e6_dp
+   real(dp), parameter :: TO_PPM = FINE_STRUCTURE**2*PER_MILLION
+      !! A shielding in atomic units is in units of the fine-structure
+      !! constant squared
    integer, parameter :: CP_MAX_ITER = 60
-   real(dp), parameter :: CP_TOL = 1.0e-10_dp
-      !! Largest element of the coupled-perturbed residual at convergence
-   real(dp), parameter :: SINGULAR_PIVOT = 1.0e-13_dp
+      !! Largest Krylov subspace the field response may build per direction
    integer, parameter :: LINE_LEN = 160
+      !! Length of a formatted report line
+   integer, parameter :: LABEL_LEN = 16
+      !! Length of an atom's label in the report
 
 contains
 
@@ -76,7 +83,6 @@ contains
       real(dp), allocatable :: vj(:, :, :), vk(:, :, :), bounds(:, :)
       real(dp), allocatable :: h1(:, :, :), s1(:, :, :), mo1(:, :, :), dm10(:, :, :)
       real(dp), allocatable :: dia(:, :, :), para(:, :, :), a11(:, :, :), a01(:, :, :)
-      real(dp), allocatable :: half(:, :)
       real(dp) :: tensor(3, 3)
       real(dp) :: trace, exchange
       integer :: n_ao, n_mo, n_vir, x, y, iatom, i
@@ -125,8 +131,7 @@ contains
       end if
 
       allocate (density(n_ao, n_ao))
-      call pic_gemm(coeff(:, 1:n_occ), coeff(:, 1:n_occ), density, transb="T", &
-                    alpha=2.0_dp, beta=0.0_dp)
+      call build_density_closed_shell(coeff, n_occ, density)
 
       ! ---- the first-order Fock and overlap matrices -----------------------
       !
@@ -159,14 +164,9 @@ contains
       s10 = -s10
 
       ! Both into the orbital basis, every orbital by the occupied ones.
-      allocate (h1(n_mo, n_occ, 3), s1(n_mo, n_occ, 3), half(n_ao, n_occ))
-      do x = 1, 3
-         call pic_gemm(h10(:, :, x), coeff(:, 1:n_occ), half, beta=0.0_dp)
-         call pic_gemm(coeff, half, h1(:, :, x), transa="T", beta=0.0_dp)
-         call pic_gemm(s10(:, :, x), coeff(:, 1:n_occ), half, beta=0.0_dp)
-         call pic_gemm(coeff, half, s1(:, :, x), transa="T", beta=0.0_dp)
-      end do
-      deallocate (h10, s10, half)
+      call occupied_columns(h10, coeff, n_occ, h1)
+      call occupied_columns(s10, coeff, n_occ, s1)
+      deallocate (h10, s10)
 
       ! ---- the orbitals' response to the field -----------------------------
       call schwarz_bounds(mol, bounds, error)
@@ -177,11 +177,7 @@ contains
 
       ! The first-order density's generator, twice for the two electrons an
       ! orbital holds: C (2 mo1) C_occ^T.
-      allocate (dm10(n_ao, n_ao, 3), half(n_ao, n_occ))
-      do x = 1, 3
-         call pic_gemm(coeff, mo1(:, :, x), half, alpha=2.0_dp, beta=0.0_dp)
-         call pic_gemm(half, coeff(:, 1:n_occ), dm10(:, :, x), transb="T", beta=0.0_dp)
-      end do
+      call generator_density(mo1, coeff, n_occ, dm10)
 
       ! ---- the two parts, nucleus by nucleus -------------------------------
       allocate (dia(3, 3, mol%natm), para(3, 3, mol%natm))
@@ -296,8 +292,8 @@ contains
       n_done = 0
       do k = 1, min(CP_MAX_ITER, n)
          do x = 1, 3
-            rnorm(x) = maxval(abs(resid(:, x)))
-            if (rnorm(x) < CP_TOL) active(x) = .false.
+            rnorm(x) = largest_residual(resid(:, x))
+            if (rnorm(x) < PROPERTY_RESPONSE_TOL) active(x) = .false.
          end do
          if (.not. any(active)) exit
 
@@ -343,9 +339,10 @@ contains
          end do
       end do
       do x = 1, 3
-         rnorm(x) = maxval(abs(resid(:, x)))
+         rnorm(x) = largest_residual(resid(:, x))
       end do
-      if (maxval(rnorm) >= CP_TOL) then
+      ! Written so that a residual that is not a number fails the test.
+      if (.not. all(rnorm < PROPERTY_RESPONSE_TOL)) then
          call error%set(ERROR_VALIDATION, "the shielding's coupled-perturbed equations "// &
                         "did not converge")
          return
@@ -371,31 +368,25 @@ contains
       real(dp), allocatable, intent(out) :: v(:, :, :)     !! (n_mo, n_occ, 3)
       type(error_t), intent(inout) :: error
 
-      real(dp), allocatable :: dens(:, :, :), g(:, :, :), half(:, :), zero_h(:, :)
-      integer :: n_ao, n_mo, x
+      real(dp), allocatable :: dens(:, :, :), g(:, :, :), zero_h(:, :)
+      integer :: n_ao, x
 
       n_ao = size(coeff, 1)
-      n_mo = size(coeff, 2)
       if (abs(exchange) <= 0.0_dp) then
-         allocate (v(n_mo, n_occ, 3))
+         allocate (v(size(coeff, 2), n_occ, 3))
          v = 0.0_dp
          return
       end if
-      allocate (dens(n_ao, n_ao, 3), half(n_ao, n_occ), zero_h(n_ao, n_ao))
+      allocate (zero_h(n_ao, n_ao))
       zero_h = 0.0_dp
+      call generator_density(mo1, coeff, n_occ, dens)
       do x = 1, 3
-         call pic_gemm(coeff, mo1(:, :, x), half, alpha=2.0_dp, beta=0.0_dp)
-         call pic_gemm(half, coeff(:, 1:n_occ), dens(:, :, x), transb="T", beta=0.0_dp)
          dens(:, :, x) = dens(:, :, x) - transpose(dens(:, :, x))
       end do
       call response_mean_field(mol, dens, zero_h, g, error, minus=.true., bounds=bounds, &
                                k_scale=exchange)
       if (error%has_error()) return
-      allocate (v(n_mo, n_occ, 3))
-      do x = 1, 3
-         call pic_gemm(g(:, :, x), coeff(:, 1:n_occ), half, beta=0.0_dp)
-         call pic_gemm(coeff, half, v(:, :, x), transa="T", beta=0.0_dp)
-      end do
+      call occupied_columns(g, coeff, n_occ, v)
    end subroutine exchange_response
 
    subroutine giao_xc_potential(xc, mol, density, vmat, error)
@@ -418,11 +409,11 @@ contains
 
       real(dp), allocatable :: rho(:), exc(:), vrho(:), gcoef(:, :)
       real(dp), allocatable :: ao(:, :), aog(:, :, :), aow(:, :), ig(:, :), dig(:, :)
-      real(dp), allocatable :: centre(:, :), part(:, :)
-      integer, allocatable :: offsets(:), counts(:)
+      real(dp), allocatable :: part(:, :), axes(:, :)
+      integer, allocatable :: owner(:)
       real(dp) :: r(3), cross(3), wv(3)
       real(dp) :: w0
-      integer :: n_ao, npts, g0, g1, nb, p, u, a, b, iatom
+      integer :: n_ao, npts, g0, g1, nb, p, u, a, b
 
       if (error%has_error()) return
       n_ao = mol%nao
@@ -430,16 +421,10 @@ contains
       call xc_grid_gga_quantities(xc, mol, density, rho, exc, vrho, gcoef, error)
       if (error%has_error()) return
 
-      ! Where each basis function sits.
-      allocate (offsets(mol%natm), counts(mol%natm), centre(3, n_ao))
-      call atom_ao_blocks(mol, offsets, counts)
-      do iatom = 1, mol%natm
-         do u = offsets(iatom) + 1, offsets(iatom) + counts(iatom)
-            centre(:, u) = mol%coords(:, iatom)
-         end do
-      end do
+      ! Which atom each basis function sits on.
+      call ao_to_atom(mol, owner)
 
-      allocate (vmat(n_ao, n_ao, 3), part(n_ao, n_ao))
+      allocate (vmat(n_ao, n_ao, 3), part(n_ao, n_ao), axes(3, n_ao))
       vmat = 0.0_dp
       do g0 = 1, npts, AO_POINT_BLOCK
          g1 = min(g0 + AO_POINT_BLOCK - 1, npts)
@@ -476,16 +461,19 @@ contains
          do b = 1, 3
             ! The gauge derivative of every function along this direction,
             ! and for a GGA its gradient contracted with `w dE/d grad rho`.
+            ! d/dr_a of (R x r)_b is (R x e_a)_b, the same at every point.
+            do u = 1, n_ao
+               axes(:, u) = cross_with_axes(mol%coords(:, owner(u)), b)
+            end do
             do u = 1, n_ao
                do p = 1, nb
                   r = xc%grid%coords(:, g0 + p - 1)
-                  cross = cross_product(centre(:, u), r)
+                  cross = cross_product(mol%coords(:, owner(u)), r)
                   ig(p, u) = 0.5_dp*cross(b)*ao(p, u)
                   if (xc%any_gga) then
                      w0 = xc%grid%weights(g0 + p - 1)
                      wv = w0*gcoef(g0 + p - 1, :)
-                     ! d/dr_a of (R x r)_b is (R x e_a)_b.
-                     dig(p, u) = 0.5_dp*(dot_product(wv, cross_with_axes(centre(:, u), b)) &
+                     dig(p, u) = 0.5_dp*(dot_product(wv, axes(:, u)) &
                                          *ao(p, u) &
                                          + cross(b)*(wv(1)*aog(p, u, 1) + wv(2)*aog(p, u, 2) &
                                                      + wv(3)*aog(p, u, 3)))
@@ -505,15 +493,6 @@ contains
       end do
    end subroutine giao_xc_potential
 
-   pure function cross_product(a, b) result(c)
-      real(dp), intent(in) :: a(3), b(3)
-      real(dp) :: c(3)
-
-      c(1) = a(2)*b(3) - a(3)*b(2)
-      c(2) = a(3)*b(1) - a(1)*b(3)
-      c(3) = a(1)*b(2) - a(2)*b(1)
-   end function cross_product
-
    pure function cross_with_axes(a, component) result(c)
       !! `(a x e_k)_component` for the three unit vectors `e_k`
       real(dp), intent(in) :: a(3)
@@ -531,45 +510,75 @@ contains
       end do
    end function cross_with_axes
 
+   subroutine occupied_columns(ao, coeff, n_occ, mo)
+      !! `C^T A C_occ` for each of a stack of matrices in the atomic basis
+      real(dp), intent(in) :: ao(:, :, :)        !! (n_ao, n_ao, n)
+      real(dp), intent(in) :: coeff(:, :)        !! (n_ao, n_mo)
+      integer, intent(in) :: n_occ
+      real(dp), allocatable, intent(out) :: mo(:, :, :)   !! (n_mo, n_occ, n)
+
+      real(dp), allocatable :: half(:, :)
+      integer :: x
+
+      allocate (mo(size(coeff, 2), n_occ, size(ao, 3)), half(size(coeff, 1), n_occ))
+      do x = 1, size(ao, 3)
+         call pic_gemm(ao(:, :, x), coeff(:, 1:n_occ), half, beta=0.0_dp)
+         call pic_gemm(coeff, half, mo(:, :, x), transa="T", beta=0.0_dp)
+      end do
+   end subroutine occupied_columns
+
+   subroutine generator_density(mo1, coeff, n_occ, dens)
+      !! `C (2 mo1) C_occ^T`: what a set of first-order coefficients adds to
+      !! the density, before it is antisymmetrised
+      real(dp), intent(in) :: mo1(:, :, :)       !! (n_mo, n_occ, n)
+      real(dp), intent(in) :: coeff(:, :)        !! (n_ao, n_mo)
+      integer, intent(in) :: n_occ
+      real(dp), allocatable, intent(out) :: dens(:, :, :)   !! (n_ao, n_ao, n)
+
+      real(dp), allocatable :: half(:, :)
+      integer :: n_ao, x
+
+      n_ao = size(coeff, 1)
+      allocate (dens(n_ao, n_ao, size(mo1, 3)), half(n_ao, n_occ))
+      do x = 1, size(mo1, 3)
+         call pic_gemm(coeff, mo1(:, :, x), half, alpha=2.0_dp, beta=0.0_dp)
+         call pic_gemm(half, coeff(:, 1:n_occ), dens(:, :, x), transb="T", beta=0.0_dp)
+      end do
+   end subroutine generator_density
+
+   pure function largest_residual(resid) result(norm)
+      !! Largest element of a residual in magnitude; `huge` when any element
+      !! is not a number, so that it can never read as converged
+      real(dp), intent(in) :: resid(:)
+      real(dp) :: norm
+
+      if (ieee_is_nan(sum(resid))) then
+         norm = huge(1.0_dp)
+      else
+         norm = maxval(abs(resid))
+      end if
+   end function largest_residual
+
    subroutine solve_small(matrix, rhs, x, singular)
-      !! A small dense system by elimination with partial pivoting
+      !! A small dense system by LU factorisation
       real(dp), intent(in) :: matrix(:, :), rhs(:)
       real(dp), allocatable, intent(out) :: x(:)
-      logical, intent(out) :: singular
+      logical, intent(out) :: singular   !! The factorisation met a zero pivot
 
-      real(dp), allocatable :: a(:, :), row(:)
-      real(dp) :: scale, factor
-      integer :: n, i, j, pivot
+      real(dp), allocatable :: a(:, :), b(:, :)
+      integer, allocatable :: ipiv(:)
+      integer :: n, info
 
       n = size(rhs)
-      a = matrix
-      x = rhs
-      singular = .false.
-      scale = maxval(abs(a))
-      allocate (row(n))
-      do i = 1, n
-         pivot = i - 1 + maxloc(abs(a(i:n, i)), dim=1)
-         if (abs(a(pivot, i)) <= SINGULAR_PIVOT*scale) then
-            singular = .true.
-            return
-         end if
-         if (pivot /= i) then
-            row = a(i, :)
-            a(i, :) = a(pivot, :)
-            a(pivot, :) = row
-            factor = x(i)
-            x(i) = x(pivot)
-            x(pivot) = factor
-         end if
-         do j = i + 1, n
-            factor = a(j, i)/a(i, i)
-            a(j, i:n) = a(j, i:n) - factor*a(i, i:n)
-            x(j) = x(j) - factor*x(i)
-         end do
-      end do
-      do i = n, 1, -1
-         x(i) = (x(i) - dot_product(a(i, i + 1:n), x(i + 1:n)))/a(i, i)
-      end do
+      allocate (a(n, n), source=matrix)
+      allocate (b(n, 1), ipiv(n))
+      b(:, 1) = rhs
+      call pic_getrf(a, ipiv, info)
+      singular = info /= 0
+      if (singular) return
+      call pic_getrs(a, ipiv, b, info=info)
+      singular = info /= 0
+      allocate (x(n), source=b(:, 1))
    end subroutine solve_small
 
    subroutine print_shielding_report(shielding, element_symbols)
@@ -578,7 +587,7 @@ contains
       character(len=*), intent(in) :: element_symbols(:)
 
       character(len=LINE_LEN) :: line
-      character(len=16) :: label
+      character(len=LABEL_LEN) :: label
       real(dp) :: iso, aniso
       integer :: iatom, x
 
