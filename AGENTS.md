@@ -282,6 +282,22 @@ The methods:
   Coupled cluster and a double hybrid over a fitted unrestricted reference
   are refused by name; a range-separated open-shell gradient is refused
   fitted or not.
+  **ROHF and ROKS are `model.restricted_open`, and run inside `run_czt_uhf`**
+  (`restricted_open=`): the two spin Fock matrices are built as for UHF, then
+  replaced by Roothaan's effective matrix (`roothaan_fock`), diagonalised
+  once, with the DIIS error taken against the total density. After
+  convergence each spin's orbitals are rotated to diagonalise that spin's own
+  Fock matrix within its occupied and virtual blocks. **That rotation is why
+  nothing downstream knows about ROHF**: the result is shaped as an
+  unrestricted one, and `C_occ eps C_occ^T` is then `D F D` per spin, whose
+  sum is the ROHF energy-weighted density, so the UHF gradient is the ROHF
+  gradient unchanged. It also means **alpha's first `n_beta` orbitals are not
+  the doubly occupied ones** -- alpha's occupied block mixes closed and open
+  -- so project with `D_b` and `D_a - D_b`, never by orbital index. Anything
+  that assumes a diagonal Fock matrix across occupied and virtual (MP2, CC,
+  double hybrids, TDDFT) is refused in the bridge; GDM and the second-order
+  SCF are refused in the driver. OH under a pure functional does not
+  converge, here or in PySCF: its open orbital is one of a degenerate pair.
 - `DFT` - restricted and unrestricted Kohn-Sham over libxc, through
   `model.functional`. LDA through double hybrid, including range-separated
   hybrids, whose long-range exchange needs the direct build
@@ -839,7 +855,7 @@ under `cpu/mqc/` is deleted by the next regeneration.
 Validation categories under `cpu/mqc/` are `bond_orders ccsd ccsd-t charges cosx counterpoise
 df-dft df-hf df-uhf dft dh ecp efmo efp fmo fukui gdm gradient hessian interaction_energy
 makefp mcscf mp2 neo optimize pcm quao rhf ri-ccsd ri-ccsd-t ri-mp2 sapt scs-mp2
-soscf sos-mp2 tddft udft uhf` -- worth checking against before assuming
+rohf soscf sos-mp2 tddft udft uhf` -- worth checking against before assuming
 something is untested. That list is `ls validation/inputs/cpu/mqc/`; it went stale twice
 because it was maintained by hand, so check the directory rather than this
 line if something is missing from it.

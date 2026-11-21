@@ -234,6 +234,10 @@ contains
       ! absent: they say how the same roots are reached, not which roots they
       ! are. Guarded on `enabled`, so a deck that asks for none hashes exactly
       ! as it did before the block existed.
+      ! A different wavefunction, so a different energy. Tagged and guarded
+      ! as the excited-state block is, so every deck without it hashes as it
+      ! did before the keyword existed.
+      if (config%scf%restricted_open) call h%text("restricted_open")
       if (config%excited%enabled) then
          call h%text("excited")
          call h%int(config%excited%n_states)

@@ -400,6 +400,7 @@ contains
       end if
       driver_config%method_config%scf%allow_crap_scf = mqc_config%allow_crap_scf
       driver_config%method_config%scf%unrestricted = mqc_config%unrestricted
+      driver_config%method_config%scf%restricted_open = mqc_config%restricted_open
       driver_config%method_config%scf%density_fitting = mqc_config%scf_density_fitting
       driver_config%method_config%scf%cosx = mqc_config%scf_cosx
       driver_config%method_config%scf%cosx_grid = mqc_config%scf_cosx_grid
