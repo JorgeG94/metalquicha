@@ -48,7 +48,7 @@ module mqc_czt_nmr
    public :: print_shielding_report
 
    real(dp), parameter :: PER_MILLION = 1.0e6_dp
-   real(dp), parameter :: TO_PPM = FINE_STRUCTURE**2*PER_MILLION
+   real(dp), parameter :: TO_PPM = (FINE_STRUCTURE**2)*PER_MILLION
       !! A shielding in atomic units is in units of the fine-structure
       !! constant squared
    integer, parameter :: CP_MAX_ITER = 60
