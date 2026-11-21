@@ -28,7 +28,7 @@ plotting program.
 Each function takes the path of an output file, the dictionary read from one,
 or the ``Result`` of a run made in the same session.
 
-or from a shell, with no Python written:
+The same from a shell, with no Python written:
 
 .. code-block:: bash
 
