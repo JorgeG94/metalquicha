@@ -323,6 +323,11 @@ if(MQC_ENABLE_CZT)
   addtest(mqc_czt_uhf)
   target_link_libraries(test_mqc_czt_uhf PRIVATE ${MQC_INTEGRALS_LIBS})
 
+  # Cartesian polarizability derivatives for Raman activities: PySCF's
+  # differenced polarizability, and the translational sum rule.
+  addtest(mqc_czt_raman)
+  target_link_libraries(test_mqc_czt_raman PRIVATE ${MQC_INTEGRALS_LIBS})
+
   # The restricted open-shell SCF: PySCF's energies, the shared orbital spaces,
   # and the stationary conditions on the effective Fock matrix.
   addtest(mqc_czt_rohf)

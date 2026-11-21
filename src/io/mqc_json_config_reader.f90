@@ -262,6 +262,8 @@ contains
          call optional_string(json, "properties.bond_orders.scheme", &
                               config%bond_order_scheme)
       end if
+      ! The object is the request; it has no settings to read.
+      call json%info("properties.raman", found=config%raman)
       call optional_string(json, "properties.bonding_analysis.type", &
                            config%bonding_analysis)
       call optional_real(json, "properties.bonding_analysis.energy_threshold", &
@@ -292,6 +294,21 @@ contains
          call error%set(ERROR_VALIDATION, "unknown driver '"//trim(text)// &
                         "'. Accepted: energy, gradient, hessian, optimize, "// &
                         "makefp, conformers, interactionenergy")
+         return
+      end if
+      ! Raman activities are a column beside the frequencies: without a
+      ! Hessian there are no modes to project the polarizability onto.
+      if (config%raman .and. config%calc_type /= CALC_TYPE_HESSIAN) then
+         call error%set(ERROR_VALIDATION, "properties.raman needs driver 'Hessian': "// &
+                        "the activities are computed per normal mode.")
+         return
+      end if
+      ! Nothing else has a polarizability derivative, and a semi-empirical
+      ! Hessian would otherwise finish with the column missing.
+      if (config%raman .and. config%method /= METHOD_TYPE_HF &
+          .and. config%method /= METHOD_TYPE_DFT) then
+         call error%set(ERROR_VALIDATION, "properties.raman is implemented for "// &
+                        "Hartree-Fock and Kohn-Sham (model.method 'hf' or 'dft').")
          return
       end if
 

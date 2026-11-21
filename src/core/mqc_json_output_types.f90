@@ -82,6 +82,10 @@ module mqc_json_output_types
       real(dp), allocatable :: reduced_masses(:)     !! amu
       real(dp), allocatable :: force_constants(:)    !! mdyne/Angstrom
       real(dp), allocatable :: ir_intensities(:)     !! km/mol
+      real(dp), allocatable :: raman_activities(:)       !! Angstrom^4/amu
+      real(dp), allocatable :: raman_depolarization(:)   !! Linear-polarization ratios
+      real(dp) :: polarizability(3, 3) = 0.0_dp          !! Static, Bohr^3
+      logical :: has_polarizability = .false.
       type(thermochemistry_result_t) :: thermo
       logical :: has_vibrational = .false.
       logical :: has_ir_intensities = .false.

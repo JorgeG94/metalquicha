@@ -181,6 +181,10 @@ is GAMESS. The work is threaded with OpenMP throughout.
   conventional or density-fitted perturbative terms. The energy works for
   restricted and unrestricted references. The gradient and the Hessian need a
   closed shell (below).
+- **Raman activities**: scattering activities and depolarization ratios per
+  normal mode, from the static polarizability differenced along each
+  Cartesian coordinate. Closed-shell Hartree-Fock and Kohn-Sham, beside an
+  analytic Hessian. ``properties.raman``; see :doc:`vibrational_analysis`.
 - **Empirical dispersion**: ``keywords.dft.dispersion`` adds D3(BJ)
   (``"d3bj"``) or D4 with its three-body term (``"d4"``) to a Kohn-Sham energy
   and gradient. The values come from simple-dftd3 and dftd4. Both are LGPL, so

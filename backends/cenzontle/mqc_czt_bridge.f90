@@ -57,6 +57,7 @@ module mqc_czt_bridge
    use mqc_czt_mp2_hessian, only: mp2_correlation_hessian
    use mqc_czt_ri_mp2_hessian, only: ri_mp2_correlation_hessian, ri_hessian_metric_dropped
    use mqc_czt_mp2_gradient, only: czt_mp2_gradient
+   use mqc_czt_raman, only: polarizability_derivatives
    use mqc_czt_ri_mp2_gradient, only: czt_ri_mp2_gradient
    use mqc_czt_mp2, only: mp2_result_t, run_czt_mp2, run_czt_ri_mp2, &
                           run_czt_ump2, run_czt_uri_mp2
@@ -1290,6 +1291,46 @@ contains
       pcm_pte = settings%pcm%enabled .and. trim(settings%pcm%correlation) == "pte"
       pcm_ptd = settings%pcm%enabled .and. trim(settings%pcm%correlation) == "ptd"
 
+      ! Raman activities difference the closed-shell polarizability, exact
+      ! integrals, and ride on the analytic Hessian's branch below. Anything
+      ! that would take the Hessian elsewhere, or that the displaced
+      ! references would not reproduce, is refused rather than left to run
+      ! without them.
+      if (settings%raman) then
+         block
+            character(len=:), allocatable :: why
+
+            why = ""
+            if (unrestricted) then
+               why = "an open shell needs an unrestricted polarizability"
+            else if (settings%run_mp2 .or. settings%run_cc) then
+               why = "a correlated polarizability is not built"
+            else if (settings%density_fitting) then
+               why = "the displaced references are not density fitted"
+            else if (settings%pcm%enabled) then
+               why = "the displaced references carry no continuum"
+            else if (len_trim(settings%ecp_set) > 0) then
+               why = "the displaced references carry no effective core potential"
+            else if (fragment%n_caps > 0 .or. any(fragment%ghost_mask())) then
+               why = "capped and ghosted fragments are not rebuilt at displaced "// &
+                     "geometries"
+            else if (settings%hessian_method /= HESSIAN_METHOD_ANALYTIC) then
+               why = "it accompanies the analytic Hessian"
+            else if (settings%second_order .or. settings%gdm) then
+               why = "the displaced references are converged by DIIS alone, and "// &
+                     "could land on another solution than a second-order or "// &
+                     "direct-minimisation reference"
+            end if
+            if (len(why) > 0) then
+               call result%error%set(ERROR_VALIDATION, "properties.raman is implemented "// &
+                                     "for closed-shell Hartree-Fock and Kohn-Sham with "// &
+                                     "exact integrals: "//why//".")
+               result%has_error = .true.
+               return
+            end if
+         end block
+      end if
+
       ! Natural orbitals are those of the most complete one-particle density
       ! the method has, and `properties.density: "relaxed"` asks the charges
       ! and bond orders for the same one. For a correlated method that is a
@@ -1698,6 +1739,16 @@ contains
                                   "density-fitted unrestricted reference has not been "// &
                                   "validated and is refused. Run the reference without "// &
                                   "keywords.scf.density_fitting.")
+            result%has_error = .true.
+            if (kohn_sham) call xc%destroy()
+            call mol%destroy()
+            return
+         end if
+         if (settings%raman .and. xc%pt2_fraction /= 0.0_dp) then
+            call result%error%set(ERROR_VALIDATION, "properties.raman is not "// &
+                                  "implemented with a double hybrid: the "// &
+                                  "polarizability differenced would be its hybrid "// &
+                                  "part's, without the perturbative term.")
             result%has_error = .true.
             if (kohn_sham) call xc%destroy()
             call mol%destroy()
@@ -2877,6 +2928,29 @@ contains
                   result%has_dipole_derivatives = .true.
                end if
             end if
+            ! Raman activities need the polarizability's Cartesian
+            ! derivatives beside the Hessian. A failure is a warning: the
+            ! frequencies and infrared intensities above do not depend on it.
+            if (settings%raman .and. .not. error%has_error()) then
+               block
+                  type(error_t) :: raman_error
+                  real(dp), allocatable :: dalpha(:, :)
+                  real(dp) :: alpha0(3, 3)
+
+                  call polarizability_derivatives(settings, fragment%element_numbers, &
+                                                  symbols, fragment%coordinates, nelec, &
+                                                  scf%density, accel_kind, diis_size, &
+                                                  scf_conv, alpha0, dalpha, raman_error)
+                  if (raman_error%has_error()) then
+                     call logger%warning("  Raman activities could not be computed: "// &
+                                         raman_error%get_message())
+                  else
+                     call move_alloc(dalpha, result%polarizability_derivatives)
+                     result%polarizability = alpha0
+                     result%has_polarizability = .true.
+                  end if
+               end block
+            end if
             deallocate (hess4)
             write (line, "(a,f10.2,a)") "  Hessian done in ", hess_clock%get_elapsed_time(), " s"
             call logger%info(trim(line))
@@ -3764,6 +3838,10 @@ contains
                                                           mol%necpbas > 0))
             end if
             call logger%warning("  taking it by central differences of the analytic gradient instead")
+            if (settings%raman) then
+               call logger%warning("  Raman activities accompany the analytic Hessian "// &
+                                   "and are not computed on this path")
+            end if
          end if
       end if
 

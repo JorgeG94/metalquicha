@@ -233,6 +233,115 @@ The intensity is:
    I_i \text{ (km/mol)} = \text{AU\_TO\_KMMOL} \times \sum_\alpha \left(\frac{\partial \mu_\alpha}{\partial Q_i}\right)^2
 
 
+Raman Activities from Polarizability Derivatives
+================================================
+
+A mode is Raman active to the extent that the molecule's polarizability changes
+along it, as it is infrared active to the extent its dipole does. Ask for the
+activities beside the frequencies with
+
+.. code-block:: json
+
+   "model": {"method": "hf", "basis": "cc-pVDZ"},
+   "driver": "Hessian",
+   "properties": {"raman": {}}
+
+``properties.raman`` is a request by its presence, takes no settings, and is
+refused on any driver but ``Hessian``.
+
+How it is computed
+------------------
+
+The Cartesian derivative of the static polarizability,
+:math:`\partial\alpha/\partial x_j`, is taken by central differences: each
+coordinate is displaced by 0.005 Bohr both ways, the reference is reconverged,
+and the coupled-perturbed polarizability is evaluated there. That is
+:math:`6N` self-consistent fields and :math:`6N` response solves on top of the
+Hessian, and for a small molecule it costs several times what the Hessian does.
+
+Projected onto mode :math:`i`,
+
+.. math::
+
+   \alpha'_i = \sum_j \frac{\partial \alpha}{\partial x_j}\,\frac{L_{ji}}{\sqrt{m_j}}
+
+with :math:`L` the mass-weighted eigenvectors, the same projection the infrared
+intensities use. From its mean :math:`a = \mathrm{tr}(\alpha')/3` and its
+anisotropy
+
+.. math::
+
+   \gamma^2 = \tfrac12\left[(\alpha'_{xx}-\alpha'_{yy})^2 + (\alpha'_{yy}-\alpha'_{zz})^2
+              + (\alpha'_{zz}-\alpha'_{xx})^2\right]
+              + 3\left(\alpha'^2_{xy} + \alpha'^2_{xz} + \alpha'^2_{yz}\right)
+
+the **Raman scattering activity** is :math:`S = 45a^2 + 7\gamma^2`, in
+:math:`\text{\AA}^4/\mathrm{amu}`, and the **depolarization ratio** for
+linearly polarized light is :math:`\rho = 3\gamma^2/(45a^2 + 4\gamma^2)`. The
+ratio runs from 0, a totally symmetric mode with no anisotropy, to 3/4, any
+mode that is not totally symmetric.
+
+What it reports
+---------------
+
+Two more rows in the vibrational table,
+
+.. code-block:: text
+
+    Frequencies --   1807.9869   3874.1341   3993.3734
+    IR Intens  --    105.6565      1.9052     34.0227
+    Raman Act  --     12.2241     93.9477     46.8233
+    Depolar    --      0.4023      0.2072      0.7500
+
+(water at Hartree-Fock/6-31G: the antisymmetric stretch is the one at 3/4), and
+in the output file ``raman_activities_A4_amu``, ``raman_depolarization_ratios``
+and the static polarizability itself, ``polarizability_bohr3``, under
+``vibrational_analysis``.
+
+**An activity is not an intensity.** It is a property of the molecule. What a
+spectrometer records also depends on the laser frequency :math:`\nu_0` and the
+temperature,
+
+.. math::
+
+   I_i \propto \frac{(\nu_0 - \nu_i)^4}{\nu_i\left[1 - e^{-h c \nu_i / k_B T}\right]}\, S_i
+
+and applying that, and a line shape, is left to whoever plots the spectrum.
+
+Validation
+----------
+
+The reference is PySCF used twice, sharing nothing with this program: its
+analytic Hessian for the modes, and its own coupled-perturbed polarizability
+differenced over the same displacements. Water at Hartree-Fock, B3LYP and PBE
+in 6-31G and ammonia at Hartree-Fock in cc-pVDZ agree to
+:math:`2\times10^{-5}\ \text{\AA}^4/\mathrm{amu}` on activities between 6 and
+124, and to the five decimals printed on every depolarization ratio.
+``test_mqc_czt_raman`` pins three of water's Cartesian derivatives to that
+reference, and ``test_mqc_vibrational_analysis`` holds the activity formula to
+three tensors whose answer is known by hand.
+
+The error of the central differences themselves is measured by the
+translational sum rule: the derivatives along one direction must cancel over
+the atoms, and do to :math:`3\times10^{-5}` Bohr\ :sup:`2` on derivatives of
+order ten.
+
+Limits
+------
+
+- **Closed-shell Hartree-Fock and Kohn-Sham with exact integrals.** An open
+  shell, a correlated method, a density-fitted reference, a continuum solvent,
+  an effective core potential and capped or ghosted fragments are refused by
+  name.
+- **It accompanies the analytic Hessian.** Where the Hessian is taken by
+  differences of gradients instead, the activities are skipped with a warning.
+- **Static polarizability.** The derivative is of the zero-frequency
+  polarizability, which is the usual approximation far from an electronic
+  absorption and wrong near one: there is no resonance Raman here.
+- **The displaced calculations run one after another**, not distributed over
+  MPI ranks as the displacements of a semi-numerical Hessian are.
+- **Harmonic, like everything else on this page.**
+
 Thermochemistry (RRHO Approximation)
 ====================================
 

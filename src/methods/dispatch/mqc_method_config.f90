@@ -374,6 +374,8 @@ module mqc_method_config
          !! How the ion SCFs converge. Already resolved against `keywords.scf`
          !! by the time it reaches here, so a consumer reads these fields
          !! directly and never tests a sentinel.
+      logical :: raman = .false.
+         !! `properties.raman` asked for Raman activities with the Hessian.
       character(len=:), allocatable :: charges_scheme
          !! Allocated when `properties.charges` asked for partial charges;
          !! "mulliken", "chelpg", "hirshfeld" or "mbis". Unallocated means no charges, which is why

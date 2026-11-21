@@ -401,6 +401,20 @@ separately. meta-GGA, VV10, density fitting, PCM, capped fragments, a
 correlated reference and cuEST are refused by name rather than approximated.
 See `mqc_docs/source/excited_states.rst`.
 
+Raman activities are `properties.raman` on a Hessian deck, closed-shell HF or
+KS with exact integrals. `mqc_czt_raman` differences `static_polarizability`
+over `6N` displaced geometries, each a fresh molecule, SCF and response solve,
+and the bridge calls it on the analytic-Hessian branch only;
+`compute_raman_activities` in `mqc_vibrational_analysis` projects the result
+on the modes beside the IR intensities. Two things cost time to find. **The
+displaced SCFs need an orbital gradient of 1e-10**: at 1e-8 the derivatives
+were 3e-6 off, the noise divided by the step. **A reference built from
+another program's Hessian has to project out rotations too**, or a mode that
+mixes with one differs by 0.1 cm-1 and 0.1 in its activity at a geometry
+that is not a stationary point, which every sample geometry is not. The
+reference is PySCF's Hessian with PySCF's own coupled-perturbed
+polarizability differenced, through `cphf.solve`.
+
 RIJCOSX is not a method name either. `keywords.scf.exchange: "cosx"` beside
 `keywords.scf.density_fitting` builds the Coulomb matrix from the fit and the
 exchange matrix by chain-of-spheres quadrature (`mqc_czt_cosx`), for a
@@ -830,7 +844,7 @@ under `cpu/mqc/` is deleted by the next regeneration.
 
 Validation categories under `cpu/mqc/` are `bond_orders ccsd ccsd-t charges cosx counterpoise
 df-dft df-hf df-uhf dft dh ecp efmo efp fmo fukui gdm gradient hessian interaction_energy
-makefp mcscf mp2 neo optimize pcm quao rhf ri-ccsd ri-ccsd-t ri-mp2 sapt scs-mp2
+makefp mcscf mp2 neo optimize pcm quao raman rhf ri-ccsd ri-ccsd-t ri-mp2 sapt scs-mp2
 rohf soscf sos-mp2 tddft udft uhf` -- worth checking against before assuming
 something is untested. That list is `ls validation/inputs/cpu/mqc/`; it went stale twice
 because it was maintained by hand, so check the directory rather than this

@@ -147,6 +147,7 @@ contains
                   new_unittest("scf_maxiter_named_flag", test_maxiter_named), &
                   new_unittest("scf_convergence_metric", test_convergence_metric), &
                   new_unittest("restricted_open_keyword", test_restricted_open), &
+                  new_unittest("raman_property_request", test_raman_request), &
                   new_unittest("error_malformed_json", test_malformed) &
                   ]
    end subroutine collect_mqc_json_reader_tests
@@ -4241,6 +4242,39 @@ contains
       call check(error, parse_error%has_error(), &
                  "keywords.scf.restricted_open must not be accepted")
    end subroutine test_restricted_open
+
+   subroutine test_raman_request(error)
+      !! `properties.raman` is a request by its presence and belongs to a
+      !! Hessian run: the activities are per normal mode, so on any other
+      !! driver there is nothing to attach them to and the deck is refused
+      !! rather than run without them.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "hf", "basis": "6-31g"', "Hessian", "", "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error,.not. config%raman, "Raman must be off by default")
+      if (allocated(error)) return
+
+      call write_deck('"method": "hf", "basis": "6-31g"', "Hessian", "", "", two_atoms(), &
+                      root='"properties": {"raman": {}}')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%raman, "properties.raman was not read")
+      if (allocated(error)) return
+
+      call write_deck('"method": "hf", "basis": "6-31g"', "Energy", "", "", two_atoms(), &
+                      root='"properties": {"raman": {}}')
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error() .and. &
+                 index(parse_error%get_message(), "Hessian") > 0, &
+                 "properties.raman on an energy run was accepted")
+   end subroutine test_raman_request
 
    subroutine test_maxiter_named(error)
       !! Whether the deck named `keywords.scf.maxiter`, not just its value

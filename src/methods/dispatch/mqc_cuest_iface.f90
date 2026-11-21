@@ -102,6 +102,8 @@ module mqc_cuest_iface
       character(len=:), allocatable :: charges_scheme
          !! Atomic partial charges from `properties.charges`, unallocated when
          !! none were asked for.
+      logical :: raman = .false.
+         !! Raman activities from `properties.raman`; the CPU backend only.
       logical :: natural_orbitals = .false.
          !! Natural occupations from `properties.natural_orbitals`
       logical :: intrinsic_orbitals = .false.
@@ -253,6 +255,7 @@ contains
       if (allocated(properties%fukui_guess)) then
          settings%fukui_guess = properties%fukui_guess
       end if
+      settings%raman = properties%raman
       settings%fukui_scf = properties%fukui_scf
       if (allocated(properties%charges_scheme)) then
          settings%charges_scheme = properties%charges_scheme
