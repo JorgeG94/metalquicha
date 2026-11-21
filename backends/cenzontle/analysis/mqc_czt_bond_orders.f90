@@ -23,11 +23,14 @@ module mqc_czt_bond_orders
    !! Comparing the first two on a system small enough to afford both is the
    !! reason this exists: it says whether the cheap ranking can be trusted.
    !!
-   !! **No Wiberg here.** Wiberg's order is this sum of squares in an
-   !! *orthonormal* basis, where `S` is the identity and the product collapses.
-   !! Computed over non-orthogonal AOs it is not Wiberg's quantity and not
-   !! anybody else's, so it is not offered. Over the quasi-atomic basis, which
-   !! is orthonormal, `mqc_czt_quao`'s `population_bond_order` already is it.
+   !! **Wiberg's index is here too, in Lowdin's basis.** Wiberg's order is
+   !! this sum of squares in an *orthonormal* basis, where `S` is the identity
+   !! and the product collapses. Computed over non-orthogonal AOs it is not
+   !! Wiberg's quantity and not anybody else's, so that is never done:
+   !! `wiberg_bond_orders` orthogonalises symmetrically first, which is the
+   !! usual meaning of a Wiberg index out of an ab initio calculation. Over
+   !! the quasi-atomic basis, which is orthonormal by construction,
+   !! `mqc_czt_quao`'s `population_bond_order` is the same sum.
    use pic_types, only: dp
    use pic_logger, only: logger => global_logger
    use mqc_error, only: error_t
@@ -35,12 +38,15 @@ module mqc_czt_bond_orders
    use mqc_czt_charges, only: ao_to_atom
    use mqc_population_analysis, only: mayer_atomic_bond_orders, &
                                       mayer_atomic_bond_orders_open_shell, &
-                                      mayer_atomic_valences
+                                      mayer_atomic_valences, lowdin_density, &
+                                      identity_overlap
    implicit none
    private
 
    public :: mayer_bond_orders
    public :: mayer_bond_orders_open_shell
+   public :: wiberg_bond_orders
+   public :: wiberg_bond_orders_open_shell
    public :: mayer_valences
    public :: print_mayer_report
 
@@ -89,6 +95,47 @@ contains
                                                density_beta, overlap, orders, error)
    end subroutine mayer_bond_orders_open_shell
 
+   subroutine wiberg_bond_orders(mol, density, overlap, orders, error)
+      !! W_AB = sum_{mu in A, nu in B} (S^1/2 D S^1/2)_mu,nu^2, closed shell
+      !!
+      !! Wiberg's index in Lowdin's orthonormal basis. `density` is the total
+      !! density, as for `mayer_bond_orders`.
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: density(:, :), overlap(:, :)
+      real(dp), allocatable, intent(out) :: orders(:, :)
+      type(error_t), intent(inout) :: error
+
+      integer, allocatable :: owner(:)
+      real(dp), allocatable :: lowdin(:, :)
+
+      call lowdin_density(density, overlap, lowdin, error)
+      if (error%has_error()) return
+      call ao_to_atom(mol, owner)
+      call mayer_atomic_bond_orders(owner, mol%natm, lowdin, &
+                                    identity_overlap(size(lowdin, 1)), orders, error)
+   end subroutine wiberg_bond_orders
+
+   subroutine wiberg_bond_orders_open_shell(mol, density_alpha, density_beta, overlap, &
+                                            orders, error)
+      !! The same index from two spin densities, summed over spin and doubled
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: density_alpha(:, :), density_beta(:, :)
+      real(dp), intent(in) :: overlap(:, :)
+      real(dp), allocatable, intent(out) :: orders(:, :)
+      type(error_t), intent(inout) :: error
+
+      integer, allocatable :: owner(:)
+      real(dp), allocatable :: lowdin_a(:, :), lowdin_b(:, :)
+
+      call lowdin_density(density_alpha, overlap, lowdin_a, error)
+      call lowdin_density(density_beta, overlap, lowdin_b, error)
+      if (error%has_error()) return
+      call ao_to_atom(mol, owner)
+      call mayer_atomic_bond_orders_open_shell(owner, mol%natm, lowdin_a, lowdin_b, &
+                                               identity_overlap(size(lowdin_a, 1)), &
+                                               orders, error)
+   end subroutine wiberg_bond_orders_open_shell
+
    subroutine mayer_valences(orders, valences)
       !! V_A = sum_{B /= A} B_AB
       !!
@@ -101,7 +148,7 @@ contains
       call mayer_atomic_valences(orders, valences)
    end subroutine mayer_valences
 
-   subroutine print_mayer_report(orders, valences, element_symbols, threshold)
+   subroutine print_mayer_report(orders, valences, element_symbols, threshold, scheme)
       !! The bonded pairs, then the valence each atom's orders add up to
       !!
       !! Printed whatever the verbosity, like every other analysis a deck asks
@@ -111,6 +158,8 @@ contains
       real(dp), intent(in) :: valences(:)
       character(len=*), intent(in) :: element_symbols(:)
       real(dp), intent(in), optional :: threshold   !! Weakest pair to print
+      character(len=*), intent(in), optional :: scheme
+         !! Which definition these are, for the heading. Absent is Mayer's.
 
       character(len=160) :: line
       character(len=16) :: label, partner
@@ -122,7 +171,11 @@ contains
       natm = size(valences)
 
       call logger%info("")
-      call logger%info("  ==== Mayer bond orders =================================")
+      if (present(scheme)) then
+         call logger%info("  ==== "//trim(scheme)//" bond orders ====")
+      else
+         call logger%info("  ==== Mayer bond orders =================================")
+      end if
       call logger%info("")
       ! The basis is not named here because this routine does not know it; the
       ! header of the calculation does. It matters: a Mayer order moves with
