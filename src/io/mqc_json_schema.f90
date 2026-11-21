@@ -272,8 +272,8 @@ contains
       !! Settings for the Raman activities
       !!
       !! The object is the request, as `charges` is, and belongs to a Hessian
-      !! run, which the reader checks. `method` chooses which finite
-      !! difference supplies the polarizability derivatives.
+      !! run, which the reader checks. `method` chooses the route to the
+      !! polarizability derivatives.
       type(key_set_t) :: keys
       call allow(keys, "method")
    end function raman_keys

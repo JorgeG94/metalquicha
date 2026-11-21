@@ -438,8 +438,13 @@ Found by running it under `mpirun`, not by reading it. The full expansion of a w
 trimer reproduces the unfragmented activities to 8e-10; at the pair level a
 *band's* total is within a per cent while single modes are off by half,
 because the assembled Hessian mixes near-degenerate stretches differently --
-compare bands. The bridge calls any route on the
-analytic-Hessian branch only;
+compare bands. The bridge calls any route on the analytic-Hessian branch,
+and the analytic and finite-field ones on a declined Hessian too
+(`raman_derivatives`, contained in `run_czt_hf`): a capped fragment has no
+analytic Hessian, and `hf_calc_hessian` carries the derivatives across the
+`result%destroy()` that precedes the differenced one. **That capped path runs
+and is unvalidated** -- caps change the fragments, so no expansion order
+reproduces the whole molecule to check against;
 `compute_raman_activities` in `mqc_vibrational_analysis` projects the result
 on the modes beside the IR intensities. Two things cost time to find. **The
 displaced SCFs need an orbital gradient of 1e-10**: at 1e-8 the derivatives
@@ -879,7 +884,7 @@ under `cpu/mqc/` is deleted by the next regeneration.
 
 Validation categories under `cpu/mqc/` are `bond_orders ccsd ccsd-t charges cosx counterpoise
 df-dft df-hf df-uhf dft dh ecp efmo efp fmo fukui gdm gradient hessian interaction_energy
-makefp mcscf mp2 neo optimize pcm quao rhf ri-ccsd ri-ccsd-t ri-mp2 sapt scs-mp2
+makefp mcscf mp2 neo optimize pcm quao raman rhf ri-ccsd ri-ccsd-t ri-mp2 sapt scs-mp2
 rohf soscf sos-mp2 tddft udft uhf` -- worth checking against before assuming
 something is untested. That list is `ls validation/inputs/cpu/mqc/`; it went stale twice
 because it was maintained by hand, so check the directory rather than this

@@ -124,6 +124,8 @@ module mqc_result_types
          !! activities; allocated when `properties.raman` asked
       real(dp) :: polarizability(3, 3) = 0.0_dp   !! Static, Bohr^3
       logical :: has_polarizability = .false.
+         !! `polarizability` was filled in. Set only on the rank that
+         !! computed it: the tensor is not sent between ranks.
       real(dp), allocatable :: bond_orders(:, :)
          !! Bond orders, (natoms, natoms), symmetric with a zero diagonal.
          !!
@@ -611,6 +613,8 @@ contains
       this%has_hessian = .false.
       this%has_dipole = .false.
       this%has_dipole_derivatives = .false.
+      this%has_polarizability = .false.
+      this%polarizability = 0.0_dp
       this%has_error = .false.
       this%scf_status = SCF_UNKNOWN
       this%scf_iterations = 0
@@ -780,10 +784,25 @@ contains
       end if
    end subroutine send_quao_rows
 
-   subroutine recv_polarizability_derivatives(comm, result, source, tag, status)
-      !! The polarizability derivatives, when the sender had them
+   subroutine send_polarizability_derivatives(result, comm, dest, tag)
+      !! The polarizability derivatives, for Raman activities, when there are any
+      !!
+      !! The same shape as the dipole derivatives with six rows in place of
+      !! three.
+      type(calculation_result_t), intent(in) :: result
       type(comm_t), intent(in) :: comm
+      integer, intent(in) :: dest, tag
+
+      call send(comm, allocated(result%polarizability_derivatives), dest, tag)
+      if (allocated(result%polarizability_derivatives)) then
+         call send(comm, result%polarizability_derivatives, dest, tag)
+      end if
+   end subroutine send_polarizability_derivatives
+
+   subroutine recv_polarizability_derivatives(result, comm, source, tag, status)
+      !! The polarizability derivatives, when the sender had them
       type(calculation_result_t), intent(inout) :: result
+      type(comm_t), intent(in) :: comm
       integer, intent(in) :: source, tag
       type(MPI_Status), intent(inout) :: status
 
@@ -876,12 +895,7 @@ contains
          call send(comm, result%dipole_derivatives, dest, tag)
       end if
 
-      ! Polarizability derivatives, for Raman activities: the same shape as
-      ! the dipole derivatives with six rows in place of three.
-      call send(comm, allocated(result%polarizability_derivatives), dest, tag)
-      if (allocated(result%polarizability_derivatives)) then
-         call send(comm, result%polarizability_derivatives, dest, tag)
-      end if
+      call send_polarizability_derivatives(result, comm, dest, tag)
 
       ! Excited states, every array under one flag: the solver and the
       ! properties fill them together, so a receiver that got the energies
@@ -989,12 +1003,7 @@ contains
          call send(comm, result%dipole_derivatives, dest, tag)
       end if
 
-      ! Polarizability derivatives, for Raman activities: the same shape as
-      ! the dipole derivatives with six rows in place of three.
-      call send(comm, allocated(result%polarizability_derivatives), dest, tag)
-      if (allocated(result%polarizability_derivatives)) then
-         call send(comm, result%polarizability_derivatives, dest, tag)
-      end if
+      call send_polarizability_derivatives(result, comm, dest, tag)
 
       ! Excited states, every array under one flag: the solver and the
       ! properties fill them together, so a receiver that got the energies
@@ -1114,7 +1123,7 @@ contains
          call recv(comm, result%dipole_derivatives, source, tag, status)
       end if
 
-      call recv_polarizability_derivatives(comm, result, source, tag, status)
+      call recv_polarizability_derivatives(result, comm, source, tag, status)
 
       ! Receive excited states, every array under one flag
       call recv(comm, result%has_excited_states, source, tag, status)
@@ -1238,7 +1247,7 @@ contains
          call recv(comm, result%dipole_derivatives, source, tag, status)
       end if
 
-      call recv_polarizability_derivatives(comm, result, source, tag, status)
+      call recv_polarizability_derivatives(result, comm, source, tag, status)
 
       ! Receive excited states, every array under one flag
       call recv(comm, result%has_excited_states, source, tag, status)

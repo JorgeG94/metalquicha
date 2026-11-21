@@ -40,6 +40,7 @@ module mqc_config_adapter
    public :: check_counterpoise_support  !! Refuse a counterpoise this expansion cannot honour
    public :: check_pieda_support  !! Refuse a PIEDA request this expansion or driver cannot honour
    public :: check_interaction_energy_support
+   public :: check_raman_support
       !! Refuse an interaction-energy run the reduced expansion cannot honour
 
    type :: driver_config_t
@@ -567,6 +568,9 @@ contains
          if (.not. error%has_error()) then
             call check_interaction_energy_support(driver_config, nfrag_to_use, error)
          end if
+      end if
+      if (present(error)) then
+         if (.not. error%has_error()) call check_raman_support(driver_config, error)
       end if
 
       ! Output control
@@ -1103,6 +1107,27 @@ contains
          end if
       end if
    end subroutine check_pieda_support
+
+   subroutine check_raman_support(driver_config, error)
+      !! Refuse `properties.raman` where the fragmentation does not assemble it
+      !!
+      !! Silent for an unfragmented run and for a many-body expansion over
+      !! disjoint fragments, which assembles the polarizability derivatives
+      !! beside the dipole's. Overlapping fragments and the embedded schemes
+      !! assemble neither, and would finish with the column missing.
+      type(driver_config_t), intent(in) :: driver_config
+      type(error_t), intent(inout) :: error
+
+      if (.not. driver_config%method_config%properties%raman) return
+      if (driver_config%nlevel <= 0) return
+      if (trim(driver_config%expansion_kind) == "mbe" &
+          .and. .not. driver_config%allow_overlapping_fragments) return
+      call error%set(ERROR_VALIDATION, "properties.raman is assembled only by a "// &
+                     "many-body expansion over disjoint fragments "// &
+                     "(keywords.fragmentation.method 'mbe'). Overlapping fragments "// &
+                     "and the embedded schemes do not carry the polarizability "// &
+                     "derivatives into the whole system's.")
+   end subroutine check_raman_support
 
    subroutine check_interaction_energy_support(driver_config, n_fragments, error)
       !! Refuse an interaction-energy run the reduced expansion cannot honour

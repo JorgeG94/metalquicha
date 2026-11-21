@@ -453,8 +453,16 @@ one rank. On four ranks the activities are the serial ones to
 
 The displacement method is refused for a capped fragment, which it would have
 to rebuild at every displaced geometry; the analytic and finite-field methods
-work at the one geometry the fragment was built at. Nothing is assembled with
-overlapping fragments or under counterpoise.
+work at the one geometry the fragment was built at. A capped fragment has no
+analytic Hessian, so its Hessian is differenced from gradients and its
+polarizability derivatives are taken beside that, at the reference geometry.
+A fragment that lost orbitals to linear dependence takes the finite-field
+method whichever was asked for. The capped path has been run end to end but
+has no external reference: hydrogen caps change the fragments, so no order of
+the expansion reproduces the unfragmented molecule.
+
+A deck with overlapping fragments is refused, and nothing is assembled under
+counterpoise.
 
 Limits
 ------

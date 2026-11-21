@@ -3,6 +3,7 @@ module mqc_mbe
    !! Implements hierarchical many-body expansion for fragment-based quantum chemistry
    !! calculations with MPI parallelization and energy/gradient computation.
    use pic_types, only: int32, int64, dp
+   use mqc_symmetric_tensor, only: N_SYMMETRIC
    use mqc_combinatorics, only: fragment_size_of, vmfc_row_subset_key, is_auxiliary_row, real_count_of, &
                                 rows_match_counterpoise, counterpoise_scheme_name, COUNTERPOISE_NONE, &
                                 COUNTERPOISE_VMFC, COUNTERPOISE_SSFC
@@ -38,10 +39,6 @@ module mqc_mbe
    public :: collect_unconverged
    public :: score_unconverged
       !! The fragments that failed, with what they were built from
-
-   integer, parameter :: N_POLARIZABILITY = 6
-      !! Independent components of the polarizability, the leading extent of
-      !! its derivatives
 
 contains
 
@@ -1084,7 +1081,7 @@ contains
          mbe_result%dipole_derivatives = 0.0_dp
       end if
       if (compute_raman) then
-         allocate (mbe_result%polarizability_derivatives(N_POLARIZABILITY, hess_dim))
+         allocate (mbe_result%polarizability_derivatives(N_SYMMETRIC, hess_dim))
          mbe_result%polarizability_derivatives = 0.0_dp
       end if
 
@@ -1328,33 +1325,19 @@ contains
             integer :: n_at, n_modes
 
             call logger%info("  Computing vibrational analysis (projecting trans/rot modes)...")
-            if (compute_raman) then
-               call compute_vibrational_analysis(mbe_result%hessian, sys_geom%element_numbers, frequencies, &
-                                                 reduced_masses, force_constants, cart_disp, &
-                                                 coordinates=sys_geom%coordinates, &
-                                                 project_trans_rot=.true., &
-                                                 force_constants_mdyne=fc_mdyne, &
-                                                 dipole_derivatives=mbe_result%dipole_derivatives, &
-                                                 ir_intensities=ir_intensities, &
-                                                 polarizability_derivatives= &
-                                                 mbe_result%polarizability_derivatives, &
-                                                 raman_activities=raman_activities, &
-                                                 raman_depolarization=raman_depolarization)
-            else if (compute_dipole_derivs) then
-               call compute_vibrational_analysis(mbe_result%hessian, sys_geom%element_numbers, frequencies, &
-                                                 reduced_masses, force_constants, cart_disp, &
-                                                 coordinates=sys_geom%coordinates, &
-                                                 project_trans_rot=.true., &
-                                                 force_constants_mdyne=fc_mdyne, &
-                                                 dipole_derivatives=mbe_result%dipole_derivatives, &
-                                                 ir_intensities=ir_intensities)
-            else
-               call compute_vibrational_analysis(mbe_result%hessian, sys_geom%element_numbers, frequencies, &
-                                                 reduced_masses, force_constants, cart_disp, &
-                                                 coordinates=sys_geom%coordinates, &
-                                                 project_trans_rot=.true., &
-                                                 force_constants_mdyne=fc_mdyne)
-            end if
+            ! An unallocated derivative array is an absent argument, so one
+            ! call serves a run with neither, either or both.
+            call compute_vibrational_analysis(mbe_result%hessian, sys_geom%element_numbers, frequencies, &
+                                              reduced_masses, force_constants, cart_disp, &
+                                              coordinates=sys_geom%coordinates, &
+                                              project_trans_rot=.true., &
+                                              force_constants_mdyne=fc_mdyne, &
+                                              dipole_derivatives=mbe_result%dipole_derivatives, &
+                                              ir_intensities=ir_intensities, &
+                                              polarizability_derivatives= &
+                                              mbe_result%polarizability_derivatives, &
+                                              raman_activities=raman_activities, &
+                                              raman_depolarization=raman_depolarization)
 
             if (allocated(frequencies)) then
                ! Compute thermochemistry
@@ -1365,31 +1348,15 @@ contains
                                             spin_multiplicity=sys_geom%multiplicity)
 
                ! Print vibrational analysis to log
-               if (allocated(raman_activities)) then
-                  call print_vibrational_analysis(frequencies, reduced_masses, force_constants, &
-                                                  cart_disp, sys_geom%element_numbers, &
-                                                  force_constants_mdyne=fc_mdyne, &
-                                                  ir_intensities=ir_intensities, &
-                                                  coordinates=sys_geom%coordinates, &
-                                                  electronic_energy=mbe_result%total_energy, &
-                                                  raman_activities=raman_activities, &
-                                                  raman_depolarization=raman_depolarization)
-               else if (allocated(ir_intensities)) then
-                  call print_vibrational_analysis(frequencies, reduced_masses, force_constants, &
-                                                  cart_disp, sys_geom%element_numbers, &
-                                                  force_constants_mdyne=fc_mdyne, &
-                                                  ir_intensities=ir_intensities, &
-                                                  coordinates=sys_geom%coordinates, &
-                                                  electronic_energy=mbe_result%total_energy, &
-                                                  spin_multiplicity=sys_geom%multiplicity)
-               else
-                  call print_vibrational_analysis(frequencies, reduced_masses, force_constants, &
-                                                  cart_disp, sys_geom%element_numbers, &
-                                                  force_constants_mdyne=fc_mdyne, &
-                                                  coordinates=sys_geom%coordinates, &
-                                                  electronic_energy=mbe_result%total_energy, &
-                                                  spin_multiplicity=sys_geom%multiplicity)
-               end if
+               call print_vibrational_analysis(frequencies, reduced_masses, force_constants, &
+                                               cart_disp, sys_geom%element_numbers, &
+                                               force_constants_mdyne=fc_mdyne, &
+                                               ir_intensities=ir_intensities, &
+                                               coordinates=sys_geom%coordinates, &
+                                               electronic_energy=mbe_result%total_energy, &
+                                               raman_activities=raman_activities, &
+                                               raman_depolarization=raman_depolarization, &
+                                               spin_multiplicity=sys_geom%multiplicity)
 
                ! Populate json_data for vibrational output if present
                if (present(json_data)) then
