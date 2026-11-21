@@ -1316,6 +1316,10 @@ contains
                      "geometries"
             else if (settings%hessian_method /= HESSIAN_METHOD_ANALYTIC) then
                why = "it accompanies the analytic Hessian"
+            else if (settings%second_order .or. settings%gdm) then
+               why = "the displaced references are converged by DIIS alone, and "// &
+                     "could land on another solution than a second-order or "// &
+                     "direct-minimisation reference"
             end if
             if (len(why) > 0) then
                call result%error%set(ERROR_VALIDATION, "properties.raman is implemented "// &
@@ -1720,6 +1724,16 @@ contains
                                   "density-fitted unrestricted reference has not been "// &
                                   "validated and is refused. Run the reference without "// &
                                   "keywords.scf.density_fitting.")
+            result%has_error = .true.
+            if (kohn_sham) call xc%destroy()
+            call mol%destroy()
+            return
+         end if
+         if (settings%raman .and. xc%pt2_fraction /= 0.0_dp) then
+            call result%error%set(ERROR_VALIDATION, "properties.raman is not "// &
+                                  "implemented with a double hybrid: the "// &
+                                  "polarizability differenced would be its hybrid "// &
+                                  "part's, without the perturbative term.")
             result%has_error = .true.
             if (kohn_sham) call xc%destroy()
             call mol%destroy()

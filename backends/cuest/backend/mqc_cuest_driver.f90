@@ -122,6 +122,13 @@ contains
          call record_failure(result, error)
          return
       end if
+      if (settings%raman) then
+         call error%set(ERROR_VALIDATION, "properties.raman asks for Raman "// &
+                        "activities, which the cuEST backend does not have. "// &
+                        "Refused rather than run without them. Use the CPU backend.")
+         call record_failure(result, error)
+         return
+      end if
       if (settings%gdm) then
          call error%set(ERROR_VALIDATION, "keywords.scf.gdm asks for geometric "// &
                         "direct minimisation, which the cuEST backend does not "// &

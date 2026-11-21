@@ -283,6 +283,12 @@ contains
       call refuse_unsupported(settings, error)
       if (error%has_error()) return
 
+      if (settings%raman) then
+         call error%set(ERROR_VALIDATION, "properties.raman asks for Raman "// &
+                        "activities, which this bridge does not forward to terco. "// &
+                        "Refused rather than run without them. Use the CPU backend.")
+         return
+      end if
       if (settings%restricted_open) then
          call error%set(ERROR_VALIDATION, "model.restricted_open asks for a "// &
                         "restricted open-shell reference, which this bridge does "// &

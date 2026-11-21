@@ -197,38 +197,19 @@ contains
                end if
 
                ! Compute full vibrational analysis and print (with IR intensities if available)
-               if (result%has_dipole_derivatives) then
-                  call compute_vibrational_analysis(result%hessian, sys_geom%element_numbers, frequencies, &
-                                                    reduced_masses, force_constants, cart_disp, &
-                                                    coordinates=sys_geom%coordinates, &
-                                                    project_trans_rot=.true., &
-                                                    force_constants_mdyne=fc_mdyne, &
-                                                    dipole_derivatives=result%dipole_derivatives, &
-                                                    ir_intensities=ir_intensities, &
-                                                    polarizability_derivatives= &
-                                                    result%polarizability_derivatives, &
-                                                    raman_activities=raman_activities, &
-                                                    raman_depolarization=raman_depolarization)
-               else if (allocated(result%polarizability_derivatives)) then
-                  ! Reached only without dipole derivatives, which every route
-                  ! that builds polarizability derivatives also builds; kept so
-                  ! a Raman request is never silently dropped.
-                  call compute_vibrational_analysis(result%hessian, sys_geom%element_numbers, frequencies, &
-                                                    reduced_masses, force_constants, cart_disp, &
-                                                    coordinates=sys_geom%coordinates, &
-                                                    project_trans_rot=.true., &
-                                                    force_constants_mdyne=fc_mdyne, &
-                                                    polarizability_derivatives= &
-                                                    result%polarizability_derivatives, &
-                                                    raman_activities=raman_activities, &
-                                                    raman_depolarization=raman_depolarization)
-               else
-                  call compute_vibrational_analysis(result%hessian, sys_geom%element_numbers, frequencies, &
-                                                    reduced_masses, force_constants, cart_disp, &
-                                                    coordinates=sys_geom%coordinates, &
-                                                    project_trans_rot=.true., &
-                                                    force_constants_mdyne=fc_mdyne)
-               end if
+               ! An unallocated derivative array is an absent argument, so one
+               ! call serves a run with neither, either or both.
+               call compute_vibrational_analysis(result%hessian, sys_geom%element_numbers, frequencies, &
+                                                 reduced_masses, force_constants, cart_disp, &
+                                                 coordinates=sys_geom%coordinates, &
+                                                 project_trans_rot=.true., &
+                                                 force_constants_mdyne=fc_mdyne, &
+                                                 dipole_derivatives=result%dipole_derivatives, &
+                                                 ir_intensities=ir_intensities, &
+                                                 polarizability_derivatives= &
+                                                 result%polarizability_derivatives, &
+                                                 raman_activities=raman_activities, &
+                                                 raman_depolarization=raman_depolarization)
 
                if (allocated(frequencies)) then
                   ! Compute thermochemistry for JSON output
@@ -245,28 +226,18 @@ contains
                                                   spin_multiplicity=sys_geom%multiplicity)
 
                      ! Print vibrational analysis to log
-                     if (allocated(ir_intensities)) then
-                        ! An unallocated Raman array is an absent argument.
-                        call print_vibrational_analysis(frequencies, reduced_masses, force_constants, &
-                                                        cart_disp, sys_geom%element_numbers, &
-                                                        force_constants_mdyne=fc_mdyne, &
-                                                        ir_intensities=ir_intensities, &
-                                                        coordinates=sys_geom%coordinates, &
-                                                        electronic_energy=result%energy%total(), &
-                                                        temperature=config%hessian%temperature, &
-                                                        pressure=config%hessian%pressure, &
-                                                        raman_activities=raman_activities, &
-                                                        raman_depolarization=raman_depolarization, &
-                                                        spin_multiplicity=sys_geom%multiplicity)
-                     else
-                        call print_vibrational_analysis(frequencies, reduced_masses, force_constants, &
-                                                        cart_disp, sys_geom%element_numbers, &
-                                                        force_constants_mdyne=fc_mdyne, &
-                                                        coordinates=sys_geom%coordinates, &
-                                                        electronic_energy=result%energy%total(), &
-                                               temperature=config%hessian%temperature, pressure=config%hessian%pressure, &
-                                                        spin_multiplicity=sys_geom%multiplicity)
-                     end if
+                     ! An unallocated intensity array is an absent argument.
+                     call print_vibrational_analysis(frequencies, reduced_masses, force_constants, &
+                                                     cart_disp, sys_geom%element_numbers, &
+                                                     force_constants_mdyne=fc_mdyne, &
+                                                     ir_intensities=ir_intensities, &
+                                                     coordinates=sys_geom%coordinates, &
+                                                     electronic_energy=result%energy%total(), &
+                                                     temperature=config%hessian%temperature, &
+                                                     pressure=config%hessian%pressure, &
+                                                     raman_activities=raman_activities, &
+                                                     raman_depolarization=raman_depolarization, &
+                                                     spin_multiplicity=sys_geom%multiplicity)
 
                      ! Populate json_data if present (for centralized JSON output)
                      if (present(json_data)) then
