@@ -102,6 +102,13 @@ module mqc_cuest_iface
       character(len=:), allocatable :: charges_scheme
          !! Atomic partial charges from `properties.charges`, unallocated when
          !! none were asked for.
+      logical :: natural_orbitals = .false.
+         !! Natural occupations from `properties.natural_orbitals`
+      logical :: intrinsic_orbitals = .false.
+         !! IAO charges and IBOs from `properties.intrinsic_orbitals`
+      integer :: intrinsic_exponent = 4
+      character(len=16) :: properties_density = "scf"
+         !! `properties.density`: "scf" or "relaxed"
       character(len=:), allocatable :: bond_order_scheme
          !! Bond orders over the converged density from
          !! `properties.bond_orders`, unallocated when none were asked for.
@@ -192,6 +199,8 @@ module mqc_cuest_iface
          !! Node-local MPI rank; decides which GPU this rank binds to
       logical :: unrestricted = .false.
          !! Force UHF/UKS even for a closed shell
+      logical :: restricted_open = .false.
+         !! ROHF/ROKS for an open shell; the CPU backend only
 
       logical :: allow_crap_scf = .false.
          !! Keep a non-converged SCF instead of failing the fragment. Same
@@ -251,6 +260,10 @@ contains
       if (allocated(properties%bond_order_scheme)) then
          settings%bond_order_scheme = properties%bond_order_scheme
       end if
+      settings%natural_orbitals = properties%natural_orbitals
+      settings%intrinsic_orbitals = properties%intrinsic_orbitals
+      settings%intrinsic_exponent = properties%intrinsic_exponent
+      settings%properties_density = properties%density
    end subroutine apply_properties_settings
 
    subroutine apply_scf_settings(settings, options)
@@ -274,6 +287,7 @@ contains
       settings%freeze_core = options%freeze_core
       settings%n_frozen_core = options%n_frozen_core
       settings%unrestricted = options%unrestricted
+      settings%restricted_open = options%restricted_open
       settings%guess = options%guess
       if (allocated(options%guess_steps)) settings%guess_steps = options%guess_steps
       settings%max_iter = options%max_iter

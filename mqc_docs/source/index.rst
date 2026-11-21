@@ -46,6 +46,8 @@ The API docs for the code itself can be found here: https://jorgeg94.github.io/m
    rijcosx
    charges_and_bond_orders
    bonding_analysis
+   natural_orbitals
+   intrinsic_orbitals
    makefp
    sapt
    sapt_ligand_scan

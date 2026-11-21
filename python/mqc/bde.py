@@ -37,10 +37,10 @@ the extra electron in a singly occupied orbital. It runs, and radicals are
 xTB's weak point; the result says so in ``warnings``. No ``<S^2>`` is reported
 for xTB, and none of the ab initio backends' ``spin_squared`` reaches the JSON.
 
-**Electronic entropy.** The Fortran thermochemistry has ``S_elec = R ln(2S+1)``
-but no caller gives it the multiplicity, so it reports 0 for a radical. The
-spin term is added here, for every species (`mqc._thermo.free_energy_correction`),
-so ``dG`` and the free energies carry it. It does not enter ``D_e``, ``D0`` or
+**Electronic entropy.** ``S_elec = R ln(2S+1)`` is computed here, for every
+species (`mqc._thermo.free_energy_correction`), from the species' own
+multiplicity, so ``dG`` and the free energies carry it. The Fortran
+thermochemistry block reports the same term, and is not what is used. It does not enter ``D_e``, ``D0`` or
 ``BDE(298)``, which are enthalpies.
 
 **An atom** (an H radical, a halogen) is not given a Hessian: it is one single

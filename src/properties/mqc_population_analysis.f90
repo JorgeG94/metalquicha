@@ -22,6 +22,7 @@ module mqc_population_analysis
    !! name of the scheme that produced it.
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
+   use pic_lapack_interfaces, only: pic_syev
    use mqc_error, only: error_t, ERROR_VALIDATION
    implicit none
    private
@@ -33,11 +34,73 @@ module mqc_population_analysis
    public :: mayer_atomic_bond_orders_open_shell
    public :: mayer_atomic_valences
    public :: renormalise_populations   !! Grid-integrated populations to an exact count
+   public :: lowdin_density            !! `S^1/2 D S^1/2`, the density over Lowdin's orthonormal functions
+   public :: identity_overlap          !! The overlap of that basis, for the routines above
 
    real(dp), parameter, public :: GRID_DEFICIT_WARNING = 1.0e-4_dp
       !! Electrons a grid may miss before a partition integrated on it says so.
 
 contains
+
+   subroutine lowdin_density(density, overlap, lowdin, error)
+      !! A density in Lowdin's symmetrically orthogonalised basis
+      !!
+      !! `S^1/2 D S^1/2`. Each orthonormal function is the one closest, in the
+      !! least-squares sense, to the atomic function it came from, so it still
+      !! belongs to that function's atom and the AO-to-atom map is unchanged.
+      !!
+      !! In this basis the overlap is the identity, and the population and
+      !! bond-order routines here become Lowdin's charges and Wiberg's bond
+      !! index when handed this matrix and `identity_overlap`:
+      !! `mulliken_atomic_charges` sums its diagonal per atom, and
+      !! `mayer_atomic_bond_orders` sums its squared elements per atom pair.
+      real(dp), intent(in) :: density(:, :), overlap(:, :)   !! (n_ao, n_ao)
+      real(dp), allocatable, intent(out) :: lowdin(:, :)     !! (n_ao, n_ao)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: vectors(:, :), values(:), root(:, :), work(:, :)
+      integer :: n, i, info
+
+      if (error%has_error()) return
+      n = size(density, 1)
+      if (size(density, 2) /= n .or. size(overlap, 1) /= n .or. size(overlap, 2) /= n) then
+         call error%set(ERROR_VALIDATION, "Lowdin orthogonalisation: the density and "// &
+                        "the overlap are not the same square size")
+         return
+      end if
+      allocate (vectors(n, n), values(n))
+      vectors = overlap
+      call pic_syev(vectors, values, jobz="V", uplo="U", info=info)
+      if (info /= 0 .or. minval(values) <= 0.0_dp) then
+         call error%set(ERROR_VALIDATION, "Lowdin orthogonalisation: the overlap "// &
+                        "matrix is not positive definite")
+         return
+      end if
+      ! S^1/2 = V s^1/2 V^T. Nothing is dropped: unlike S^-1/2, the square
+      ! root of a nearly singular overlap is well conditioned.
+      allocate (root(n, n), work(n, n), lowdin(n, n))
+      do i = 1, n
+         work(:, i) = vectors(:, i)*sqrt(values(i))
+      end do
+      call pic_gemm(work, vectors, root, transb="T", beta=0.0_dp)
+      call pic_gemm(density, root, work, beta=0.0_dp)
+      call pic_gemm(root, work, lowdin, beta=0.0_dp)
+      lowdin = 0.5_dp*(lowdin + transpose(lowdin))
+   end subroutine lowdin_density
+
+   pure function identity_overlap(n) result(overlap)
+      !! The overlap matrix of an orthonormal basis of `n` functions
+      integer, intent(in) :: n
+      real(dp), allocatable :: overlap(:, :)
+
+      integer :: i
+
+      allocate (overlap(n, n))
+      overlap = 0.0_dp
+      do i = 1, n
+         overlap(i, i) = 1.0_dp
+      end do
+   end function identity_overlap
 
    subroutine ao_owner_from_counts(counts, owner)
       !! Expand a per-atom count of basis functions into a per-function owner
