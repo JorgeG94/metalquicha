@@ -8,6 +8,7 @@ module mqc_vibrational_analysis
    use pic_logger, only: logger => global_logger, verbose_level
    use mqc_physical_constants, only: AU_TO_CM1, AU_TO_MDYNE_ANG, AU_TO_KMMOL, AMU_TO_AU, &
                                      BOHR_TO_ANGSTROM
+   use mqc_symmetric_tensor, only: N_SYMMETRIC
    use mqc_thermochemistry, only: thermochemistry_result_t, compute_thermochemistry, print_thermochemistry
    implicit none
    private
@@ -21,9 +22,6 @@ module mqc_vibrational_analysis
    public :: compute_cartesian_displacements
    public :: compute_ir_intensities
    public :: compute_raman_activities
-
-   integer, parameter :: N_SYMMETRIC = 6
-      !! Independent components of a symmetric 3x3 tensor: xx, yy, zz, xy, xz, yz
    public :: print_vibrational_analysis
 
    real(dp), parameter :: TR_NULL_TOL = 1.0e-10_dp
@@ -691,6 +689,14 @@ contains
       real(dp), allocatable, intent(out), optional :: depolarization(:)
          !! One per mode; zero where the activity vanishes
 
+      ! The rotational averages of Placzek's theory for linearly polarized
+      ! light observed at a right angle: the scattering activity is
+      ! `45 a^2 + 7 g^2`, and the ratio of the perpendicular to the parallel
+      ! component `3 g^2 / (45 a^2 + 4 g^2)`.
+      real(dp), parameter :: ISOTROPIC_WEIGHT = 45.0_dp
+      real(dp), parameter :: ACTIVITY_ANISOTROPY = 7.0_dp
+      real(dp), parameter :: POLARIZED_ANISOTROPY = 4.0_dp
+      real(dp), parameter :: DEPOLARIZED_ANISOTROPY = 3.0_dp
       integer :: n_coords, iatom, i, j
       real(dp) :: d(N_SYMMETRIC)
       real(dp) :: mean, aniso2, denominator
@@ -710,10 +716,12 @@ contains
          mean = (d(1) + d(2) + d(3))/3.0_dp
          aniso2 = 0.5_dp*((d(1) - d(2))**2 + (d(2) - d(3))**2 + (d(3) - d(1))**2) &
                   + 3.0_dp*(d(4)**2 + d(5)**2 + d(6)**2)
-         activities(i) = 45.0_dp*mean**2 + 7.0_dp*aniso2
-         denominator = 45.0_dp*mean**2 + 4.0_dp*aniso2
+         activities(i) = ISOTROPIC_WEIGHT*mean**2 + ACTIVITY_ANISOTROPY*aniso2
+         denominator = ISOTROPIC_WEIGHT*mean**2 + POLARIZED_ANISOTROPY*aniso2
          ratio(i) = 0.0_dp
-         if (denominator > tiny(1.0_dp)) ratio(i) = 3.0_dp*aniso2/denominator
+         if (denominator > tiny(1.0_dp)) then
+            ratio(i) = DEPOLARIZED_ANISOTROPY*aniso2/denominator
+         end if
       end do
       if (present(depolarization)) call move_alloc(ratio, depolarization)
    end subroutine compute_raman_activities

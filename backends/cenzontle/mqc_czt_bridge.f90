@@ -1292,11 +1292,11 @@ contains
       pcm_pte = settings%pcm%enabled .and. trim(settings%pcm%correlation) == "pte"
       pcm_ptd = settings%pcm%enabled .and. trim(settings%pcm%correlation) == "ptd"
 
-      ! Raman activities difference the closed-shell polarizability, exact
-      ! integrals, and ride on the analytic Hessian's branch below. Anything
-      ! that would take the Hessian elsewhere, or that the displaced
-      ! references would not reproduce, is refused rather than left to run
-      ! without them.
+      ! Raman activities need the closed-shell polarizability's Cartesian
+      ! derivatives over exact integrals, and ride on the analytic Hessian's
+      ! branch below. Anything that would take the Hessian elsewhere, or that
+      ! the routes to those derivatives do not carry, is refused rather than
+      ! left to run without them.
       if (settings%raman) then
          block
             character(len=:), allocatable :: why
@@ -1307,16 +1307,26 @@ contains
             else if (settings%run_mp2 .or. settings%run_cc) then
                why = "a correlated polarizability is not built"
             else if (settings%density_fitting) then
-               why = "the displaced references are not density fitted"
+               why = "the polarizability derivatives are not built over fitted "// &
+                     "integrals"
             else if (settings%pcm%enabled) then
-               why = "the displaced references carry no continuum"
+               why = "the polarizability derivatives carry no continuum"
             else if (len_trim(settings%ecp_set) > 0) then
-               why = "the displaced references carry no effective core potential"
+               why = "the polarizability derivatives carry no effective core "// &
+                     "potential"
             else if (fragment%n_caps > 0 .or. any(fragment%ghost_mask())) then
                why = "capped and ghosted fragments are not rebuilt at displaced "// &
                      "geometries"
             else if (settings%hessian_method /= HESSIAN_METHOD_ANALYTIC) then
                why = "it accompanies the analytic Hessian"
+            else if ((settings%second_order .or. settings%gdm) &
+                     .and. (trim(settings%raman_method) /= "analytic" &
+                            .or. len_trim(settings%functional) > 0)) then
+               ! The analytic route reads the reference's own orbitals and
+               ! runs no further SCF; the two differenced routes do.
+               why = "the differenced references are converged by DIIS alone, and "// &
+                     "could land on another solution than a second-order or "// &
+                     "direct-minimisation reference"
             end if
             if (len(why) > 0) then
                call result%error%set(ERROR_VALIDATION, "properties.raman is implemented "// &
@@ -1721,6 +1731,16 @@ contains
                                   "density-fitted unrestricted reference has not been "// &
                                   "validated and is refused. Run the reference without "// &
                                   "keywords.scf.density_fitting.")
+            result%has_error = .true.
+            if (kohn_sham) call xc%destroy()
+            call mol%destroy()
+            return
+         end if
+         if (settings%raman .and. xc%pt2_fraction /= 0.0_dp) then
+            call result%error%set(ERROR_VALIDATION, "properties.raman is not "// &
+                                  "implemented with a double hybrid: the "// &
+                                  "polarizability differenced would be its hybrid "// &
+                                  "part's, without the perturbative term.")
             result%has_error = .true.
             if (kohn_sham) call xc%destroy()
             call mol%destroy()

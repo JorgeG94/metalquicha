@@ -20,6 +20,8 @@ module mqc_scf_convergence
    !!   about.
    !! * `CONV_METRIC_STANDARD` is both, and the default.
    use pic_types, only: dp
+   use mqc_calculation_defaults, only: DIFFERENCED_SCF_ENERGY_TOL, &
+                                       DIFFERENCED_SCF_GRADIENT_TOL
    implicit none
    private
 
@@ -61,9 +63,24 @@ module mqc_scf_convergence
       procedure :: is_converged
       procedure :: describe
       procedure :: commutator_bound
+      procedure :: for_differencing
    end type scf_convergence_t
 
 contains
+
+   pure function for_differencing(this) result(tight)
+      !! This rule tightened to what a finite difference of the result needs
+      !!
+      !! The metric is kept. The tolerance is lowered to
+      !! `DIFFERENCED_SCF_ENERGY_TOL` unless it is already tighter, and the
+      !! orbital gradient is bounded by `DIFFERENCED_SCF_GRADIENT_TOL`.
+      class(scf_convergence_t), intent(in) :: this
+      type(scf_convergence_t) :: tight
+
+      tight%metric = this%metric
+      tight%tolerance = min(this%tolerance, DIFFERENCED_SCF_ENERGY_TOL)
+      tight%gradient_tolerance = DIFFERENCED_SCF_GRADIENT_TOL
+   end function for_differencing
 
    pure function commutator_bound(this) result(bound)
       !! The commutator threshold in force, derived or stated

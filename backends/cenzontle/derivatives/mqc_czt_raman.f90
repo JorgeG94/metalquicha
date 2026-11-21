@@ -18,7 +18,13 @@ module mqc_czt_raman
    !! one. A measured Raman spectrum is taken at a laser frequency, and near
    !! an electronic absorption the two differ a great deal.
    use pic_types, only: dp
+   use pic_io, only: to_char
    use pic_logger, only: logger => global_logger
+   use mqc_calculation_defaults, only: DEFAULT_DISPLACEMENT, PROPERTY_RESPONSE_TOL, &
+                                       DIFFERENCED_SCF_ENERGY_TOL, &
+                                       DIFFERENCED_SCF_DENSITY_TOL
+   use mqc_symmetric_tensor, only: pack_symmetric, N_SYMMETRIC, SYMMETRIC_ROW, &
+                                   SYMMETRIC_COL
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf, SCF_GUESS_SAD
@@ -40,20 +46,11 @@ module mqc_czt_raman
    public :: polarizability_derivatives
    public :: polarizability_derivatives_field
    public :: polarizability_derivatives_analytic
-   public :: RAMAN_FIELD
-   public :: RAMAN_STEP
 
-   real(dp), parameter :: RAMAN_STEP = 5.0e-3_dp
-      !! Displacement in Bohr. The error of a central difference is quadratic
-      !! in it: 3e-5 Bohr^2 on water's derivatives of order ten, measured by
-      !! the translational sum rule, which is the sixth figure of an activity.
-   real(dp), parameter :: SCF_ENERGY_TOL = 1.0e-12_dp
-   real(dp), parameter :: SCF_DENSITY_TOL = 1.0e-10_dp
-   real(dp), parameter :: SCF_GRAD_TOL = 1.0e-10_dp
-      !! Far tighter than an energy needs: the polarizabilities are
-      !! differenced, which divides their noise by the step. An orbital
-      !! gradient of 1e-8 left the derivatives 3e-6 off.
-   real(dp), parameter :: RESPONSE_TOL = 1.0e-10_dp
+   ! The displacement is the Hessian's default, 5e-3 Bohr. A central
+   ! difference's error is quadratic in it: 3e-5 Bohr^2 on water's
+   ! derivatives of order ten, measured by the translational sum rule, which
+   ! is the sixth figure of an activity.
    real(dp), parameter :: RAMAN_FIELD = 1.0e-3_dp
       !! Field strength in atomic units for the finite-field route. The error
       !! of the second difference is quadratic in it and was measured on
@@ -64,9 +61,6 @@ module mqc_czt_raman
    integer, parameter :: N_FIELDS = 12
       !! Fields the second differences need: plus and minus each axis, and
       !! plus and minus each pair of axes together
-   integer, parameter :: N_COMPONENTS = 6
-      !! Independent components of the symmetric tensor: xx, yy, zz, xy, xz, yz
-   integer, parameter :: LINE_LEN = 160
 
 contains
 
@@ -92,21 +86,19 @@ contains
          !! tightened to what a differenced polarizability needs.
       real(dp), intent(out) :: alpha(3, 3)   !! At `coords`, Bohr^3
       real(dp), allocatable, intent(out) :: dalpha(:, :)
-         !! (6, 3*n_atoms) in Bohr^2: the components `xx, yy, zz, xy, xz, yz`
-         !! of the derivative with respect to coordinate `3*(atom-1) + xyz`
+         !! (N_SYMMETRIC, 3*n_atoms) in Bohr^2: the components
+         !! `xx, yy, zz, xy, xz, yz` of the derivative with respect to
+         !! coordinate `3*(atom-1) + xyz`
       type(error_t), intent(inout) :: error
 
       real(dp) :: moved(3, size(coords, 2)), plus(3, 3), minus(3, 3), diff(3, 3)
       type(scf_convergence_t) :: tight
-      integer :: n_atoms, iatom, comp, k
-      character(len=LINE_LEN) :: line
+      integer :: n_atoms, iatom, comp
 
       if (error%has_error()) return
       n_atoms = size(coords, 2)
-      tight = convergence
-      tight%tolerance = min(convergence%tolerance, SCF_ENERGY_TOL)
-      tight%gradient_tolerance = SCF_GRAD_TOL
-      allocate (dalpha(6, 3*n_atoms))
+      tight = convergence%for_differencing()
+      allocate (dalpha(N_SYMMETRIC, 3*n_atoms))
       dalpha = 0.0_dp
 
       call polarizability_at(settings, element_numbers, symbols, coords, nelec, &
@@ -114,17 +106,16 @@ contains
                              alpha, error)
       if (error%has_error()) return
 
-      write (line, "(a,i0,a)") "  Raman: differencing the polarizability over ", &
-         6*n_atoms, " displaced geometries"
-      call logger%info(trim(line))
+      call logger%info("  Raman: differencing the polarizability over "// &
+                       to_char(2*3*n_atoms)//" displaced geometries")
       do iatom = 1, n_atoms
          do comp = 1, 3
             moved = coords
-            moved(comp, iatom) = coords(comp, iatom) + RAMAN_STEP
+            moved(comp, iatom) = coords(comp, iatom) + DEFAULT_DISPLACEMENT
             call polarizability_at(settings, element_numbers, symbols, moved, nelec, &
                                    reference_density, accelerator, diis_vectors, tight, &
                                    plus, error)
-            moved(comp, iatom) = coords(comp, iatom) - RAMAN_STEP
+            moved(comp, iatom) = coords(comp, iatom) - DEFAULT_DISPLACEMENT
             call polarizability_at(settings, element_numbers, symbols, moved, nelec, &
                                    reference_density, accelerator, diis_vectors, tight, &
                                    minus, error)
@@ -132,16 +123,8 @@ contains
                call error%add_context("Raman: a displaced polarizability")
                return
             end if
-            diff = (plus - minus)/(2.0_dp*RAMAN_STEP)
-            ! The tensor is symmetric; the average of the two off-diagonal
-            ! elements removes what the response solver's tolerance leaves.
-            k = 3*(iatom - 1) + comp
-            dalpha(1, k) = diff(1, 1)
-            dalpha(2, k) = diff(2, 2)
-            dalpha(3, k) = diff(3, 3)
-            dalpha(4, k) = 0.5_dp*(diff(1, 2) + diff(2, 1))
-            dalpha(5, k) = 0.5_dp*(diff(1, 3) + diff(3, 1))
-            dalpha(6, k) = 0.5_dp*(diff(2, 3) + diff(3, 2))
+            diff = (plus - minus)/(2.0_dp*DEFAULT_DISPLACEMENT)
+            dalpha(:, 3*(iatom - 1) + comp) = pack_symmetric(diff)
          end do
       end do
    end subroutine polarizability_derivatives
@@ -181,7 +164,8 @@ contains
       type(xc_context_t), intent(inout), optional :: xc
          !! The reference's functional. Absent or inactive is Hartree-Fock.
 
-      integer, parameter :: PAIRS(2, 3) = reshape([1, 2, 1, 3, 2, 3], [2, 3])
+      ! The off-diagonal components, in the packed order xy, xz, yz.
+      integer, parameter :: OFF_DIAGONAL(2, 3) = reshape([1, 2, 1, 3, 2, 3], [2, 3])
       real(dp), allocatable :: dip(:, :, :), ddip(:, :, :, :, :)
       real(dp), allocatable :: g0(:, :), g(:, :, :), second(:, :, :)
       real(dp) :: origin(3), fields(3, N_FIELDS)
@@ -189,16 +173,13 @@ contains
       type(rhf_result_t) :: scf
       integer :: natm, k, l, ipair, ifield, iatom, comp, col
       logical :: kohn_sham
-      character(len=LINE_LEN) :: line
 
       alpha = 0.0_dp
       if (error%has_error()) return
       natm = mol%natm
       kohn_sham = .false.
       if (present(xc)) kohn_sham = xc%active
-      tight = convergence
-      tight%tolerance = min(convergence%tolerance, SCF_ENERGY_TOL)
-      tight%gradient_tolerance = SCF_GRAD_TOL
+      tight = convergence%for_differencing()
 
       ! The origin `r` is measured from. It moves the energy of a charged
       ! molecule by a constant per unit field and its gradient by a term
@@ -217,22 +198,21 @@ contains
          fields(k, 2*k) = -RAMAN_FIELD
       end do
       do ipair = 1, 3
-         fields(PAIRS(:, ipair), 5 + 2*ipair) = RAMAN_FIELD
-         fields(PAIRS(:, ipair), 6 + 2*ipair) = -RAMAN_FIELD
+         fields(OFF_DIAGONAL(:, ipair), 5 + 2*ipair) = RAMAN_FIELD
+         fields(OFF_DIAGONAL(:, ipair), 6 + 2*ipair) = -RAMAN_FIELD
       end do
 
-      write (line, "(a,i0,a)") "  Raman: differencing the gradient over ", N_FIELDS, &
-         " electric fields"
-      call logger%info(trim(line))
+      call logger%info("  Raman: differencing the gradient over "//to_char(N_FIELDS)// &
+                       " electric fields")
       call field_gradient([0.0_dp, 0.0_dp, 0.0_dp], g0, keep=scf)
       if (error%has_error()) return
       if (kohn_sham) then
          call static_polarizability(mol, scf%orbitals, scf%orbital_energies, &
-                                    scf%n_occupied, alpha, error, tol=RESPONSE_TOL, &
+                                    scf%n_occupied, alpha, error, tol=PROPERTY_RESPONSE_TOL, &
                                     xc=xc, density=scf%density)
       else
          call static_polarizability(mol, scf%orbitals, scf%orbital_energies, &
-                                    scf%n_occupied, alpha, error, tol=RESPONSE_TOL)
+                                    scf%n_occupied, alpha, error, tol=PROPERTY_RESPONSE_TOL)
       end if
       if (error%has_error()) return
 
@@ -252,20 +232,20 @@ contains
 
       ! Second derivatives of the gradient: the diagonal ones from each
       ! axis, the mixed ones from the pair fields less the two diagonals.
-      allocate (second(3, natm, 6))
+      allocate (second(3, natm, N_SYMMETRIC))
       do k = 1, 3
          second(:, :, k) = (g(:, :, 2*k - 1) + g(:, :, 2*k) - 2.0_dp*g0)/RAMAN_FIELD**2
       end do
       do ipair = 1, 3
-         k = PAIRS(1, ipair)
-         l = PAIRS(2, ipair)
+         k = OFF_DIAGONAL(1, ipair)
+         l = OFF_DIAGONAL(2, ipair)
          second(:, :, 3 + ipair) = 0.5_dp*((g(:, :, 5 + 2*ipair) + g(:, :, 6 + 2*ipair) &
                                             - 2.0_dp*g0)/RAMAN_FIELD**2 &
                                            - second(:, :, k) - second(:, :, l))
       end do
 
-      ! Components xx, yy, zz, xy, xz, yz, which is the order of `PAIRS`.
-      allocate (dalpha(6, 3*natm))
+      ! Components xx, yy, zz, xy, xz, yz, which is the order of `OFF_DIAGONAL`.
+      allocate (dalpha(N_SYMMETRIC, 3*natm))
       do iatom = 1, natm
          do comp = 1, 3
             col = 3*(iatom - 1) + comp
@@ -291,8 +271,9 @@ contains
          do a = 1, 3
             h_field = h_field + field(a)*dip(:, :, a)
          end do
-         call run_czt_rhf(mol, nelec, settings%max_iter, SCF_ENERGY_TOL, SCF_DENSITY_TOL, &
-                          .false., here, error, guess=SCF_GUESS_SAD, &
+         call run_czt_rhf(mol, nelec, settings%max_iter, DIFFERENCED_SCF_ENERGY_TOL, &
+                          DIFFERENCED_SCF_DENSITY_TOL, .false., here, error, &
+                          guess=SCF_GUESS_SAD, &
                           guess_density=reference_density, xc=xc, h_extra=h_field, &
                           level_shift=settings%level_shift, &
                           linear_dependence=settings%linear_dependence, &
@@ -366,8 +347,6 @@ contains
          !! lays it out
       type(error_t), intent(inout) :: error
 
-      integer, parameter :: PAIRS(2, N_COMPONENTS) = &
-                            reshape([1, 1, 2, 2, 3, 3, 1, 2, 1, 3, 2, 3], [2, N_COMPONENTS])
       real(dp), allocatable :: dip(:, :, :), ddip(:, :, :, :, :)
       real(dp), allocatable :: u1(:, :, :), u2(:, :, :), rhs(:, :, :)
       real(dp), allocatable :: d0(:, :), d1(:, :, :), d2(:, :, :), w2(:, :, :)
@@ -404,7 +383,7 @@ contains
       ! First order. `U^k` is the virtual-occupied block of the density's
       ! derivative per spin, so the total is twice it, symmetrised.
       call cphf_solve(mol, orbitals, orbital_energies, n_occ, perturbations=dip, &
-                      response=u1, error=error, tol=RESPONSE_TOL)
+                      response=u1, error=error, tol=PROPERTY_RESPONSE_TOL)
       if (error%has_error()) return
 
       ! Everything below is assembled in the orbital basis and carried back.
@@ -447,12 +426,12 @@ contains
       ! Second order. Idempotency fixes the occupied-occupied and
       ! virtual-virtual blocks of the density from the first-order ones;
       ! only the block between them is solved for.
-      allocate (dm2(n_mo, n_mo, 6), d2(n_ao, n_ao, 6), f2(n_mo, n_mo, 6))
+      allocate (dm2(n_mo, n_mo, N_SYMMETRIC), d2(n_ao, n_ao, N_SYMMETRIC), f2(n_mo, n_mo, N_SYMMETRIC))
       allocate (trial(n_mo, n_mo))
       dm2 = 0.0_dp
-      do c = 1, 6
-         k = PAIRS(1, c)
-         l = PAIRS(2, c)
+      do c = 1, N_SYMMETRIC
+         k = SYMMETRIC_ROW(c)
+         l = SYMMETRIC_COL(c)
          call pic_gemm(dm1(:, :, k), dm1(:, :, l), trial)
          trial = 0.5_dp*(trial + transpose(trial))
          dm2(:n_occ, :n_occ, c) = -trial(:n_occ, :n_occ)
@@ -463,10 +442,10 @@ contains
       scratch = d2
       call response_mean_field(mol, scratch, zero_h, g, error, bounds=bounds)
       if (error%has_error()) return
-      allocate (rhs(n_vir, n_occ, 6))
-      do c = 1, 6
-         k = PAIRS(1, c)
-         l = PAIRS(2, c)
+      allocate (rhs(n_vir, n_occ, N_SYMMETRIC))
+      do c = 1, N_SYMMETRIC
+         k = SYMMETRIC_ROW(c)
+         l = SYMMETRIC_COL(c)
          call to_mo(g(:, :, c), f2(:, :, c))
          ! The commutators `[F^k, P^l] + [F^l, P^k]` in the virtual-occupied
          ! block, `P` being the density per spin.
@@ -478,7 +457,7 @@ contains
       end do
       deallocate (g, scratch)
       call cphf_solve(mol, orbitals, orbital_energies, n_occ, response=u2, error=error, &
-                      tol=RESPONSE_TOL, mo_rhs=rhs)
+                      tol=PROPERTY_RESPONSE_TOL, mo_rhs=rhs)
       if (error%has_error()) then
          call error%add_context("Raman: the second-order field response")
          return
@@ -486,8 +465,8 @@ contains
 
       ! The solved block, and the mean field of it on top of the fixed
       ! blocks' one.
-      allocate (scratch(n_ao, n_ao, 6))
-      do c = 1, 6
+      allocate (scratch(n_ao, n_ao, N_SYMMETRIC))
+      do c = 1, N_SYMMETRIC
          trial = 0.0_dp
          trial(n_occ + 1:, :n_occ) = 2.0_dp*u2(:, :, c)
          trial(:n_occ, n_occ + 1:) = 2.0_dp*transpose(u2(:, :, c))
@@ -497,7 +476,7 @@ contains
       end do
       call response_mean_field(mol, scratch, zero_h, g, error, bounds=bounds)
       if (error%has_error()) return
-      do c = 1, 6
+      do c = 1, N_SYMMETRIC
          call to_mo(g(:, :, c), trial)
          f2(:, :, c) = f2(:, :, c) + trial
       end do
@@ -505,10 +484,10 @@ contains
 
       ! The energy-weighted density is `(1/2) D F D`, differentiated by the
       ! product rule over its three factors.
-      allocate (w2(n_ao, n_ao, 6), wm(n_mo, n_mo))
-      do c = 1, 6
-         k = PAIRS(1, c)
-         l = PAIRS(2, c)
+      allocate (w2(n_ao, n_ao, N_SYMMETRIC), wm(n_mo, n_mo))
+      do c = 1, N_SYMMETRIC
+         k = SYMMETRIC_ROW(c)
+         l = SYMMETRIC_COL(c)
          wm = triple(dm2(:, :, c), f0, dm0) + triple(dm0, f0, dm2(:, :, c)) &
               + triple(dm0, f2(:, :, c), dm0) &
               + triple(dm1(:, :, k), f1(:, :, l), dm0) + triple(dm1(:, :, l), f1(:, :, k), dm0) &
@@ -542,10 +521,10 @@ contains
          if (error%has_error()) return
       end do
 
-      allocate (dalpha(6, 3*natm), second(3, natm), trial(n_ao, n_ao))
-      do c = 1, 6
-         k = PAIRS(1, c)
-         l = PAIRS(2, c)
+      allocate (dalpha(N_SYMMETRIC, 3*natm), second(3, natm), trial(n_ao, n_ao))
+      do c = 1, N_SYMMETRIC
+         k = SYMMETRIC_ROW(c)
+         l = SYMMETRIC_COL(c)
          second = 0.0_dp
 
          call hellmann_feynman_gradient(mol, d2(:, :, c), second)
@@ -655,6 +634,7 @@ contains
                               mol, error, force_cartesian=settings%cartesian)
       if (error%has_error()) return
 
+      ! An inactive `xc` is Hartree-Fock to the SCF and the response alike.
       kohn_sham = len_trim(settings%functional) > 0
       if (kohn_sham) then
          call xc_context_create(mol, trim(settings%functional), xc, error, &
@@ -669,26 +649,16 @@ contains
             call mol%destroy()
             return
          end if
-         call run_czt_rhf(mol, nelec, settings%max_iter, SCF_ENERGY_TOL, SCF_DENSITY_TOL, &
-                          .false., scf, error, guess=SCF_GUESS_SAD, &
-                          guess_density=guess_density, xc=xc, &
-                          level_shift=settings%level_shift, &
-                          linear_dependence=settings%linear_dependence, &
-                          accelerator=accelerator, diis_vectors=diis_vectors, &
-                          incremental_fock=settings%incremental_fock, &
-                          grad_tol=convergence%gradient_tolerance, &
-                          convergence=convergence)
-      else
-         call run_czt_rhf(mol, nelec, settings%max_iter, SCF_ENERGY_TOL, SCF_DENSITY_TOL, &
-                          .false., scf, error, guess=SCF_GUESS_SAD, &
-                          guess_density=guess_density, &
-                          level_shift=settings%level_shift, &
-                          linear_dependence=settings%linear_dependence, &
-                          accelerator=accelerator, diis_vectors=diis_vectors, &
-                          incremental_fock=settings%incremental_fock, &
-                          grad_tol=convergence%gradient_tolerance, &
-                          convergence=convergence)
       end if
+      call run_czt_rhf(mol, nelec, settings%max_iter, DIFFERENCED_SCF_ENERGY_TOL, &
+                       DIFFERENCED_SCF_DENSITY_TOL, .false., scf, error, &
+                       guess=SCF_GUESS_SAD, guess_density=guess_density, xc=xc, &
+                       level_shift=settings%level_shift, &
+                       linear_dependence=settings%linear_dependence, &
+                       accelerator=accelerator, diis_vectors=diis_vectors, &
+                       incremental_fock=settings%incremental_fock, &
+                       grad_tol=convergence%gradient_tolerance, &
+                       convergence=convergence)
       if (.not. error%has_error() .and. .not. scf%converged) then
          call error%set(ERROR_VALIDATION, "the reference did not converge at a "// &
                         "displaced geometry")
@@ -696,11 +666,13 @@ contains
       if (.not. error%has_error()) then
          if (kohn_sham) then
             call static_polarizability(mol, scf%orbitals, scf%orbital_energies, &
-                                       scf%n_occupied, alpha, error, tol=RESPONSE_TOL, &
-                                       xc=xc, density=scf%density)
+                                       scf%n_occupied, alpha, error, &
+                                       tol=PROPERTY_RESPONSE_TOL, xc=xc, &
+                                       density=scf%density)
          else
             call static_polarizability(mol, scf%orbitals, scf%orbital_energies, &
-                                       scf%n_occupied, alpha, error, tol=RESPONSE_TOL)
+                                       scf%n_occupied, alpha, error, &
+                                       tol=PROPERTY_RESPONSE_TOL)
          end if
       end if
       if (kohn_sham) call xc%destroy()

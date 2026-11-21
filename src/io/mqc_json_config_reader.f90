@@ -318,6 +318,14 @@ contains
                         "the activities are computed per normal mode.")
          return
       end if
+      ! Nothing else has a polarizability derivative, and a semi-empirical
+      ! Hessian would otherwise finish with the column missing.
+      if (config%raman .and. config%method /= METHOD_TYPE_HF &
+          .and. config%method /= METHOD_TYPE_DFT) then
+         call error%set(ERROR_VALIDATION, "properties.raman is implemented for "// &
+                        "Hartree-Fock and Kohn-Sham (model.method 'hf' or 'dft').")
+         return
+      end if
 
       ! ---- system ----------------------------------------------------------
       ! Written straight into the config fields, which already hold the defaults
