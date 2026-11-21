@@ -238,6 +238,9 @@ module mqc_config_types
          !! 6-31G, then cc-pVTZ -- is two steps and a model basis.
       logical :: unrestricted = .false.
          !! `model.unrestricted`. Force UHF/UKS even when the shell is closed.
+      logical :: restricted_open = .false.
+         !! `model.restricted_open`. ROHF/ROKS for an open shell: one set of
+         !! orbitals, doubly and singly occupied. No effect on a closed shell.
       logical :: allow_crap_scf = .false.
          !! Let a non-converged SCF into the expansion instead of stopping. Off
          !! by default: the energy of an SCF that ran out of iterations is of

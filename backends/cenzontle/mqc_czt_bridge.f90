@@ -1196,6 +1196,7 @@ contains
       type(scf_numerics_t) :: ladder_scf
       logical :: conv_ok
       logical :: unrestricted, do_gradient, do_hessian, dh_analytic
+      logical :: rohf
       logical :: pcm_pte, pcm_ptd
       logical :: relaxed_analysis
          !! `properties.density` is "relaxed" and charges or bond orders were asked for
@@ -1249,6 +1250,44 @@ contains
       ! keyword says.
       unrestricted = (fragment%multiplicity /= 1) .or. (mod(fragment%nelec, 2) /= 0) &
                      .or. settings%unrestricted
+      ! A restricted open shell runs through the unrestricted driver and comes
+      ! back shaped as an unrestricted result, so `unrestricted` stays true
+      ! and everything that reads two spin densities reads these. On a closed
+      ! shell the keyword asks for what the restricted path already is.
+      rohf = settings%restricted_open .and. &
+             ((fragment%multiplicity /= 1) .or. (mod(fragment%nelec, 2) /= 0))
+      if (rohf) then
+         block
+            character(len=:), allocatable :: why
+
+            ! Each of these would run, on the unrestricted formulas, and be
+            ! wrong: they assume each spin's Fock matrix is diagonal in that
+            ! spin's orbitals, which here holds only inside the occupied and
+            ! virtual blocks.
+            why = ""
+            if (settings%run_mp2) then
+               why = "MP2 over a restricted open-shell reference needs the singles "// &
+                     "its off-diagonal Fock blocks bring in, which are not built"
+            else if (settings%run_cc) then
+               why = "coupled cluster over a restricted open-shell reference has "// &
+                     "not been validated"
+            else if (settings%excited%enabled) then
+               why = "excited states over a restricted open-shell reference need "// &
+                     "its own response equations"
+            else if (settings%stability) then
+               why = "the stability analysis is closed-shell only"
+            else if (allocated(settings%fukui_population)) then
+               why = "the Fukui functions' ionised states are run unrestricted"
+            end if
+            if (len(why) > 0) then
+               call result%error%set(ERROR_VALIDATION, "model.restricted_open: "// &
+                                     why//". Use model.unrestricted, or run the "// &
+                                     "reference alone.")
+               result%has_error = .true.
+               return
+            end if
+         end block
+      end if
       pcm_pte = settings%pcm%enabled .and. trim(settings%pcm%correlation) == "pte"
       pcm_ptd = settings%pcm%enabled .and. trim(settings%pcm%correlation) == "ptd"
 
@@ -1666,6 +1705,16 @@ contains
          end if
          ! Nothing in the perturbative term reads the fit, so this would run;
          ! it is refused because no number from it has been checked.
+         if (rohf .and. xc%pt2_fraction /= 0.0_dp) then
+            call result%error%set(ERROR_VALIDATION, "model.restricted_open with a "// &
+                                  "double hybrid: its perturbative term over a "// &
+                                  "restricted open-shell reference needs singles that "// &
+                                  "are not built. Use model.unrestricted.")
+            result%has_error = .true.
+            if (kohn_sham) call xc%destroy()
+            call mol%destroy()
+            return
+         end if
          if (unrestricted .and. settings%density_fitting .and. xc%pt2_fraction /= 0.0_dp) then
             call result%error%set(ERROR_VALIDATION, "a double hybrid over a "// &
                                   "density-fitted unrestricted reference has not been "// &
@@ -1932,7 +1981,7 @@ contains
                              gdm=use_gdm, gdm_start=settings%gdm_start, &
                              gdm_max_rotation=settings%gdm_max_rotation, &
                              second_order=use_second_order, &
-                             soscf_start=settings%soscf_start)
+                             soscf_start=settings%soscf_start, restricted_open=rohf)
          else if (keep_fit) then
             call run_czt_rhf(mol, nelec, settings%max_iter, settings%energy_tol, &
                              settings%density_tol, settings%verbose, scf, error, &
@@ -1979,7 +2028,7 @@ contains
                           gdm=use_gdm, gdm_start=settings%gdm_start, &
                           gdm_max_rotation=settings%gdm_max_rotation, &
                           second_order=use_second_order, &
-                          soscf_start=settings%soscf_start)
+                          soscf_start=settings%soscf_start, restricted_open=rohf)
       else
          ! Store the integrals when they fit, rather than rebuilding every
          ! quartet at every iteration. The threshold is memory alone: the stored

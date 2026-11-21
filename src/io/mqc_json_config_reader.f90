@@ -196,6 +196,13 @@ contains
       call optional_logical(json, "model.cartesian", config%cartesian)
       call optional_string(json, "model.functional", config%functional)
       call optional_logical(json, "model.unrestricted", config%unrestricted)
+      call optional_logical(json, "model.restricted_open", config%restricted_open)
+      if (config%restricted_open .and. config%unrestricted) then
+         call error%set(ERROR_VALIDATION, "model.restricted_open and "// &
+                        "model.unrestricted are both set. They are two different "// &
+                        "wavefunctions for the same open shell; choose one.")
+         return
+      end if
 
       ! ---- properties ------------------------------------------------------
       ! The `fukui` OBJECT is what asks for the analysis; `population` only
