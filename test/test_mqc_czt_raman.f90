@@ -14,6 +14,8 @@ module test_mqc_czt_raman
    use pic_types, only: dp
    use mqc_error, only: error_t
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
+   use mqc_czt_cphf, only: static_polarizability
+   use mqc_czt_xc, only: xc_available
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
    use mqc_czt_raman, only: polarizability_derivatives, polarizability_derivatives_field
    use mqc_cuest_iface, only: cuest_scf_settings_t
@@ -47,7 +49,8 @@ contains
 
       testsuite = [ &
                   new_unittest("water_derivatives_match_pyscf", test_water), &
-                  new_unittest("finite_field_route_agrees", test_field) &
+                  new_unittest("finite_field_route_agrees", test_field), &
+                  new_unittest("kohn_sham_derivatives_obey_the_sum_rule", test_kohn_sham) &
                   ]
    end subroutine collect_mqc_czt_raman_tests
 
@@ -184,6 +187,69 @@ contains
                  "the finite-field derivatives do not match PySCF's")
       call mol%destroy()
    end subroutine test_field
+
+   subroutine test_kohn_sham(error)
+      !! The differenced route under a functional
+      !!
+      !! No external reference: what is held is the translational sum rule,
+      !! which a Kohn-Sham polarizability obeys as Hartree-Fock's does because
+      !! the quadrature grid moves with the atoms, and that the functional was
+      !! used at all -- the polarizability has to differ from Hartree-Fock's
+      !! in the same basis. The Hartree-Fock density is only the displaced
+      !! SCFs' starting guess. This is the branch the bridge takes for every
+      !! Kohn-Sham Raman run, and nothing else exercised it.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      type(cuest_scf_settings_t) :: settings
+      type(error_t) :: err
+      type(scf_convergence_t) :: conv
+      real(dp), allocatable :: dalpha(:, :)
+      real(dp) :: c(3, 3), alpha(3, 3), alpha_hf(3, 3), drift
+      integer :: comp, k
+
+      if (.not. xc_available()) return
+      c = reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                   0.0_dp, 0.0_dp, 0.9584_dp*ANG, &
+                   0.9268_dp*ANG, 0.0_dp, -0.2400_dp*ANG], [3, 3])
+      call build_czt_molecule([8, 1, 1], ["O ", "H ", "H "], c, "sto-3g", mol, err)
+      call run_czt_rhf(mol, 10, 200, 1.0e-13_dp, 1.0e-11_dp, .false., scf, err, &
+                       grad_tol=1.0e-10_dp)
+      call check(error,.not. err%has_error() .and. scf%converged, &
+                 "water must converge: "//err%get_full_trace())
+      if (allocated(error)) return
+      call static_polarizability(mol, scf%orbitals, scf%orbital_energies, scf%n_occupied, &
+                                 alpha_hf, err)
+      call check(error,.not. err%has_error(), "polarizability: "//err%get_full_trace())
+      if (allocated(error)) return
+
+      settings%basis_set = "sto-3g"
+      settings%functional = "pbe"
+      settings%max_iter = 200
+      call polarizability_derivatives(settings, [8, 1, 1], ["O ", "H ", "H "], c, 10, &
+                                      scf%density, ACCEL_DIIS, 8, conv, alpha, dalpha, err)
+      call check(error,.not. err%has_error(), "derivatives: "//err%get_full_trace())
+      if (allocated(error)) return
+
+      write (*, "(4x,a,2f14.8)") "alpha zz, PBE and Hartree-Fock ", alpha(3, 3), alpha_hf(3, 3)
+      call check(error, abs(alpha(3, 3) - alpha_hf(3, 3)) > 1.0e-3_dp, &
+                 "the Kohn-Sham polarizability is Hartree-Fock's: the functional "// &
+                 "was not used")
+      if (allocated(error)) return
+
+      drift = 0.0_dp
+      do comp = 1, 3
+         do k = 1, 6
+            drift = max(drift, abs(dalpha(k, comp) + dalpha(k, 3 + comp) + dalpha(k, 6 + comp)))
+         end do
+      end do
+      write (*, "(4x,a,es10.2)") "translational sum rule, PBE ", drift
+      ! The bound is the central differences' own error, as above.
+      call check(error, drift < 1.0e-4_dp, &
+                 "the Kohn-Sham polarizability changed when the molecule was moved")
+      call mol%destroy()
+   end subroutine test_kohn_sham
 
 end module test_mqc_czt_raman
 
