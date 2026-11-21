@@ -1292,9 +1292,9 @@ contains
       pcm_pte = settings%pcm%enabled .and. trim(settings%pcm%correlation) == "pte"
       pcm_ptd = settings%pcm%enabled .and. trim(settings%pcm%correlation) == "ptd"
 
-      ! The shielding implemented is closed-shell Hartree-Fock's with exact
-      ! integrals. Each of these would run and return that formula's number
-      ! for a wave function it does not describe.
+      ! The shielding implemented is closed-shell Hartree-Fock's or
+      ! Kohn-Sham's with exact integrals. Each of these would run and return
+      ! that formula's number for a wave function it does not describe.
       if (settings%nmr_shielding) then
          block
             character(len=:), allocatable :: why
@@ -1309,6 +1309,8 @@ contains
             else if (settings%density_fitting) then
                why = "a density-fitted reference needs the field derivative of "// &
                      "the fitted integrals"
+            else if (len_trim(settings%ecp_set) > 0) then
+               why = "an effective core potential's field derivative is not built"
             end if
             if (len(why) > 0) then
                call result%error%set(ERROR_VALIDATION, "properties.nmr is implemented "// &

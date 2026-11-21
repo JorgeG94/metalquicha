@@ -262,7 +262,11 @@ module mqc_json_output_types
       character(len=16) :: bond_order_scheme = ""
       logical :: has_bond_orders = .false.
       real(dp), allocatable :: nmr_shielding(:, :, :)
+         !! (3, 3, n_atoms) shielding tensors in ppm, first index the field's
+         !! direction and second the nuclear moment's. Unallocated when none
+         !! were computed.
       real(dp), allocatable :: nmr_diamagnetic(:, :, :), nmr_paramagnetic(:, :, :)
+         !! The shielding's two parts, same shape and units
       real(dp), allocatable :: spin_spin_coupling(:, :)
          !! Reduced spin-spin couplings, atomic units, (n_atoms, n_atoms)
       ! Intrinsic atomic orbital charges and bond orbital populations.
