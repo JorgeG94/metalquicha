@@ -140,6 +140,10 @@ module mqc_result_types
          !! the nuclear moment's; not symmetric.
       real(dp), allocatable :: nmr_diamagnetic(:, :, :), nmr_paramagnetic(:, :, :)
          !! Its two parts, same shape. Only their sum is gauge independent.
+      real(dp), allocatable :: spin_spin_coupling(:, :)
+         !! (n_atoms, n_atoms) reduced indirect spin-spin couplings in atomic
+         !! units, Fermi-contact term, from `properties.spin_spin_coupling`.
+         !! Symmetric, zero on the diagonal; unallocated when not asked for.
       real(dp), allocatable :: iao_charges(:)
          !! (natoms) intrinsic atomic orbital charges, when
          !! `properties.intrinsic_orbitals` asked

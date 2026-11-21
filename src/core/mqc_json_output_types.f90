@@ -267,6 +267,8 @@ module mqc_json_output_types
          !! were computed.
       real(dp), allocatable :: nmr_diamagnetic(:, :, :), nmr_paramagnetic(:, :, :)
          !! The shielding's two parts, same shape and units
+      real(dp), allocatable :: spin_spin_coupling(:, :)
+         !! Reduced spin-spin couplings, atomic units, (n_atoms, n_atoms)
       ! Intrinsic atomic orbital charges and bond orbital populations.
       real(dp), allocatable :: iao_charges(:)
       real(dp), allocatable :: ibo_populations(:, :)

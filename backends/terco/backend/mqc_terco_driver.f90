@@ -1122,6 +1122,10 @@ contains
          call logger%warning("  shieldings could not be computed: properties.nmr is "// &
                              "not forwarded to terco. Run it on the CPU backend.")
       end if
+      if (settings%spin_spin_coupling) then
+         call logger%warning("  spin-spin couplings could not be computed: properties.spin_spin_coupling is "// &
+                             "not forwarded to terco. Run it on the CPU backend.")
+      end if
       if (.not. allocated(settings%charges_scheme) .and. &
           .not. allocated(settings%bond_order_scheme)) return
 

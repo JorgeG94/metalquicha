@@ -381,6 +381,8 @@ module mqc_method_config
          !! `bonding_analysis` -- there is no scheme that means "do not".
       logical :: nmr_shielding = .false.
          !! `properties.nmr` asked for nuclear magnetic shielding tensors.
+      logical :: spin_spin_coupling = .false.
+         !! `properties.spin_spin_coupling` asked for the J couplings.
       logical :: natural_orbitals = .false.
          !! `properties.natural_orbitals` asked for natural occupations
       logical :: intrinsic_orbitals = .false.

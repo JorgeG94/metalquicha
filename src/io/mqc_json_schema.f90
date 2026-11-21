@@ -100,6 +100,8 @@ contains
                                    intrinsic_orbitals_keys(), error)
       call check_bond_orders(core, root, error)
       call check_grandchild_object(core, root, "properties", "nmr", nmr_keys(), error)
+      call check_grandchild_object(core, root, "properties", "spin_spin_coupling", &
+                                   spin_spin_coupling_keys(), error)
       call check_grandchild_object(core, root, "properties", "bonding_analysis", &
                                    bonding_analysis_keys(), error)
       call check_bonding_analysis(core, root, error)
@@ -266,6 +268,7 @@ contains
       call allow(keys, "natural_orbitals")
       call allow(keys, "intrinsic_orbitals")
       call allow(keys, "density")
+      call allow(keys, "spin_spin_coupling")
    end function properties_keys
 
    function nmr_keys() result(keys)
@@ -274,6 +277,12 @@ contains
       type(key_set_t) :: keys
       keys%n_allowed = 0
    end function nmr_keys
+
+   function spin_spin_coupling_keys() result(keys)
+      !! Settings for the spin-spin couplings: none, the object is the request
+      type(key_set_t) :: keys
+      keys%n_allowed = 0
+   end function spin_spin_coupling_keys
 
    function fukui_keys() result(keys)
       !! Settings for the Fukui index analysis

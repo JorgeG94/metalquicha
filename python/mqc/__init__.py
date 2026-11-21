@@ -876,6 +876,17 @@ class Result:
         return self._section("nmr_shielding")
 
     @property
+    def spin_spin_coupling(self):
+        """Indirect nuclear spin-spin couplings from the run, or None.
+
+        ``terms`` lists what was included (the Fermi-contact term), ``atoms``
+        gives each nucleus's ``isotope`` and ``g_factor``, and ``j_hz`` and
+        ``reduced_1e19_T2_per_J`` are square symmetric matrices in the order
+        of ``atoms``, zero on the diagonal.
+        """
+        return self._section("spin_spin_coupling")
+
+    @property
     def atomic_charges(self):
         """Partial charges from the run, or None.
 

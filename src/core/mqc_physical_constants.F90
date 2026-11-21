@@ -138,6 +138,21 @@ module mqc_physical_constants
    real(dp), parameter, public :: FINE_STRUCTURE = 7.2973525693e-3_dp
       !! The fine-structure constant, CODATA 2018; `1/c` in atomic units
 
+   real(dp), parameter, public :: HARTREE_TO_HZ = 6.579683920502e15_dp
+      !! One hartree as a frequency, `E_h/h`, in hertz (CODATA 2018)
+
+   real(dp), parameter, public :: HARTREE_TO_JOULE = 4.3597447222071e-18_dp
+      !! One hartree in joules (CODATA 2018)
+
+   real(dp), parameter, public :: PROTON_ELECTRON_MASS_RATIO = 1836.15267343_dp
+      !! Proton mass over electron mass (CODATA 2018)
+
+   real(dp), parameter, public :: NUCLEAR_MAGNETON_AU = 0.5_dp/PROTON_ELECTRON_MASS_RATIO
+      !! The nuclear magneton in atomic units, `1/(2 m_p)`
+
+   real(dp), parameter, public :: NUCLEAR_MAGNETON_SI = 5.0507837461e-27_dp
+      !! The nuclear magneton in J/T (CODATA 2018)
+
    real(dp), parameter, public :: PI = 3.14159265358979323846_dp
    !! Pi constant
 

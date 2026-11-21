@@ -16,6 +16,8 @@ module mqc_json_writer
                                STATE_SPIN_UNRESTRICTED
    use json_module, only: json_core, json_value
    use mqc_nmr_summary, only: shielding_summary
+   use mqc_nmr_isotopes, only: nmr_isotope, reduced_to_hertz, reduced_to_si, &
+                               ISOTOPE_LABEL_LEN
    implicit none
    private
 
@@ -195,6 +197,7 @@ contains
       call write_efmo_section(json, main_obj, data)
       call write_fmo_section(json, main_obj, data)
       call write_nmr_section(json, main_obj, data)
+      call write_coupling_section(json, main_obj, data)
       call write_ieda_section(json, main_obj, data)
       call write_charges_section(json, main_obj, data)
       call write_bond_orders_section(json, main_obj, data)
@@ -800,6 +803,62 @@ contains
          end do
       end subroutine add_tensor
    end subroutine write_nmr_section
+
+   subroutine write_coupling_section(json, parent, data)
+      !! Indirect nuclear spin-spin couplings
+      !!
+      !! `atoms` names the isotope each coupling in hertz is quoted for, with
+      !! its g factor. `j_hz` and `reduced_1e19_T2_per_J` are square,
+      !! symmetric and zero on the diagonal, a row per atom in the order of
+      !! `atoms`. The reduced coupling does not depend on the isotopes; an
+      !! element with no isotope in the table has zeros in its row of `j_hz`
+      !! and a blank `isotope`.
+      type(json_core), intent(inout) :: json
+      type(json_value), pointer, intent(in) :: parent
+      type(json_output_data_t), intent(in) :: data
+
+      type(json_value), pointer :: section, atoms, atom, terms, hz, reduced
+      character(len=ISOTOPE_LABEL_LEN) :: label
+      real(dp), allocatable :: g(:), row(:)
+      integer :: natm, ia, ib
+
+      if (.not. allocated(data%spin_spin_coupling)) return
+      if (.not. allocated(data%atomic_numbers)) return
+      natm = size(data%spin_spin_coupling, 1)
+      call json%create_object(section, "spin_spin_coupling")
+      call json%add(parent, section)
+      call json%create_array(terms, "terms")
+      call json%add(section, terms)
+      call json%add(terms, "", "fermi_contact")
+
+      allocate (g(natm), row(natm))
+      call json%create_array(atoms, "atoms")
+      call json%add(section, atoms)
+      do ia = 1, natm
+         call nmr_isotope(data%atomic_numbers(ia), label, g(ia))
+         call json%create_object(atom, "")
+         call json%add(atoms, atom)
+         call json%add(atom, "atom", ia)
+         call json%add(atom, "element", trim(element_of(data, ia)))
+         call json%add(atom, "isotope", trim(label))
+         call json%add(atom, "g_factor", g(ia))
+      end do
+
+      call json%create_array(hz, "j_hz")
+      call json%add(section, hz)
+      call json%create_array(reduced, "reduced_1e19_T2_per_J")
+      call json%add(section, reduced)
+      do ia = 1, natm
+         do ib = 1, natm
+            row(ib) = reduced_to_hertz(data%spin_spin_coupling(ia, ib), g(ia), g(ib))
+         end do
+         call json%add(hz, "", row)
+         do ib = 1, natm
+            row(ib) = reduced_to_si(data%spin_spin_coupling(ia, ib))
+         end do
+         call json%add(reduced, "", row)
+      end do
+   end subroutine write_coupling_section
 
    subroutine write_bond_orders_section(json, parent, data)
       !! Bond orders per atom pair, with the valence they sum to

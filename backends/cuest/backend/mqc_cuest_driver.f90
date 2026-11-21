@@ -527,6 +527,11 @@ contains
                              "not implemented on the GPU backend. Run it on the CPU "// &
                              "backend.")
       end if
+      if (settings%spin_spin_coupling) then
+         call logger%warning("  spin-spin couplings could not be computed: properties.spin_spin_coupling is "// &
+                             "not implemented on the GPU backend. Run it on the CPU "// &
+                             "backend.")
+      end if
       if (allocated(settings%bond_order_scheme)) then
          call logger%warning("  bond orders could not be computed: "// &
                              "properties.bond_orders is not implemented on the GPU "// &

@@ -4272,6 +4272,26 @@ contains
       call read_deck(config, parse_error)
       call check(error, parse_error%has_error(), &
                  "an unknown key under properties.nmr was accepted")
+      if (allocated(error)) return
+
+      ! The spin-spin couplings are asked for the same way, separately: a
+      ! deck may want either without the other.
+      call check(error,.not. config%spin_spin_coupling, &
+                 "couplings were switched on by a shielding request")
+      if (allocated(error)) return
+      call write_deck('"method": "hf", "basis": "6-31g"', "Energy", "", "", two_atoms(), &
+                      root='"properties": {"spin_spin_coupling": {}}')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%spin_spin_coupling .and. .not. config%nmr_shielding, &
+                 "properties.spin_spin_coupling was not read on its own")
+      if (allocated(error)) return
+      call write_deck('"method": "hf", "basis": "6-31g"', "Energy", "", "", two_atoms(), &
+                      root='"properties": {"spin_spin_coupling": {"terms": "all"}}')
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "an unknown key under properties.spin_spin_coupling was accepted")
    end subroutine test_nmr_request
 
    subroutine test_maxiter_named(error)

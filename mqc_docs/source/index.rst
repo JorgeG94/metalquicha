@@ -45,6 +45,7 @@ The API docs for the code itself can be found here: https://jorgeg94.github.io/m
    rijcosx
    charges_and_bond_orders
    nmr_shielding
+   spin_spin_coupling
    bonding_analysis
    natural_orbitals
    intrinsic_orbitals
