@@ -248,17 +248,54 @@ activities beside the frequencies with
 
 ``properties.raman`` is a request by its presence and is refused on any driver
 but ``Hessian``. Its one setting, ``method``, chooses how the polarizability
-derivatives are obtained: ``"field"`` (the default) or ``"displacements"``.
+derivatives are obtained: ``"analytic"`` (the default), ``"field"`` or
+``"displacements"``.
 
 How it is computed
 ------------------
 
 What is needed is the Cartesian derivative of the static polarizability,
 :math:`\partial\alpha/\partial x_j`: a third derivative of the energy, twice in
-the electric field and once in a nuclear coordinate. It is taken by finite
-differences of something analytic, and there are two ways to arrange that.
+the electric field and once in a nuclear coordinate. There are three routes
+to it: one with no finite difference, for Hartree-Fock, and two that
+difference something analytic.
 
-**By field** (``"method": "field"``, the default). In a uniform field
+**Analytically** (``"method": "analytic"``, the default). The nuclear gradient
+has the same form in a uniform field as without one,
+
+.. math::
+
+   g_x = \mathrm{Tr}(D h^x) + \tfrac12 \mathrm{Tr}(D\,G^x[D])
+         - \mathrm{Tr}(W S^x) + \mathbf{F}\cdot\mathrm{Tr}(D\,\mathbf{r}^x)
+
+and the derivative wanted is minus its second field derivative. None of the
+integrals depends on the field, so that is the same contraction with the
+density's and the energy-weighted density's field derivatives in place of the
+matrices themselves:
+
+.. math::
+
+   \frac{\partial \alpha_{kl}}{\partial x}
+     = -\Big[\mathrm{Tr}(D^{kl} h^x) - \mathrm{Tr}(W^{kl} S^x)
+       + \mathrm{Tr}(D^{kl} G^x[D]) + \mathrm{Tr}(D^{k} G^x[D^{l}])
+       + \mathrm{Tr}(D^{k} r_l^x) + \mathrm{Tr}(D^{l} r_k^x)\Big]
+
+:math:`D^k` comes from the three coupled-perturbed solves the polarizability
+itself needs. :math:`D^{kl}` has its occupied-occupied and virtual-virtual
+blocks fixed by idempotency and the block between them from six more solves
+against the same operator. **No response to a nuclear displacement is solved**,
+so beyond the nine solves the cost is that of eighteen two-electron gradient
+contractions, whatever the size of the molecule. The translational sum rule,
+which a finite difference satisfies to its truncation error, holds to
+:math:`10^{-13}` on water.
+
+It is built for closed-shell Hartree-Fock. Under a functional the same
+derivation needs the functional's third derivative, which is not built, and a
+Kohn-Sham reference asked for ``"analytic"`` -- which is every Kohn-Sham
+reference that does not say otherwise -- takes the field route below, and the
+log says so.
+
+**By field** (``"method": "field"``). In a uniform field
 :math:`\mathbf{F}` the energy is
 :math:`E_0 - \boldsymbol\mu\cdot\mathbf{F} - \tfrac12\mathbf{F}\alpha\mathbf{F}`,
 so
@@ -284,7 +321,8 @@ against.
 
 The two are different finite differences of the same quantity and agree to the
 error of each, about :math:`3\times10^{-5}` Bohr\ :sup:`2` on water's
-derivatives of order ten.
+derivatives of order ten. The analytic route agrees with either to that error
+and with their extrapolation to zero step to :math:`4\times10^{-7}`.
 
 Projected onto mode :math:`i`,
 

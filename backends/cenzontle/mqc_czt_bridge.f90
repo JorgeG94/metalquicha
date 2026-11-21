@@ -57,7 +57,8 @@ module mqc_czt_bridge
    use mqc_czt_mp2_hessian, only: mp2_correlation_hessian
    use mqc_czt_ri_mp2_hessian, only: ri_mp2_correlation_hessian, ri_hessian_metric_dropped
    use mqc_czt_mp2_gradient, only: czt_mp2_gradient
-   use mqc_czt_raman, only: polarizability_derivatives, polarizability_derivatives_field
+   use mqc_czt_raman, only: polarizability_derivatives, polarizability_derivatives_field, &
+                            polarizability_derivatives_analytic
    use mqc_czt_ri_mp2_gradient, only: czt_ri_mp2_gradient
    use mqc_czt_mp2, only: mp2_result_t, run_czt_mp2, run_czt_ri_mp2, &
                           run_czt_ump2, run_czt_uri_mp2
@@ -1291,11 +1292,11 @@ contains
       pcm_pte = settings%pcm%enabled .and. trim(settings%pcm%correlation) == "pte"
       pcm_ptd = settings%pcm%enabled .and. trim(settings%pcm%correlation) == "ptd"
 
-      ! Raman activities difference the closed-shell polarizability, exact
-      ! integrals, and ride on the analytic Hessian's branch below. Anything
-      ! that would take the Hessian elsewhere, or that the displaced
-      ! references would not reproduce, is refused rather than left to run
-      ! without them.
+      ! Raman activities need the closed-shell polarizability's Cartesian
+      ! derivatives over exact integrals, and ride on the analytic Hessian's
+      ! branch below. Anything that would take the Hessian elsewhere, or that
+      ! the routes to those derivatives do not carry, is refused rather than
+      ! left to run without them.
       if (settings%raman) then
          block
             character(len=:), allocatable :: why
@@ -1306,18 +1307,24 @@ contains
             else if (settings%run_mp2 .or. settings%run_cc) then
                why = "a correlated polarizability is not built"
             else if (settings%density_fitting) then
-               why = "the displaced references are not density fitted"
+               why = "the polarizability derivatives are not built over fitted "// &
+                     "integrals"
             else if (settings%pcm%enabled) then
-               why = "the displaced references carry no continuum"
+               why = "the polarizability derivatives carry no continuum"
             else if (len_trim(settings%ecp_set) > 0) then
-               why = "the displaced references carry no effective core potential"
+               why = "the polarizability derivatives carry no effective core "// &
+                     "potential"
             else if (fragment%n_caps > 0 .or. any(fragment%ghost_mask())) then
                why = "capped and ghosted fragments are not rebuilt at displaced "// &
                      "geometries"
             else if (settings%hessian_method /= HESSIAN_METHOD_ANALYTIC) then
                why = "it accompanies the analytic Hessian"
-            else if (settings%second_order .or. settings%gdm) then
-               why = "the displaced references are converged by DIIS alone, and "// &
+            else if ((settings%second_order .or. settings%gdm) &
+                     .and. (trim(settings%raman_method) /= "analytic" &
+                            .or. len_trim(settings%functional) > 0)) then
+               ! The analytic route reads the reference's own orbitals and
+               ! runs no further SCF; the two differenced routes do.
+               why = "the differenced references are converged by DIIS alone, and "// &
                      "could land on another solution than a second-order or "// &
                      "direct-minimisation reference"
             end if
@@ -2943,7 +2950,19 @@ contains
                                                      nelec, scf%density, accel_kind, &
                                                      diis_size, scf_conv, alpha0, &
                                                      dalpha, raman_error)
+                  else if (trim(settings%raman_method) == "analytic" &
+                           .and. .not. xc%active) then
+                     call polarizability_derivatives_analytic(mol, scf%orbitals, &
+                                                              scf%orbital_energies, &
+                                                              scf%n_occupied, alpha0, &
+                                                              dalpha, raman_error)
                   else
+                     ! The analytic route needs a functional's third
+                     ! derivative, which is not built.
+                     if (trim(settings%raman_method) == "analytic") then
+                        call logger%info("  Raman: no analytic route under a "// &
+                                         "functional; taking the finite-field one")
+                     end if
                      call polarizability_derivatives_field(settings, mol, nelec, &
                                                            scf%density, accel_kind, &
                                                            diis_size, scf_conv, alpha0, &

@@ -381,7 +381,9 @@ module mqc_method_config
          !! `bonding_analysis` -- there is no scheme that means "do not".
       logical :: raman = .false.
          !! `properties.raman` asked for Raman activities with the Hessian.
-      character(len=16) :: raman_method = "field"
+      character(len=16) :: raman_method = "analytic"
+         !! "analytic": the gradient's second field derivative in closed
+         !! form, Hartree-Fock only; Kohn-Sham takes "field" in its place.
          !! "field": the gradient differenced over electric fields.
          !! "displacements": the polarizability over nuclear positions.
       logical :: natural_orbitals = .false.

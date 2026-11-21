@@ -402,8 +402,19 @@ correlated reference and cuEST are refused by name rather than approximated.
 See `mqc_docs/source/excited_states.rst`.
 
 Raman activities are `properties.raman` on a Hessian deck, closed-shell HF or
-KS with exact integrals. `mqc_czt_raman` has two routes to the polarizability's
-Cartesian derivatives. The default, `polarizability_derivatives_field`,
+KS with exact integrals. `mqc_czt_raman` has three routes to the polarizability's
+Cartesian derivatives. The default, `polarizability_derivatives_analytic`, is
+Hartree-Fock only and differences nothing: the gradient formula holds in a
+field, so its second field derivative is the same contraction at `D^kl` and
+`W^kl`, plus `Tr(D^k G^x[D^l])`. `D^kl` is six more `cphf_solve`s through
+`mo_rhs`, with its diagonal blocks fixed by idempotency; `W^kl` is the product
+rule on `(1/2) D F D`. **The two-electron term goes through
+`two_electron_gradient`, which is quadratic in one density**, so a product of
+two different densities is taken by polarisation -- eighteen calls in all. Its
+check is the translational sum rule, 1e-13, and PySCF's differences
+*extrapolated to zero step*; the plain ones are 3e-5 off, their own error. A
+Kohn-Sham reference takes the next route instead, since the analytic one
+would need the functional's third derivative. `polarizability_derivatives_field`
 differences the analytic gradient twice over twelve electric fields --
 thirteen SCFs and gradients whatever the molecule's size, the field entering
 through `run_czt_rhf`'s `h_extra` and its own gradient term added by hand,

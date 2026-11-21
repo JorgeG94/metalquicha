@@ -6,11 +6,13 @@ module mqc_czt_raman
    !! nuclear coordinate, which `mqc_vibrational_analysis` then projects onto
    !! the modes.
    !!
-   !! **By central differences of an analytic polarizability.** Each
-   !! coordinate is displaced both ways, the closed-shell reference is
-   !! reconverged, and the coupled-perturbed polarizability is taken there:
-   !! `6 N` self-consistent fields and as many response solves. The analytic
-   !! route is a third derivative of the energy and is not built.
+   !! **Three routes to one third derivative of the energy.**
+   !! `polarizability_derivatives_analytic` differentiates the gradient twice
+   !! in the field in closed form, for Hartree-Fock.
+   !! `polarizability_derivatives_field` takes the same two derivatives by
+   !! differences over twelve fields, and `polarizability_derivatives`
+   !! differences the polarizability over `6 N` displaced geometries; both
+   !! run under a functional too.
    !!
    !! **Static, so off resonance.** The polarizability is the zero-frequency
    !! one. A measured Raman spectrum is taken at a laser frequency, and near
@@ -21,12 +23,19 @@ module mqc_czt_raman
    use mqc_calculation_defaults, only: DEFAULT_DISPLACEMENT, PROPERTY_RESPONSE_TOL, &
                                        DIFFERENCED_SCF_ENERGY_TOL, &
                                        DIFFERENCED_SCF_DENSITY_TOL
-   use mqc_symmetric_tensor, only: pack_symmetric, N_SYMMETRIC
+   use mqc_symmetric_tensor, only: pack_symmetric, N_SYMMETRIC, SYMMETRIC_ROW, &
+                                   SYMMETRIC_COL
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf, SCF_GUESS_SAD
-   use mqc_czt_cphf, only: static_polarizability
-   use mqc_czt_gradient, only: czt_scf_gradient
+   use pic_blas_interfaces, only: pic_gemm
+   use mqc_czt_integrals, only: atom_ao_blocks
+   use mqc_czt_cphf, only: static_polarizability, cphf_solve
+   use mqc_czt_direct, only: schwarz_bounds
+   use mqc_czt_response_product, only: response_mean_field
+   use mqc_czt_gradient, only: czt_scf_gradient, one_electron_deriv, &
+                               two_electron_gradient, hellmann_feynman_gradient, &
+                               DERIV_OVLP, DERIV_KIN, DERIV_NUC
    use mqc_czt_multipole, only: multipole_matrices, dipole_integral_derivatives
    use mqc_czt_xc, only: xc_context_t, xc_context_create
    use mqc_cuest_iface, only: cuest_scf_settings_t
@@ -36,6 +45,7 @@ module mqc_czt_raman
 
    public :: polarizability_derivatives
    public :: polarizability_derivatives_field
+   public :: polarizability_derivatives_analytic
 
    ! The displacement is the Hessian's default, 5e-3 Bohr. A central
    ! difference's error is quadratic in it: 3e-5 Bohr^2 on water's
@@ -154,7 +164,8 @@ contains
       type(xc_context_t), intent(inout), optional :: xc
          !! The reference's functional. Absent or inactive is Hartree-Fock.
 
-      integer, parameter :: PAIRS(2, 3) = reshape([1, 2, 1, 3, 2, 3], [2, 3])
+      ! The off-diagonal components, in the packed order xy, xz, yz.
+      integer, parameter :: OFF_DIAGONAL(2, 3) = reshape([1, 2, 1, 3, 2, 3], [2, 3])
       real(dp), allocatable :: dip(:, :, :), ddip(:, :, :, :, :)
       real(dp), allocatable :: g0(:, :), g(:, :, :), second(:, :, :)
       real(dp) :: origin(3), fields(3, N_FIELDS)
@@ -187,8 +198,8 @@ contains
          fields(k, 2*k) = -RAMAN_FIELD
       end do
       do ipair = 1, 3
-         fields(PAIRS(:, ipair), 5 + 2*ipair) = RAMAN_FIELD
-         fields(PAIRS(:, ipair), 6 + 2*ipair) = -RAMAN_FIELD
+         fields(OFF_DIAGONAL(:, ipair), 5 + 2*ipair) = RAMAN_FIELD
+         fields(OFF_DIAGONAL(:, ipair), 6 + 2*ipair) = -RAMAN_FIELD
       end do
 
       call logger%info("  Raman: differencing the gradient over "//to_char(N_FIELDS)// &
@@ -226,14 +237,14 @@ contains
          second(:, :, k) = (g(:, :, 2*k - 1) + g(:, :, 2*k) - 2.0_dp*g0)/RAMAN_FIELD**2
       end do
       do ipair = 1, 3
-         k = PAIRS(1, ipair)
-         l = PAIRS(2, ipair)
+         k = OFF_DIAGONAL(1, ipair)
+         l = OFF_DIAGONAL(2, ipair)
          second(:, :, 3 + ipair) = 0.5_dp*((g(:, :, 5 + 2*ipair) + g(:, :, 6 + 2*ipair) &
                                             - 2.0_dp*g0)/RAMAN_FIELD**2 &
                                            - second(:, :, k) - second(:, :, l))
       end do
 
-      ! Components xx, yy, zz, xy, xz, yz, which is the order of `PAIRS`.
+      ! Components xx, yy, zz, xy, xz, yz, which is the order of `OFF_DIAGONAL`.
       allocate (dalpha(N_SYMMETRIC, 3*natm))
       do iatom = 1, natm
          do comp = 1, 3
@@ -301,6 +312,301 @@ contains
          if (present(keep)) keep = here
       end subroutine field_gradient
    end subroutine polarizability_derivatives_field
+
+   subroutine polarizability_derivatives_analytic(mol, orbitals, orbital_energies, n_occ, &
+                                                  alpha, dalpha, error)
+      !! `d alpha / d x` with no finite difference, for closed-shell Hartree-Fock
+      !!
+      !! The nuclear gradient holds in a uniform field `F` as it does without
+      !! one,
+      !!
+      !!     g_x = Tr(D h^x) + (1/2) Tr(D G^x[D]) - Tr(W S^x) + F . Tr(D r^x)
+      !!
+      !! and the polarizability's derivative is minus its second field
+      !! derivative. The integrals do not depend on the field, so that is the
+      !! same contraction at the density's and the energy-weighted density's
+      !! field derivatives:
+      !!
+      !!     d alpha_kl / d x = - [ Tr(D^kl h^x) - Tr(W^kl S^x)
+      !!                            + Tr(D^kl G^x[D]) + Tr(D^k G^x[D^l])
+      !!                            + Tr(D^k r_l^x) + Tr(D^l r_k^x) ]
+      !!
+      !! `D^k` comes from the three coupled-perturbed solves the
+      !! polarizability itself needs and `D^kl` from six more, against the
+      !! same operator with a right-hand side built from the first-order
+      !! ones. No nuclear response is solved, so the cost does not grow with
+      !! the number of atoms beyond that of a gradient: nine response solves
+      !! and eighteen two-electron gradient contractions.
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: orbitals(:, :)          !! Canonical, (n_ao, n_mo)
+      real(dp), intent(in) :: orbital_energies(:)
+      integer, intent(in) :: n_occ
+      real(dp), intent(out) :: alpha(3, 3)   !! Bohr^3
+      real(dp), allocatable, intent(out) :: dalpha(:, :)
+         !! (6, 3*n_atoms) in Bohr^2, laid out as `polarizability_derivatives`
+         !! lays it out
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: dip(:, :, :), ddip(:, :, :, :, :)
+      real(dp), allocatable :: u1(:, :, :), u2(:, :, :), rhs(:, :, :)
+      real(dp), allocatable :: d0(:, :), d1(:, :, :), d2(:, :, :), w2(:, :, :)
+      real(dp), allocatable :: dm1(:, :, :), dm2(:, :, :), f1(:, :, :), f2(:, :, :)
+      real(dp), allocatable :: dm0(:, :), f0(:, :), wm(:, :)
+      real(dp), allocatable :: g(:, :, :), scratch(:, :, :), bounds(:, :), zero_h(:, :)
+      real(dp), allocatable :: s1(:, :, :), h1(:, :, :), kin(:, :, :)
+      real(dp), allocatable :: q1(:, :, :), qpair(:, :), plus(:, :), minus(:, :)
+      real(dp), allocatable :: second(:, :), trial(:, :)
+      integer, allocatable :: offsets(:), counts(:)
+      real(dp) :: origin(3)
+      integer :: n_ao, n_mo, n_vir, natm, k, l, c, i, iatom, comp, p0, p1
+
+      alpha = 0.0_dp
+      if (error%has_error()) return
+      n_ao = size(orbitals, 1)
+      n_mo = size(orbitals, 2)
+      n_vir = n_mo - n_occ
+      natm = mol%natm
+
+      origin = sum(mol%coords, 2)/real(natm, dp)
+      call multipole_matrices(mol, origin, 1, dip, error)
+      if (error%has_error()) return
+      call dipole_integral_derivatives(mol, origin, ddip, error)
+      if (error%has_error()) return
+      call schwarz_bounds(mol, bounds, error)
+      if (error%has_error()) return
+      allocate (zero_h(n_ao, n_ao))
+      zero_h = 0.0_dp
+
+      call logger%info("  Raman: analytic polarizability derivatives, nine response "// &
+                       "solves and no finite difference")
+
+      ! First order. `U^k` is the virtual-occupied block of the density's
+      ! derivative per spin, so the total is twice it, symmetrised.
+      call cphf_solve(mol, orbitals, orbital_energies, n_occ, perturbations=dip, &
+                      response=u1, error=error, tol=PROPERTY_RESPONSE_TOL)
+      if (error%has_error()) return
+
+      ! Everything below is assembled in the orbital basis and carried back.
+      allocate (dm0(n_mo, n_mo), f0(n_mo, n_mo))
+      dm0 = 0.0_dp
+      f0 = 0.0_dp
+      do i = 1, n_occ
+         dm0(i, i) = 2.0_dp
+      end do
+      do i = 1, n_mo
+         f0(i, i) = orbital_energies(i)
+      end do
+      allocate (d0(n_ao, n_ao))
+      call to_ao(dm0, d0)
+
+      allocate (dm1(n_mo, n_mo, 3), d1(n_ao, n_ao, 3), f1(n_mo, n_mo, 3))
+      dm1 = 0.0_dp
+      do k = 1, 3
+         dm1(n_occ + 1:, :n_occ, k) = 2.0_dp*u1(:, :, k)
+         dm1(:n_occ, n_occ + 1:, k) = 2.0_dp*transpose(u1(:, :, k))
+         call to_ao(dm1(:, :, k), d1(:, :, k))
+      end do
+      do k = 1, 3
+         do l = 1, 3
+            alpha(k, l) = -sum(d1(:, :, l)*dip(:, :, k))
+         end do
+      end do
+
+      ! The first-order Fock matrices: the field's own operator and the mean
+      ! field of the density it induces.
+      scratch = d1
+      call response_mean_field(mol, scratch, zero_h, g, error, bounds=bounds)
+      if (error%has_error()) return
+      do k = 1, 3
+         g(:, :, k) = g(:, :, k) + dip(:, :, k)
+         call to_mo(g(:, :, k), f1(:, :, k))
+      end do
+      deallocate (g, scratch)
+
+      ! Second order. Idempotency fixes the occupied-occupied and
+      ! virtual-virtual blocks of the density from the first-order ones;
+      ! only the block between them is solved for.
+      allocate (dm2(n_mo, n_mo, N_SYMMETRIC), d2(n_ao, n_ao, N_SYMMETRIC), f2(n_mo, n_mo, N_SYMMETRIC))
+      allocate (trial(n_mo, n_mo))
+      dm2 = 0.0_dp
+      do c = 1, N_SYMMETRIC
+         k = SYMMETRIC_ROW(c)
+         l = SYMMETRIC_COL(c)
+         call pic_gemm(dm1(:, :, k), dm1(:, :, l), trial)
+         trial = 0.5_dp*(trial + transpose(trial))
+         dm2(:n_occ, :n_occ, c) = -trial(:n_occ, :n_occ)
+         dm2(n_occ + 1:, n_occ + 1:, c) = trial(n_occ + 1:, n_occ + 1:)
+         call to_ao(dm2(:, :, c), d2(:, :, c))
+      end do
+
+      scratch = d2
+      call response_mean_field(mol, scratch, zero_h, g, error, bounds=bounds)
+      if (error%has_error()) return
+      allocate (rhs(n_vir, n_occ, N_SYMMETRIC))
+      do c = 1, N_SYMMETRIC
+         k = SYMMETRIC_ROW(c)
+         l = SYMMETRIC_COL(c)
+         call to_mo(g(:, :, c), f2(:, :, c))
+         ! The commutators `[F^k, P^l] + [F^l, P^k]` in the virtual-occupied
+         ! block, `P` being the density per spin.
+         rhs(:, :, c) = f2(n_occ + 1:, :n_occ, c) &
+                        + matmul(f1(n_occ + 1:, n_occ + 1:, k), u1(:, :, l)) &
+                        - matmul(u1(:, :, l), f1(:n_occ, :n_occ, k)) &
+                        + matmul(f1(n_occ + 1:, n_occ + 1:, l), u1(:, :, k)) &
+                        - matmul(u1(:, :, k), f1(:n_occ, :n_occ, l))
+      end do
+      deallocate (g, scratch)
+      call cphf_solve(mol, orbitals, orbital_energies, n_occ, response=u2, error=error, &
+                      tol=PROPERTY_RESPONSE_TOL, mo_rhs=rhs)
+      if (error%has_error()) then
+         call error%add_context("Raman: the second-order field response")
+         return
+      end if
+
+      ! The solved block, and the mean field of it on top of the fixed
+      ! blocks' one.
+      allocate (scratch(n_ao, n_ao, N_SYMMETRIC))
+      do c = 1, N_SYMMETRIC
+         trial = 0.0_dp
+         trial(n_occ + 1:, :n_occ) = 2.0_dp*u2(:, :, c)
+         trial(:n_occ, n_occ + 1:) = 2.0_dp*transpose(u2(:, :, c))
+         dm2(:, :, c) = dm2(:, :, c) + trial
+         call to_ao(trial, scratch(:, :, c))
+         d2(:, :, c) = d2(:, :, c) + scratch(:, :, c)
+      end do
+      call response_mean_field(mol, scratch, zero_h, g, error, bounds=bounds)
+      if (error%has_error()) return
+      do c = 1, N_SYMMETRIC
+         call to_mo(g(:, :, c), trial)
+         f2(:, :, c) = f2(:, :, c) + trial
+      end do
+      deallocate (g, scratch)
+
+      ! The energy-weighted density is `(1/2) D F D`, differentiated by the
+      ! product rule over its three factors.
+      allocate (w2(n_ao, n_ao, N_SYMMETRIC), wm(n_mo, n_mo))
+      do c = 1, N_SYMMETRIC
+         k = SYMMETRIC_ROW(c)
+         l = SYMMETRIC_COL(c)
+         wm = triple(dm2(:, :, c), f0, dm0) + triple(dm0, f0, dm2(:, :, c)) &
+              + triple(dm0, f2(:, :, c), dm0) &
+              + triple(dm1(:, :, k), f1(:, :, l), dm0) + triple(dm1(:, :, l), f1(:, :, k), dm0) &
+              + triple(dm0, f1(:, :, k), dm1(:, :, l)) + triple(dm0, f1(:, :, l), dm1(:, :, k)) &
+              + triple(dm1(:, :, k), f0, dm1(:, :, l)) + triple(dm1(:, :, l), f0, dm1(:, :, k))
+         wm = 0.5_dp*wm
+         call to_ao(wm, w2(:, :, c))
+      end do
+      deallocate (dm0, dm1, dm2, f0, f1, f2, wm, trial, u1, u2, rhs)
+
+      ! The integral derivatives, in libcint's convention: the nabla is on
+      ! the bra, and the derivative with respect to the bra's atom is minus
+      ! that.
+      call one_electron_deriv(mol, s1, DERIV_OVLP)
+      s1 = -s1
+      call one_electron_deriv(mol, kin, DERIV_KIN)
+      call one_electron_deriv(mol, h1, DERIV_NUC)
+      h1 = -(kin + h1)
+      deallocate (kin)
+      allocate (offsets(natm), counts(natm))
+      call atom_ao_blocks(mol, offsets, counts)
+
+      ! The two-electron term is quadratic in the density it is contracted
+      ! with, and the contraction available is the gradient's own, at one
+      ! density. A product of two different densities is the difference of
+      ! that at their sum and at each.
+      allocate (q1(3, natm, 3), qpair(3, natm), plus(3, natm), minus(3, natm))
+      q1 = 0.0_dp
+      do k = 1, 3
+         call two_electron_gradient(mol, d1(:, :, k), q1(:, :, k), error)
+         if (error%has_error()) return
+      end do
+
+      allocate (dalpha(N_SYMMETRIC, 3*natm), second(3, natm), trial(n_ao, n_ao))
+      do c = 1, N_SYMMETRIC
+         k = SYMMETRIC_ROW(c)
+         l = SYMMETRIC_COL(c)
+         second = 0.0_dp
+
+         call hellmann_feynman_gradient(mol, d2(:, :, c), second)
+         do iatom = 1, natm
+            if (counts(iatom) == 0) cycle
+            p0 = offsets(iatom) + 1
+            p1 = offsets(iatom) + counts(iatom)
+            do comp = 1, 3
+               second(comp, iatom) = second(comp, iatom) &
+                                     + 2.0_dp*sum(h1(p0:p1, :, comp)*d2(p0:p1, :, c)) &
+                                     - 2.0_dp*sum(s1(p0:p1, :, comp)*w2(p0:p1, :, c))
+            end do
+         end do
+
+         ! `Tr(D^kl G^x[D])`
+         plus = 0.0_dp
+         minus = 0.0_dp
+         trial = d0 + d2(:, :, c)
+         call two_electron_gradient(mol, trial, plus, error)
+         if (error%has_error()) return
+         trial = d0 - d2(:, :, c)
+         call two_electron_gradient(mol, trial, minus, error)
+         if (error%has_error()) return
+         second = second + 0.5_dp*(plus - minus)
+
+         ! `Tr(D^k G^x[D^l])`
+         if (k == l) then
+            second = second + 2.0_dp*q1(:, :, k)
+         else
+            qpair = 0.0_dp
+            trial = d1(:, :, k) + d1(:, :, l)
+            call two_electron_gradient(mol, trial, qpair, error)
+            if (error%has_error()) return
+            second = second + qpair - q1(:, :, k) - q1(:, :, l)
+         end if
+
+         ! The field term's own derivative, at the first-order densities.
+         do iatom = 1, natm
+            do comp = 1, 3
+               second(comp, iatom) = second(comp, iatom) &
+                                     + sum(d1(:, :, k)*ddip(:, :, l, comp, iatom)) &
+                                     + sum(d1(:, :, l)*ddip(:, :, k, comp, iatom))
+               dalpha(c, 3*(iatom - 1) + comp) = -second(comp, iatom)
+            end do
+         end do
+      end do
+
+   contains
+
+      subroutine to_ao(mo, ao)
+         !! `C mo C^T`
+         real(dp), intent(in) :: mo(:, :)
+         real(dp), intent(out) :: ao(:, :)
+         real(dp), allocatable :: half(:, :)
+
+         allocate (half(n_ao, n_mo))
+         call pic_gemm(orbitals, mo, half)
+         call pic_gemm(half, orbitals, ao, transb="T")
+      end subroutine to_ao
+
+      subroutine to_mo(ao, mo)
+         !! `C^T ao C`
+         real(dp), intent(in) :: ao(:, :)
+         real(dp), intent(out) :: mo(:, :)
+         real(dp), allocatable :: half(:, :)
+
+         allocate (half(n_ao, n_mo))
+         call pic_gemm(ao, orbitals, half)
+         call pic_gemm(orbitals, half, mo, transa="T")
+      end subroutine to_mo
+
+      function triple(x, y, z) result(xyz)
+         !! The product of three square matrices
+         real(dp), intent(in) :: x(:, :), y(:, :), z(:, :)
+         real(dp) :: xyz(size(x, 1), size(x, 1))
+         real(dp), allocatable :: xy(:, :)
+
+         allocate (xy(size(x, 1), size(x, 1)))
+         call pic_gemm(x, y, xy)
+         call pic_gemm(xy, z, xyz)
+      end function triple
+   end subroutine polarizability_derivatives_analytic
 
    subroutine polarizability_at(settings, element_numbers, symbols, coords, nelec, &
                                 guess_density, accelerator, diis_vectors, convergence, &
