@@ -1313,6 +1313,21 @@ contains
          end if
       end if
 
+      if (do_gradient .and. settings%run_cc) then
+         block
+            character(len=:), allocatable :: why
+            why = cc_gradient_decline_reason(settings, unrestricted)
+            if (len(why) > 0) then
+               call result%error%set(ERROR_VALIDATION, "the coupled cluster gradient is "// &
+                                     "implemented for RI-CCSD and RI-CCSD(T) over a closed-shell "// &
+                                     "reference with exact integrals, and not for "// &
+                                     why//". Run that as an energy.")
+               result%has_error = .true.
+               return
+            end if
+         end block
+      end if
+
       ! Continuum solvation on this backend is an *energy*: the surface charges
       ! enter every SCF iteration and the total, but their derivative does not
       ! exist here, so an analytic gradient would come back converged,
