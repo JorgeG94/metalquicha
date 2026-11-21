@@ -102,6 +102,9 @@ module mqc_cuest_iface
       character(len=:), allocatable :: charges_scheme
          !! Atomic partial charges from `properties.charges`, unallocated when
          !! none were asked for.
+      logical :: nmr_shielding = .false.
+         !! Nuclear magnetic shielding tensors from `properties.nmr`; the CPU
+         !! backend only.
       logical :: natural_orbitals = .false.
          !! Natural occupations from `properties.natural_orbitals`
       logical :: intrinsic_orbitals = .false.
@@ -260,6 +263,7 @@ contains
       if (allocated(properties%bond_order_scheme)) then
          settings%bond_order_scheme = properties%bond_order_scheme
       end if
+      settings%nmr_shielding = properties%nmr_shielding
       settings%natural_orbitals = properties%natural_orbitals
       settings%intrinsic_orbitals = properties%intrinsic_orbitals
       settings%intrinsic_exponent = properties%intrinsic_exponent

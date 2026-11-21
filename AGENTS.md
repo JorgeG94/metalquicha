@@ -401,6 +401,24 @@ separately. meta-GGA, VV10, density fitting, PCM, capped fragments, a
 correlated reference and cuEST are refused by name rather than approximated.
 See `mqc_docs/source/excited_states.rst`.
 
+NMR shieldings are `properties.nmr` on an energy deck: the shielding tensor
+of every nucleus over gauge-including (London) orbitals, closed-shell
+Hartree-Fock with exact integrals, everything else refused by name. Two
+modules. `mqc_czt_giao` is the integrals, through the field-derivative
+entry points `libcint_fortran` exports from libfint v0.9.0 on
+(`libcint_1e_igovlp_*` through `libcint_2e_ig1_*`). `mqc_czt_nmr` is the physics, term
+for term `pyscf.prop.nmr.rhf`: the field is an imaginary antisymmetric
+perturbation, so the coupled-perturbed operator is exchange only
+(`response_mean_field` with `minus`), and the occupied-occupied block of the
+first-order coefficients is fixed at `-s1/2`. **The tensor is not
+symmetric**, first index the field and second the nuclear moment, and a
+transposed result passes any symmetric check. The reference is
+`pyscf.prop.nmr.RHF` from the separate `pyscf-properties` package, whose
+packaged response callback assumes three vectors a call and fails under
+current PySCF; pass it one that reshapes to any count. The two-electron
+field derivative computes every shell quartet with no screening. See
+`mqc_docs/source/nmr_shielding.rst`.
+
 RIJCOSX is not a method name either. `keywords.scf.exchange: "cosx"` beside
 `keywords.scf.density_fitting` builds the Coulomb matrix from the fit and the
 exchange matrix by chain-of-spheres quadrature (`mqc_czt_cosx`), for a
@@ -830,7 +848,7 @@ under `cpu/mqc/` is deleted by the next regeneration.
 
 Validation categories under `cpu/mqc/` are `bond_orders ccsd ccsd-t charges cosx counterpoise
 df-dft df-hf df-uhf dft dh ecp efmo efp fmo fukui gdm gradient hessian interaction_energy
-makefp mcscf mp2 neo optimize pcm quao rhf ri-ccsd ri-ccsd-t ri-mp2 sapt scs-mp2
+makefp mcscf mp2 neo nmr optimize pcm quao rhf ri-ccsd ri-ccsd-t ri-mp2 sapt scs-mp2
 rohf soscf sos-mp2 tddft udft uhf` -- worth checking against before assuming
 something is untested. That list is `ls validation/inputs/cpu/mqc/`; it went stale twice
 because it was maintained by hand, so check the directory rather than this

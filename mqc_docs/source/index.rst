@@ -44,6 +44,7 @@ The API docs for the code itself can be found here: https://jorgeg94.github.io/m
    continuum_solvation
    rijcosx
    charges_and_bond_orders
+   nmr_shielding
    bonding_analysis
    natural_orbitals
    intrinsic_orbitals

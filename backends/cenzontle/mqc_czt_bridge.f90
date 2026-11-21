@@ -57,6 +57,7 @@ module mqc_czt_bridge
    use mqc_czt_mp2_hessian, only: mp2_correlation_hessian
    use mqc_czt_ri_mp2_hessian, only: ri_mp2_correlation_hessian, ri_hessian_metric_dropped
    use mqc_czt_mp2_gradient, only: czt_mp2_gradient
+   use mqc_czt_nmr, only: czt_nmr_shielding, print_shielding_report
    use mqc_czt_ri_mp2_gradient, only: czt_ri_mp2_gradient
    use mqc_czt_mp2, only: mp2_result_t, run_czt_mp2, run_czt_ri_mp2, &
                           run_czt_ump2, run_czt_uri_mp2
@@ -1290,6 +1291,41 @@ contains
       pcm_pte = settings%pcm%enabled .and. trim(settings%pcm%correlation) == "pte"
       pcm_ptd = settings%pcm%enabled .and. trim(settings%pcm%correlation) == "ptd"
 
+      ! The shielding implemented is closed-shell Hartree-Fock's with exact
+      ! integrals. Each of these would run and return that formula's number
+      ! for a wave function it does not describe.
+      if (settings%nmr_shielding) then
+         block
+            character(len=:), allocatable :: why
+
+            why = ""
+            if (unrestricted) then
+               why = "an open shell needs the spin-resolved response and the "// &
+                     "terms the unpaired spin adds"
+            else if (len_trim(settings%functional) > 0) then
+               why = "a Kohn-Sham reference needs the gauge factor carried through "// &
+                     "the exchange-correlation quadrature"
+            else if (settings%run_mp2 .or. settings%run_cc) then
+               why = "a correlated shielding needs that method's own response "// &
+                     "to the field"
+            else if (settings%density_fitting) then
+               why = "a density-fitted reference needs the field derivative of "// &
+                     "the fitted integrals"
+            else if (settings%pcm%enabled) then
+               why = "a continuum's reaction field is not differentiated"
+            else if (len_trim(settings%ecp_set) > 0) then
+               why = "an effective core potential's field derivative is not built"
+            end if
+            if (len(why) > 0) then
+               call result%error%set(ERROR_VALIDATION, "properties.nmr is implemented "// &
+                                     "for closed-shell Hartree-Fock with exact "// &
+                                     "integrals: "//why//".")
+               result%has_error = .true.
+               return
+            end if
+         end block
+      end if
+
       ! Natural orbitals are those of the most complete one-particle density
       ! the method has, and `properties.density: "relaxed"` asks the charges
       ! and bond orders for the same one. For a correlated method that is a
@@ -2506,6 +2542,29 @@ contains
       if (bonding_analysis_kind(settings%bonding_analysis) == BONDING_GMS_QUAO) then
          call run_czt_bonding_analysis(settings, mol, fragment, symbols, scf%orbitals, &
                                        nelec, result)
+      end if
+
+      ! Nuclear magnetic shieldings: a second derivative of the reference's
+      ! own energy, so it needs nothing but the converged orbitals. A failure
+      ! is a warning, as for every analysis here.
+      if (settings%nmr_shielding) then
+         block
+            type(error_t) :: nmr_error
+            real(dp), allocatable :: sigma(:, :, :), sigma_dia(:, :, :), sigma_para(:, :, :)
+
+            call czt_nmr_shielding(mol, scf%orbitals, scf%orbital_energies, &
+                                   scf%n_occupied, sigma, nmr_error, &
+                                   diamagnetic=sigma_dia, paramagnetic=sigma_para)
+            if (nmr_error%has_error()) then
+               call logger%warning("  shieldings could not be computed: "// &
+                                   nmr_error%get_message())
+            else
+               call print_shielding_report(sigma, symbols)
+               call move_alloc(sigma, result%nmr_shielding)
+               call move_alloc(sigma_dia, result%nmr_diamagnetic)
+               call move_alloc(sigma_para, result%nmr_paramagnetic)
+            end if
+         end block
       end if
 
       ! ---- dE/dR, analytically ----------------------------------------------
