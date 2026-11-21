@@ -429,7 +429,17 @@ transpose, on the grid, with that derivative's gradient for a GGA.
 size that is not a multiple of the grid's), so the reference is the same
 formulas in one pass, held to the two numbers in that module's self-test --
 and those were made with the old B3LYP, `b3lyp5` now, which is 0.02 ppm from
-today's. See `mqc_docs/source/nmr_shielding.rst`.
+today's. **In a continuum the surface charges do not respond either**, to
+the field or to a nucleus's contact field, so the couplings need nothing but
+the solvated orbitals and the shieldings need one term: the gauge derivative
+of the charges' potential, `giao_smeared_charges`. The charges are Gaussians,
+and `int1e_ignuc` sums integer charges over every atom it is told of, so each
+charge is put first in the atom list as a unit Gaussian nucleus and the
+integral told there is one atom -- it still finds each shell's centre further
+down the list. One pass over the shell pairs per surface point. No other
+program here does a shielding in a continuum, so **the check is translation**:
+6e-8 ppm with the term, 87 ppm without. See
+`mqc_docs/source/nmr_shielding.rst`.
 
 Spin-spin couplings are `properties.spin_spin_coupling`, a separate request
 from the shieldings: a deck may want either without the other.

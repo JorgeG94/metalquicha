@@ -21,6 +21,8 @@ module test_mqc_czt_nmr
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
    use mqc_czt_nmr, only: czt_nmr_shielding
    use mqc_czt_xc, only: xc_context_t, xc_context_create, xc_available
+   use mqc_czt_pcm, only: pcm_context_t
+   use mqc_method_config, only: pcm_config_t
    use mqc_nmr_summary, only: shielding_summary
    implicit none
    private
@@ -81,21 +83,27 @@ contains
                   new_unittest("translation_leaves_the_tensors_unchanged", test_translation), &
                   new_unittest("kohn_sham_tensors_match_pyscf", test_kohn_sham), &
                   new_unittest("kohn_sham_translation_and_refusals", test_kohn_sham_gauge), &
+                  new_unittest("continuum_shieldings_do_not_move", test_continuum), &
                   new_unittest("summary_of_a_known_tensor", test_summary) &
                   ]
    end subroutine collect_mqc_czt_nmr_tests
 
-   subroutine shield_water(shift, sigma, dia, para, err, functional)
+   subroutine shield_water(shift, sigma, dia, para, err, functional, dielectric)
       !! Water in 6-31G, moved by `shift`, and its shielding tensors
       real(dp), intent(in) :: shift(3)
       real(dp), allocatable, intent(out) :: sigma(:, :, :), dia(:, :, :), para(:, :, :)
       type(error_t), intent(inout) :: err
       character(len=*), intent(in), optional :: functional
          !! Kohn-Sham with this functional; absent is Hartree-Fock
+      real(dp), intent(in), optional :: dielectric
+         !! In a conductor-like continuum of this dielectric constant;
+         !! Hartree-Fock only here. Absent is the gas phase.
 
       type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
       type(xc_context_t) :: xc
+      type(pcm_context_t) :: pcm
+      type(pcm_config_t) :: config
       real(dp) :: c(3, 3)
       integer :: i
 
@@ -115,6 +123,22 @@ contains
          if (err%has_error()) return
          call czt_nmr_shielding(mol, scf%orbitals, scf%orbital_energies, scf%n_occupied, &
                                 sigma, err, diamagnetic=dia, paramagnetic=para, xc=xc)
+         call mol%destroy()
+         return
+      end if
+      if (present(dielectric)) then
+         config%enabled = .true.
+         config%method = "cpcm"
+         config%dielectric = dielectric
+         config%angular_points = 302
+         call pcm%build(mol, [8, 1, 1], config, err)
+         if (err%has_error()) return
+         call run_czt_rhf(mol, 10, 200, 1.0e-13_dp, 1.0e-11_dp, .false., scf, err, &
+                          grad_tol=1.0e-10_dp, pcm=pcm)
+         if (err%has_error()) return
+         call czt_nmr_shielding(mol, scf%orbitals, scf%orbital_energies, scf%n_occupied, &
+                                sigma, err, diamagnetic=dia, paramagnetic=para, pcm=pcm)
+         call pcm%destroy()
          call mol%destroy()
          return
       end if
@@ -246,6 +270,45 @@ contains
                  index(err%get_message(), "range-separated") > 0, &
                  "a range-separated shielding was not refused by name")
    end subroutine test_kohn_sham_gauge
+
+   subroutine test_continuum(error)
+      !! Shieldings in a continuum, which no other program here computes.
+      !!
+      !! What can be checked without one is the thing the continuum's term
+      !! exists for. The surface charges' potential sits in the Fock matrix,
+      !! so its derivative through the gauge factor has to sit in the
+      !! first-order one, or the shielding depends on where the molecule is:
+      !! with that term left out, moving water by the vector below changes
+      !! oxygen's shielding by 87 ppm. With it the change is the response
+      !! solve's residual. Any error of sign or size in the term shows here.
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp), parameter :: EPS_WATER = 78.3553_dp
+      type(error_t) :: err
+      real(dp), allocatable :: gas(:, :, :), here(:, :, :), there(:, :, :)
+      real(dp), allocatable :: dia(:, :, :), para(:, :, :)
+      real(dp) :: iso_gas, iso_here
+
+      call shield_water([0.0_dp, 0.0_dp, 0.0_dp], gas, dia, para, err)
+      call shield_water([0.0_dp, 0.0_dp, 0.0_dp], here, dia, para, err, dielectric=EPS_WATER)
+      call shield_water([3.0_dp, -5.0_dp, 7.0_dp], there, dia, para, err, &
+                        dielectric=EPS_WATER)
+      call check(error,.not. err%has_error(), "shielding: "//err%get_full_trace())
+      if (allocated(error)) return
+      iso_gas = (gas(1, 1, 1) + gas(2, 2, 1) + gas(3, 3, 1))/3.0_dp
+      iso_here = (here(1, 1, 1) + here(2, 2, 1) + here(3, 3, 1))/3.0_dp
+      write (*, "(4x,a,es10.2)") "in the continuum, largest change on moving ", &
+         maxval(abs(there - here))
+      write (*, "(4x,a,2f12.4)") "oxygen, gas phase and continuum            ", &
+         iso_gas, iso_here
+      call check(error, maxval(abs(there - here)) < 1.0e-5_dp, &
+                 "the shielding in a continuum changed when the molecule was moved")
+      if (allocated(error)) return
+      ! And the continuum did something: oxygen's shielding rises by twelve
+      ! ppm in water's dielectric.
+      call check(error, abs(iso_here - iso_gas - 11.68_dp) < 0.05_dp, &
+                 "the continuum's effect on oxygen's shielding is not the one measured")
+   end subroutine test_continuum
 
    subroutine test_summary(error)
       type(error_type), allocatable, intent(out) :: error

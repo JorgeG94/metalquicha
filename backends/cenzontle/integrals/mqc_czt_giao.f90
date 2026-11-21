@@ -12,7 +12,9 @@ module mqc_czt_giao
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_czt_integrals, only: czt_molecule_t, shell_dim
-   use libcint_fortran, only: LIBCINT_PTR_RINV_ORIG, &
+   use libcint_fortran, only: LIBCINT_PTR_RINV_ORIG, LIBCINT_ATM_SLOTS, LIBCINT_ATOM_OF, &
+                              LIBCINT_CHARGE_OF, LIBCINT_PTR_COORD, LIBCINT_NUC_MOD_OF, &
+                              LIBCINT_PTR_ZETA, &
                               libcint_1e_igovlp_sph, libcint_1e_igovlp_cart, &
                               libcint_1e_igkin_sph, libcint_1e_igkin_cart, &
                               libcint_1e_ignuc_sph, libcint_1e_ignuc_cart, &
@@ -26,6 +28,7 @@ module mqc_czt_giao
 
    public :: giao_one_electron
    public :: giao_coulomb_exchange
+   public :: giao_smeared_charges
    public :: GIAO_OVLP, GIAO_KIN, GIAO_NUC, GIAO_RXP, GIAO_A11, GIAO_A01GP, GIAO_PRINVXP
 
    integer, parameter :: GIAO_OVLP = 1     !! `int1e_igovlp`, 3 components
@@ -193,6 +196,105 @@ contains
       end if
       have = ret /= 0
    end function one_shell_pair
+
+   subroutine giao_smeared_charges(mol, coords, zeta, charges, matrix, error)
+      !! The field derivative of the potential of a set of Gaussian charges
+      !!
+      !! For the one-electron operator
+      !! `-sum_k q_k erf(zeta_k |r - r_k|) / |r - r_k|`, which is what a
+      !! continuum's surface charges add to the Fock matrix, the matrix of
+      !! its derivative through the gauge factor.
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: coords(:, :)   !! (3, n_charges), Bohr
+      real(dp), intent(in) :: zeta(:)        !! The `zeta_k` of `erf(zeta_k r)`
+      real(dp), intent(in) :: charges(:)
+      real(dp), allocatable, intent(out) :: matrix(:, :, :)   !! (n_ao, n_ao, 3)
+      type(error_t), intent(inout) :: error
+
+      ! libcint's code for a nucleus that is a Gaussian rather than a point,
+      ! which `libcint_fortran` has no name for.
+      integer, parameter :: GAUSSIAN_NUCLEUS = 2
+      ! Slots added to `env` for the charge: three coordinates, the width,
+      ! and the fractional charge libfint counts one past the width.
+      integer, parameter :: N_CHARGE_SLOTS = 5
+      integer, allocatable :: atm(:, :), bas(:, :)
+      real(dp), allocatable :: env(:), buf(:), acc(:)
+      integer :: shls(2)
+      integer :: n_charges, ish, jsh, di, dj, io, jo, i, j, comp, mx, k, slot, n_env
+      logical :: have
+
+      if (error%has_error()) return
+      n_charges = size(charges)
+      if (size(coords, 2) /= n_charges .or. size(zeta) /= n_charges) then
+         call error%set(ERROR_VALIDATION, "the smeared charges, their positions and "// &
+                        "their widths differ in number")
+         return
+      end if
+      allocate (matrix(mol%nao, mol%nao, N_VECTOR))
+      matrix = 0.0_dp
+      if (n_charges == 0) return
+
+      ! There is no integral for one such charge at an arbitrary point, and
+      ! the nuclear one sums over every atom it is told of. So the charge is
+      ! put first in the atom list as a Gaussian nucleus of unit charge, the
+      ! molecule's atoms after it with every shell's atom index moved up by
+      ! one, and the integral told there is one atom: it sums over the charge
+      ! alone and still finds every shell's centre. That reads `atm` past the
+      ! one atom declared, which holds because the array is passed whole.
+      n_env = size(mol%env)
+      allocate (atm(LIBCINT_ATM_SLOTS, mol%natm + 1))
+      allocate (bas, source=mol%bas)
+      atm(:, 1) = 0
+      atm(:, 2:) = mol%atm
+      atm(LIBCINT_CHARGE_OF, 1) = 1
+      atm(LIBCINT_PTR_COORD, 1) = n_env
+      atm(LIBCINT_NUC_MOD_OF, 1) = GAUSSIAN_NUCLEUS
+      atm(LIBCINT_PTR_ZETA, 1) = n_env + 3
+      bas(LIBCINT_ATOM_OF, :) = bas(LIBCINT_ATOM_OF, :) + 1
+      mx = max_shell_dim(mol)
+      slot = n_env + 1
+
+      !$omp parallel default(none) &
+      !$omp    shared(mol, matrix, atm, bas, mx, coords, zeta, charges, n_charges, n_env, slot) &
+      !$omp    private(ish, jsh, di, dj, io, jo, i, j, comp, shls, buf, acc, have, env, k)
+      allocate (buf(mx*mx*N_VECTOR), acc(mx*mx*N_VECTOR), env(n_env + N_CHARGE_SLOTS))
+      env(1:n_env) = mol%env
+      env(n_env + 1:) = 0.0_dp
+      !$omp do schedule(dynamic)
+      do ish = 1, mol%nbas
+         di = shell_dim(mol%cartesian, ish - 1, mol%bas)
+         io = mol%shell_offset(ish)
+         do jsh = 1, mol%nbas
+            dj = shell_dim(mol%cartesian, jsh - 1, mol%bas)
+            jo = mol%shell_offset(jsh)
+            shls = [ish - 1, jsh - 1]
+            acc(1:di*dj*N_VECTOR) = 0.0_dp
+            do k = 1, n_charges
+               env(slot:slot + 2) = coords(:, k)
+               ! A Gaussian nucleus of exponent `a` has the potential
+               ! `erf(sqrt(a) r) / r`.
+               env(slot + 3) = zeta(k)**2
+               if (mol%cartesian) then
+                  have = libcint_1e_ignuc_cart(buf, shls, atm, 1, bas, mol%nbas, env) /= 0
+               else
+                  have = libcint_1e_ignuc_sph(buf, shls, atm, 1, bas, mol%nbas, env) /= 0
+               end if
+               if (have) acc(1:di*dj*N_VECTOR) = acc(1:di*dj*N_VECTOR) &
+                                                 + charges(k)*buf(1:di*dj*N_VECTOR)
+            end do
+            do comp = 1, N_VECTOR
+               do j = 1, dj
+                  do i = 1, di
+                     matrix(io + i, jo + j, comp) = acc(i + di*(j - 1 + dj*(comp - 1)))
+                  end do
+               end do
+            end do
+         end do
+      end do
+      !$omp end do
+      deallocate (buf, acc, env)
+      !$omp end parallel
+   end subroutine giao_smeared_charges
 
    subroutine giao_coulomb_exchange(mol, density, vj, vk, error)
       !! The field derivative of the two-electron integrals against a density
