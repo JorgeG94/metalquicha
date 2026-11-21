@@ -83,7 +83,9 @@ contains
                   new_unittest("ri_mp2_gradient_rejects_freezing_everything", &
                                test_ri_frozen_gradient_refusal), &
                   new_unittest("packed_eri_is_symmetric_and_screened_within_bound", &
-                               test_packed_eri_screening) &
+                               test_packed_eri_screening), &
+                  new_unittest("ri_mp2_relaxed_density_is_the_energy_derivative", &
+                               test_relaxed_density) &
                   ]
    end subroutine collect_mqc_czt_mp2_tests
 
@@ -292,6 +294,109 @@ contains
       if (allocated(error)) return
       call check(error, ri%n_virtual, exact%n_virtual)
    end subroutine test_ri
+
+   subroutine test_relaxed_density(error)
+      !! The relaxed density against a finite field, in any one-electron operator
+      !!
+      !! `relaxed_density` claims that its trace with a one-electron operator is
+      !! the derivative of the RI-MP2 energy with respect to that operator's
+      !! strength. That is checked literally: the operator is added to the
+      !! core Hamiltonian at plus and minus a small strength, the reference
+      !! and the correlation are both rerun, and the central difference is
+      !! compared with the trace. Nothing about a gradient enters, so a
+      !! density that is right only inside the gradient's own contractions
+      !! would fail here. The operator is the core Hamiltonian itself: any
+      !! symmetric matrix serves, and this one has no symmetry the density
+      !! could hide behind.
+      !!
+      !! `fit_response` is off: the reference here is exact, and the default
+      !! fitted response operator moves this trace by 1.9e-5 -- the fitting
+      !! error, magnified by an operator the size of the Hamiltonian.
+      !!
+      !! All-electron and frozen core, because the occupied-frozen block of
+      !! the relaxed density exists only in the second. The trace with the
+      !! overlap is the electron count either way.
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp), parameter :: FIELD = 4.0e-4_dp
+      type(czt_molecule_t) :: mol, aux
+      type(error_t) :: err
+      type(rhf_result_t) :: scf
+      real(dp), allocatable :: v(:, :), s(:, :), relaxed(:, :), no_gradient(:, :)
+      real(dp) :: e_plus, e_minus, numeric, analytic, coarse
+      integer :: frozen
+
+      call build_czt_molecule([8, 1, 1], ["O ", "H ", "H "], WATER_B, "6-31g", mol, err)
+      call build_czt_molecule([8, 1, 1], ["O ", "H ", "H "], WATER_B, "cc-pvdz-rifit", aux, err)
+      call check(error,.not. err%has_error(), "water must build: "//err%get_full_trace())
+      if (allocated(error)) return
+      call mol%core_hamiltonian(v)
+      call mol%overlap(s)
+
+      do frozen = 0, 1
+         call run_czt_rhf(mol, 10, 200, 1.0e-13_dp, 1.0e-11_dp, .false., scf, err, &
+                          in_core=.true., grad_tol=1.0e-10_dp)
+         call check(error, scf%converged, "the reference did not converge")
+         if (allocated(error)) return
+         call czt_ri_mp2_gradient(mol, aux, scf%orbitals, scf%orbital_energies, 5, &
+                                  no_gradient, err, n_frozen=frozen, &
+                                  fit_response=.false., relaxed_density=relaxed)
+         call check(error,.not. err%has_error(), "relaxed density: "//err%get_full_trace())
+         if (allocated(error)) return
+         call check(error,.not. allocated(no_gradient), &
+                    "asking for the density must not assemble a gradient")
+         if (allocated(error)) return
+         call check(error, abs(sum(relaxed*s) - 10.0_dp) < 1.0e-9_dp, &
+                    "the relaxed density does not hold ten electrons")
+         if (allocated(error)) return
+
+         ! Two step sizes, extrapolated: the core Hamiltonian is a large
+         ! operator and the energy is visibly cubic in its strength, so one
+         ! central difference carries a truncation error near 1e-5 here.
+         call field_energy(FIELD, e_plus)
+         if (allocated(error)) return
+         call field_energy(-FIELD, e_minus)
+         if (allocated(error)) return
+         coarse = (e_plus - e_minus)/(2.0_dp*FIELD)
+         call field_energy(0.5_dp*FIELD, e_plus)
+         if (allocated(error)) return
+         call field_energy(-0.5_dp*FIELD, e_minus)
+         if (allocated(error)) return
+         numeric = (4.0_dp*(e_plus - e_minus)/FIELD - coarse)/3.0_dp
+         analytic = sum(relaxed*v)
+         write (*, "(a,i0,a,f16.9,a,f16.9,a,f16.9)") "    frozen ", frozen, &
+            ": dE/dlambda one step ", coarse, "  extrapolated ", numeric, &
+            "  Tr(P V) ", analytic
+         call check(error, abs(numeric - analytic) < 1.0e-6_dp, &
+                    "the relaxed density is not the derivative of the RI-MP2 energy")
+         if (allocated(error)) return
+      end do
+      call mol%destroy()
+      call aux%destroy()
+
+   contains
+
+      subroutine field_energy(strength, energy)
+         !! The RI-MP2 total energy with `strength * v` added to the Hamiltonian
+         real(dp), intent(in) :: strength
+         real(dp), intent(out) :: energy
+
+         type(rhf_result_t) :: ref
+         type(mp2_result_t) :: mp2
+
+         energy = 0.0_dp
+         call run_czt_rhf(mol, 10, 200, 1.0e-13_dp, 1.0e-11_dp, .false., ref, err, &
+                          in_core=.true., grad_tol=1.0e-10_dp, h_extra=strength*v)
+         call check(error, ref%converged .and. .not. err%has_error(), &
+                    "the perturbed reference did not converge")
+         if (allocated(error)) return
+         call run_czt_ri_mp2(mol, aux, ref%orbitals, ref%orbital_energies, 5, ref%energy, &
+                             mp2, err, n_frozen=frozen)
+         call check(error,.not. err%has_error(), "perturbed MP2: "//err%get_full_trace())
+         if (allocated(error)) return
+         energy = mp2%total
+      end subroutine field_energy
+   end subroutine test_relaxed_density
 
    subroutine water_gradient(basis, frozen, gradient, err, block_bytes, force_blocked)
       !! One converged SCF at `WATER_B`, then the frozen-core MP2 gradient

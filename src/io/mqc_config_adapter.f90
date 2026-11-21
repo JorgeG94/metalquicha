@@ -435,6 +435,12 @@ contains
          driver_config%method_config%properties%bond_order_scheme = &
             mqc_config%bond_order_scheme
       end if
+      driver_config%method_config%properties%natural_orbitals = mqc_config%natural_orbitals
+      driver_config%method_config%properties%intrinsic_orbitals = &
+         mqc_config%intrinsic_orbitals
+      driver_config%method_config%properties%intrinsic_exponent = &
+         mqc_config%intrinsic_exponent
+      driver_config%method_config%properties%density = mqc_config%properties_density
       if (allocated(mqc_config%bonding_analysis)) then
          driver_config%method_config%properties%bonding_analysis = &
             mqc_config%bonding_analysis
@@ -467,6 +473,7 @@ contains
 
       driver_config%method_config%pcm%enabled = mqc_config%pcm_enabled
       driver_config%method_config%pcm%method = mqc_config%pcm_method
+      driver_config%method_config%pcm%correlation = mqc_config%pcm_correlation
       driver_config%method_config%pcm%dielectric = mqc_config%pcm_dielectric
       driver_config%method_config%pcm%angular_points = mqc_config%pcm_angular_points
       driver_config%method_config%pcm%radii_scale = mqc_config%pcm_radii_scale

@@ -86,7 +86,7 @@ module mqc_result_types
    type :: energy_t
       !! Container for quantum chemistry energy components
       !!
-      !! The total is `scf + dispersion + dh_pt2 + mp2%total() + cc%total()`.
+      !! The total is `scf + dispersion + dh_pt2 + solvation + mp2%total() + cc%total()`.
       real(dp) :: scf = 0.0_dp           !! SCF/HF/KS reference energy (Hartree)
       real(dp) :: dispersion = 0.0_dp
          !! Empirical dispersion, from `keywords.dft.dispersion`. Kept out of
@@ -96,6 +96,11 @@ module mqc_result_types
          !! without it.
       real(dp) :: dh_pt2 = 0.0_dp
          !! The perturbative part of a double hybrid's *functional*.
+      real(dp) :: solvation = 0.0_dp
+         !! A continuum's free energy evaluated once, after the wave function,
+         !! with a density the SCF did not converge -- `keywords.pcm.correlation
+         !! "ptd"`. Zero whenever the continuum was part of the SCF, whose
+         !! energy then carries it inside `scf`.
       type(mp2_energy_t) :: mp2          !! MP2 correlation components
       type(cc_energy_t) :: cc            !! Coupled cluster correlation components
       ! add more as needed, also need to modify the total energy function
@@ -139,6 +144,37 @@ module mqc_result_types
          !! units, Fermi-contact term, from `properties.spin_spin_coupling`.
          !! Symmetric, zero on the diagonal; unallocated when not asked for.
          !! Its two parts, same shape. Only their sum is gauge independent.
+      real(dp), allocatable :: iao_charges(:)
+         !! (natoms) intrinsic atomic orbital charges, when
+         !! `properties.intrinsic_orbitals` asked
+      real(dp), allocatable :: ibo_populations(:, :)
+         !! (natoms, n_occ) the share of each intrinsic bond orbital on each
+         !! atom; a column sums to one
+      real(dp), allocatable :: iao_spin_populations(:)
+         !! (natoms) alpha minus beta intrinsic populations; allocated only
+         !! for an unrestricted reference
+      real(dp), allocatable :: ibo_populations_beta(:, :)
+         !! (natoms, n_beta) the beta bond orbitals of an unrestricted
+         !! reference, `ibo_populations` then holding alpha's. Each orbital
+         !! holds one electron there and two otherwise.
+      integer :: ibo_exponent = 0
+         !! The localisation exponent those orbitals were found with
+      logical :: has_intrinsic_orbitals = .false.
+      real(dp), allocatable :: natural_occupations(:)
+         !! Occupations of the natural orbitals, descending, when
+         !! `properties.natural_orbitals` asked. One per retained orbital, both
+         !! spins summed, so between zero and two.
+      character(len=32) :: natural_orbital_density = ""
+         !! Which density they diagonalise: "scf", "unrestricted scf" or
+         !! "ri-mp2 relaxed". Occupations of different densities are not
+         !! comparable, so the name travels with them.
+      real(dp) :: natural_unpaired_linear = 0.0_dp
+         !! `sum min(n, 2 - n)` over those occupations
+      real(dp) :: natural_unpaired_quadratic = 0.0_dp
+         !! `sum n^2 (2 - n)^2` over them
+      integer :: natural_fractional = 0
+         !! How many lie between 0.02 and 1.98
+      logical :: has_natural_orbitals = .false.
 
       ! Atomic partial charges, when `properties.charges` asked for them.
       real(dp), allocatable :: atomic_charges(:)
@@ -149,6 +185,9 @@ module mqc_result_types
          !! sums to `n_alpha - n_beta`. Allocated only for an unrestricted
          !! reference under Mulliken; CHELPG fits the electrostatic potential,
          !! which has no spin analogue.
+      character(len=32) :: analysis_density = ""
+         !! Which density the charges and bond orders partitioned: "scf" or
+         !! "ri-mp2 relaxed". Empty when neither was computed.
       character(len=16) :: charge_scheme = ""
          !! Which partition produced them. Two schemes disagree by design, so a
          !! charge without its scheme is not interpretable.
@@ -483,7 +522,8 @@ contains
       real(dp) :: total
 
       ! this line needs to me modified if more components are added
-      total = this%scf + this%dispersion + this%dh_pt2 + this%mp2%total() + this%cc%total()
+      total = this%scf + this%dispersion + this%dh_pt2 + this%solvation &
+              + this%mp2%total() + this%cc%total()
    end function energy_total
 
    subroutine energy_reset(this)
@@ -492,6 +532,7 @@ contains
       this%scf = 0.0_dp
       this%dispersion = 0.0_dp
       this%dh_pt2 = 0.0_dp
+      this%solvation = 0.0_dp
       call this%mp2%reset()
       call this%cc%reset()
    end subroutine energy_reset
@@ -504,6 +545,8 @@ contains
       ! while `has_bond_orders` still says they are current.
       class(calculation_result_t), intent(inout) :: this
       if (allocated(this%gradient)) deallocate (this%gradient)
+      if (allocated(this%natural_occupations)) deallocate (this%natural_occupations)
+      this%has_natural_orbitals = .false.
       if (allocated(this%sigma)) deallocate (this%sigma)
       if (allocated(this%hessian)) deallocate (this%hessian)
       if (allocated(this%dipole)) deallocate (this%dipole)
@@ -777,6 +820,7 @@ contains
       call send(comm, result%energy%scf, dest, tag)
       call send(comm, result%energy%dispersion, dest, tag)
       call send(comm, result%energy%dh_pt2, dest, tag)
+      call send(comm, result%energy%solvation, dest, tag)
       call send(comm, result%energy%mp2%ss_scale, dest, tag)
       call send(comm, result%energy%mp2%os_scale, dest, tag)
       call send(comm, result%energy%mp2%ss, dest, tag)
@@ -882,6 +926,7 @@ contains
       ! Send other energy components (blocking to avoid needing multiple request handles)
       call send(comm, result%energy%dispersion, dest, tag)
       call send(comm, result%energy%dh_pt2, dest, tag)
+      call send(comm, result%energy%solvation, dest, tag)
       call send(comm, result%energy%mp2%ss_scale, dest, tag)
       call send(comm, result%energy%mp2%os_scale, dest, tag)
       call send(comm, result%energy%mp2%ss, dest, tag)
@@ -995,6 +1040,7 @@ contains
       call recv(comm, result%energy%scf, source, tag, status)
       call recv(comm, result%energy%dispersion, source, tag, status)
       call recv(comm, result%energy%dh_pt2, source, tag, status)
+      call recv(comm, result%energy%solvation, source, tag, status)
       call recv(comm, result%energy%mp2%ss_scale, source, tag, status)
       call recv(comm, result%energy%mp2%os_scale, source, tag, status)
       call recv(comm, result%energy%mp2%ss, source, tag, status)
@@ -1116,6 +1162,7 @@ contains
       ! Receive other energy components (blocking to avoid needing multiple request handles)
       call recv(comm, result%energy%dispersion, source, tag, status)
       call recv(comm, result%energy%dh_pt2, source, tag, status)
+      call recv(comm, result%energy%solvation, source, tag, status)
       call recv(comm, result%energy%mp2%ss_scale, source, tag, status)
       call recv(comm, result%energy%mp2%os_scale, source, tag, status)
       call recv(comm, result%energy%mp2%ss, source, tag, status)
