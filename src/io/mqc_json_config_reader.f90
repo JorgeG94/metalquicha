@@ -230,6 +230,32 @@ contains
       ! And again: the object is the request, `scheme` only says which
       ! definition, defaulted here so the scheme the run used is a value in the
       ! config and travels into the report and the JSON beside the numbers.
+      ! The object is the request, as for `charges`; it has no settings yet.
+      call json%info("properties.natural_orbitals", found=config%natural_orbitals)
+      call json%info("properties.intrinsic_orbitals", found=config%intrinsic_orbitals)
+      call optional_int(json, "properties.intrinsic_orbitals.exponent", &
+                        config%intrinsic_exponent)
+      if (config%intrinsic_exponent /= 2 .and. config%intrinsic_exponent /= 4) then
+         call error%set(ERROR_VALIDATION, "properties.intrinsic_orbitals.exponent must "// &
+                        "be 2 (Pipek-Mezey) or 4 (the default)")
+         return
+      end if
+      block
+         character(len=:), allocatable :: density_text
+         logical :: density_named
+         call json%get("properties.density", density_text, density_named)
+         if (density_named .and. allocated(density_text)) then
+            density_text = to_lower(trim(density_text))
+            select case (density_text)
+            case ("scf", "relaxed")
+               config%properties_density = density_text
+            case default
+               call error%set(ERROR_VALIDATION, "properties.density '"//density_text// &
+                              "' is not 'scf' or 'relaxed'")
+               return
+            end select
+         end if
+      end block
       call json%info("properties.bond_orders", found=found_bond_orders)
       if (found_bond_orders) then
          config%bond_order_scheme = "mayer"
@@ -425,6 +451,22 @@ contains
          call json%get("keywords.pcm.method", pcm_method_text, pcm_method_named)
          if (pcm_method_named .and. allocated(pcm_method_text)) then
             config%pcm_method = pcm_method_text
+         end if
+      end block
+      block
+         character(len=:), allocatable :: scheme_text
+         logical :: scheme_named
+         call json%get("keywords.pcm.correlation", scheme_text, scheme_named)
+         if (scheme_named .and. allocated(scheme_text)) then
+            scheme_text = to_lower(trim(scheme_text))
+            select case (scheme_text)
+            case ("none", "pte", "ptd")
+               config%pcm_correlation = scheme_text
+            case default
+               call error%set(ERROR_VALIDATION, "keywords.pcm.correlation '"// &
+                              scheme_text//"' is not one of 'none', 'pte' or 'ptd'")
+               return
+            end select
          end if
       end block
       call optional_real(json, "keywords.pcm.dielectric", config%pcm_dielectric)

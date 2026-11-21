@@ -542,6 +542,15 @@ HAND_MAINTAINED = {
     # converge to a plausible number.
     "cpu/mqc/pcm/cpu_water_cation_6-31g_uhf_iefpcm.json",
     "cpu/mqc/pcm/cpu_water_6-31g_pbe0_cpcm.json",
+    # MP2 in a continuum, under each `keywords.pcm.correlation` scheme. The
+    # PySCF recipes are in their manifest notes.
+    "cpu/mqc/pcm/cpu_nh3_cc-pvdz_rimp2_f1_ptd_cpcm.json",
+    "cpu/mqc/pcm/cpu_w1_cc-pvdz_rimp2_f0_ptd_cpcm.json",
+    "cpu/mqc/pcm/cpu_w1_cc-pvdz_rimp2_f0_ptd_cpcm_dfref.json",
+    "cpu/mqc/pcm/cpu_w1_cc-pvdz_rimp2_f0_pte_cpcm.json",
+    "cpu/mqc/pcm/cpu_w1_cc-pvdz_rimp2_f1_ptd_iefpcm.json",
+    "cpu/mqc/pcm/cpu_w1_cc-pvdz_rimp2_f1_pte_iefpcm_dfref.json",
+    "cpu/mqc/pcm/cpu_w1_cation_cc-pvdz_rimp2_f1_pte_iefpcm.json",
     # Same reasoning, and the identity is the whole point here: propane cut at
     # both C-C bonds, expanded to its fragment count, has to reproduce the
     # unfragmented energy however the bonds were detached. It does, to 1.2e-12.
