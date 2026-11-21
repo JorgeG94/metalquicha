@@ -328,6 +328,11 @@ if(MQC_ENABLE_CZT)
   addtest(mqc_czt_nmr)
   target_link_libraries(test_mqc_czt_nmr PRIVATE ${MQC_INTEGRALS_LIBS})
 
+  # The restricted open-shell SCF: PySCF's energies, the shared orbital spaces,
+  # and the stationary conditions on the effective Fock matrix.
+  addtest(mqc_czt_rohf)
+  target_link_libraries(test_mqc_czt_rohf PRIVATE ${MQC_INTEGRALS_LIBS})
+
   # A fragment potential written and read back. The format is GAMESS's, so
   # writer and reader are two halves of one thing and a round trip is what pins
   # them.

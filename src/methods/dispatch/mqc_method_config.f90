@@ -126,6 +126,8 @@ module mqc_method_config
          !! Force an unrestricted (UHF/UKS) treatment even for a closed shell.
          !! Needed for broken-symmetry singlets, and the cleanest check that
          !! the unrestricted code reduces to the restricted result.
+      logical :: restricted_open = .false.
+         !! Restricted open-shell (ROHF/ROKS) treatment of an open shell.
       character(len=32) :: aux_basis_set = "def2-universal-jkfit"
          !! Auxiliary (JKFIT) basis for the density-fitted J and K. Required,
          !! not optional, for the cuEST backend, which exposes no conventional
@@ -475,6 +477,8 @@ module mqc_method_config
          !! Use spherical (true) or Cartesian (false) basis
       logical :: unrestricted = .false.
          !! Force UHF/UKS even for a closed shell
+      logical :: restricted_open = .false.
+         !! ROHF/ROKS for an open shell
       logical :: density_fitting = .false.
          !! Fit J and K rather than computing exact integrals
       logical :: cosx = .false.

@@ -114,6 +114,14 @@ contains
       ! no orbital-rotation Hessian under `backends/cuest`, so a Newton phase
       ! cannot be run here; a deck that asked for one would otherwise get a
       ! plain DIIS SCF and no indication that it had.
+      if (settings%restricted_open) then
+         call error%set(ERROR_VALIDATION, "model.restricted_open asks for a "// &
+                        "restricted open-shell reference, which the cuEST backend "// &
+                        "does not have. Refused rather than run unrestricted "// &
+                        "without saying so. Use the CPU backend.")
+         call record_failure(result, error)
+         return
+      end if
       if (settings%gdm) then
          call error%set(ERROR_VALIDATION, "keywords.scf.gdm asks for geometric "// &
                         "direct minimisation, which the cuEST backend does not "// &
