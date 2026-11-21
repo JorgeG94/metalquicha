@@ -1313,6 +1313,8 @@ contains
                      "the fitted integrals"
             else if (settings%pcm%enabled) then
                why = "a continuum's reaction field is not differentiated"
+            else if (len_trim(settings%ecp_set) > 0) then
+               why = "an effective core potential's field derivative is not built"
             end if
             if (len(why) > 0) then
                call result%error%set(ERROR_VALIDATION, "properties.nmr is implemented "// &

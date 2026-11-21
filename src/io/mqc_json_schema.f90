@@ -269,10 +269,8 @@ contains
    end function properties_keys
 
    function nmr_keys() result(keys)
-      !! Settings for the nuclear magnetic shieldings
-      !!
-      !! None yet: the object is the request, as `charges` is, and every
-      !! nucleus is shielded over gauge-including orbitals.
+      !! Settings for the nuclear magnetic shieldings: none, the object is
+      !! the request
       type(key_set_t) :: keys
       keys%n_allowed = 0
    end function nmr_keys

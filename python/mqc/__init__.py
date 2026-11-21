@@ -864,6 +864,18 @@ class Result:
         return self._section("dipole")
 
     @property
+    def nmr_shielding(self):
+        """Nuclear magnetic shieldings from the run, or None.
+
+        ``units`` is ``"ppm"`` and ``atoms`` is one entry per nucleus in input
+        order: ``atom`` (1-based), ``element``, ``isotropic``, ``anisotropy``
+        and the full ``tensor``, first index the field's direction and second
+        the nuclear moment's. A chemical shift is a reference compound's
+        isotropic shielding minus this one, at the same level of theory.
+        """
+        return self._section("nmr_shielding")
+
+    @property
     def atomic_charges(self):
         """Partial charges from the run, or None.
 

@@ -135,6 +135,9 @@ module mqc_physical_constants
    real(dp), parameter, public :: ATM_TO_PA = 101325.0_dp
    !! Pressure: 1 atm in Pa (exact by definition)
 
+   real(dp), parameter, public :: FINE_STRUCTURE = 7.2973525693e-3_dp
+      !! The fine-structure constant, CODATA 2018; `1/c` in atomic units
+
    real(dp), parameter, public :: PI = 3.14159265358979323846_dp
    !! Pi constant
 
