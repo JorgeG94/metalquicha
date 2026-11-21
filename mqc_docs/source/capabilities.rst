@@ -268,7 +268,9 @@ Implicit solvation models account for solvent effects without explicit solvent m
   Lebedev points per sphere, the same switching function, the same fitted
   per-point Gaussian exponents -- so the two can be compared directly. cuEST
   runs C-PCM only, validated against PySCF's, and refuses ``iefpcm``. terco
-  runs both, on the CPU backend's own cavity radii. See
+  runs both, on the CPU backend's own cavity radii. MP2 runs in the
+  continuum under a named scheme, ``keywords.pcm.correlation``: ``pte`` for
+  any MP2, ``ptd`` for closed-shell RI-MP2 with its relaxed density. See
   :doc:`continuum_solvation`.
 - **ALPB**: Analytical Linearized Poisson-Boltzmann (xTB; recommended for GFN2-xTB)
 - **GBSA**: Generalized Born with Solvent-Accessible Surface Area (xTB)
@@ -666,7 +668,7 @@ four.
   two ions unrestricted, and condensed onto atoms by a population scheme
   (``population``: ``hirshfeld``, the default, ``chelpg`` or ``mulliken``).
   ``properties.fukui``.
-- **Atomic charges**, Mulliken, CHELPG, Hirshfeld or MBIS, partitioning the density the
+- **Atomic charges**, Mulliken, Lowdin, CHELPG, Hirshfeld or MBIS, partitioning the density the
   calculation already converged -- Hartree-Fock or any Kohn-Sham functional,
   restricted or unrestricted, at no cost beyond the SCF that was going to run
   anyway. The object is the request and ``scheme`` only says how, so
@@ -674,6 +676,21 @@ four.
   Hirshfeld or MBIS spin populations from ``P_alpha - P_beta``; there is no CHELPG counterpart,
   because that scheme fits the electrostatic potential and the total density
   alone determines it. ``properties.charges``.
+- **Intrinsic atomic and bond orbitals** (Knizia's IAO/IBO): basis-set
+  insensitive atomic charges, and the occupied orbitals localised into cores,
+  lone pairs and bonds with each one's share per atom. Hartree-Fock or
+  Kohn-Sham; an unrestricted reference is analysed one spin at a time and
+  gets spin populations too. ``properties.intrinsic_orbitals``; see
+  :doc:`intrinsic_orbitals`.
+- **Natural orbitals**: the occupations of the orbitals that diagonalise the
+  most complete one-particle density the method has -- the spin-summed density
+  of an unrestricted reference, or the relaxed density of closed-shell
+  RI-MP2 -- with two counts of effectively unpaired electrons.
+  ``properties.natural_orbitals``; see :doc:`natural_orbitals`.
+- **Wiberg bond orders in Lowdin's basis**, ``"scheme": "wiberg_lowdin"``
+  under ``properties.bond_orders``: the same sum of squares as Mayer's, taken
+  in Lowdin's orthonormal basis. The bare ``"wiberg"`` is refused, since an
+  NBO analysis means the natural-atomic-orbital one by it.
 - **Mayer bond orders**, over the converged density and the AO overlap:
   ``B_AB = sum_{mu in A, nu in B} (DS)_mu,nu (DS)_nu,mu`` for a closed shell,
   and a spin-resolved sum -- not that expression with the total density -- for

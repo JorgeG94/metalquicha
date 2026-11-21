@@ -65,6 +65,10 @@ module mqc_json_output_types
          !! compared with a published DFT-D number, and a later reader cannot
          !! tell whether a run had one at all.
       logical :: has_dispersion = .false.
+      real(dp) :: solvation_energy = 0.0_dp
+         !! The continuum free energy evaluated after the wave function
+         !! (`keywords.pcm.correlation "ptd"`), beside the total it is inside.
+      logical :: has_solvation = .false.
       real(dp), allocatable :: gradient(:, :)     !! (3, natoms)
       real(dp), allocatable :: hessian(:, :)      !! (3*natoms, 3*natoms)
       real(dp), allocatable :: dipole(:)          !! (3)
@@ -246,6 +250,7 @@ module mqc_json_output_types
       logical :: has_ieda = .false.
       real(dp), allocatable :: atomic_charges(:)
       real(dp), allocatable :: spin_populations(:)
+      character(len=32) :: analysis_density = ""
       character(len=16) :: charge_scheme = ""
       logical :: has_charges = .false.
       ! Bond orders over a converged density, when `properties.bond_orders`
@@ -258,6 +263,20 @@ module mqc_json_output_types
       logical :: has_bond_orders = .false.
       real(dp), allocatable :: nmr_shielding(:, :, :)
       real(dp), allocatable :: nmr_diamagnetic(:, :, :), nmr_paramagnetic(:, :, :)
+      ! Intrinsic atomic orbital charges and bond orbital populations.
+      real(dp), allocatable :: iao_charges(:)
+      real(dp), allocatable :: ibo_populations(:, :)
+      real(dp), allocatable :: iao_spin_populations(:)
+      real(dp), allocatable :: ibo_populations_beta(:, :)
+      integer :: ibo_exponent = 0
+      logical :: has_intrinsic_orbitals = .false.
+      ! Natural occupations, with the name of the density they belong to.
+      real(dp), allocatable :: natural_occupations(:)
+      character(len=32) :: natural_orbital_density = ""
+      real(dp) :: natural_unpaired_linear = 0.0_dp
+      real(dp) :: natural_unpaired_quadratic = 0.0_dp
+      integer :: natural_fractional = 0
+      logical :: has_natural_orbitals = .false.
       real(dp), allocatable :: fukui_plus(:), fukui_minus(:), fukui_dual(:)
       real(dp) :: fukui_ip = 0.0_dp
       real(dp) :: fukui_ea = 0.0_dp
@@ -582,6 +601,8 @@ contains
       this%total_energy = 0.0_dp
       this%dispersion_energy = 0.0_dp
       this%has_dispersion = .false.
+      this%solvation_energy = 0.0_dp
+      this%has_solvation = .false.
       this%has_energy = .false.
       this%has_gradient = .false.
       this%has_hessian = .false.
@@ -616,6 +637,8 @@ contains
       this%has_ieda = .false.
       this%has_fukui = .false.
       this%has_bond_orders = .false.
+      this%has_natural_orbitals = .false.
+      this%has_intrinsic_orbitals = .false.
       this%has_stability = .false.
       this%stability_stable = .true.
       this%stability_has_curvature = .false.

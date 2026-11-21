@@ -105,6 +105,13 @@ module mqc_cuest_iface
       logical :: nmr_shielding = .false.
          !! Nuclear magnetic shielding tensors from `properties.nmr`; the CPU
          !! backend only.
+      logical :: natural_orbitals = .false.
+         !! Natural occupations from `properties.natural_orbitals`
+      logical :: intrinsic_orbitals = .false.
+         !! IAO charges and IBOs from `properties.intrinsic_orbitals`
+      integer :: intrinsic_exponent = 4
+      character(len=16) :: properties_density = "scf"
+         !! `properties.density`: "scf" or "relaxed"
       character(len=:), allocatable :: bond_order_scheme
          !! Bond orders over the converged density from
          !! `properties.bond_orders`, unallocated when none were asked for.
@@ -255,6 +262,10 @@ contains
          settings%bond_order_scheme = properties%bond_order_scheme
       end if
       settings%nmr_shielding = properties%nmr_shielding
+      settings%natural_orbitals = properties%natural_orbitals
+      settings%intrinsic_orbitals = properties%intrinsic_orbitals
+      settings%intrinsic_exponent = properties%intrinsic_exponent
+      settings%properties_density = properties%density
    end subroutine apply_properties_settings
 
    subroutine apply_scf_settings(settings, options)
