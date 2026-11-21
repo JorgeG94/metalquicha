@@ -246,18 +246,45 @@ activities beside the frequencies with
    "driver": "Hessian",
    "properties": {"raman": {}}
 
-``properties.raman`` is a request by its presence, takes no settings, and is
-refused on any driver but ``Hessian``.
+``properties.raman`` is a request by its presence and is refused on any driver
+but ``Hessian``. Its one setting, ``method``, chooses how the polarizability
+derivatives are obtained: ``"field"`` (the default) or ``"displacements"``.
 
 How it is computed
 ------------------
 
-The Cartesian derivative of the static polarizability,
-:math:`\partial\alpha/\partial x_j`, is taken by central differences: each
-coordinate is displaced by 0.005 Bohr both ways, the reference is reconverged,
-and the coupled-perturbed polarizability is evaluated there. That is
-:math:`6N` self-consistent fields and :math:`6N` response solves on top of the
-Hessian, and for a small molecule it costs several times what the Hessian does.
+What is needed is the Cartesian derivative of the static polarizability,
+:math:`\partial\alpha/\partial x_j`: a third derivative of the energy, twice in
+the electric field and once in a nuclear coordinate. It is taken by finite
+differences of something analytic, and there are two ways to arrange that.
+
+**By field** (``"method": "field"``, the default). In a uniform field
+:math:`\mathbf{F}` the energy is
+:math:`E_0 - \boldsymbol\mu\cdot\mathbf{F} - \tfrac12\mathbf{F}\alpha\mathbf{F}`,
+so
+
+.. math::
+
+   \frac{\partial \alpha_{kl}}{\partial x_j}
+     = -\frac{\partial^2 g_j}{\partial F_k\,\partial F_l}
+
+with :math:`g` the analytic nuclear gradient. The reference is reconverged in
+twelve fields of 0.001 atomic units -- plus and minus each axis, and plus and
+minus each pair of axes together -- and the gradient taken in each. **Thirteen
+self-consistent fields and gradients, whatever the size of the molecule**, all
+at one geometry, so the molecule and its quadrature grid are built once.
+
+**By displacement** (``"method": "displacements"``). Each coordinate is moved
+by 0.005 Bohr both ways, the reference reconverged, and the coupled-perturbed
+polarizability evaluated there: :math:`6N` self-consistent fields and
+:math:`6N` response solves. It costs more than the field route from three
+atoms up and grows with the molecule, and is kept because it shares nothing
+with the other past the reference: it is what the field route is checked
+against.
+
+The two are different finite differences of the same quantity and agree to the
+error of each, about :math:`3\times10^{-5}` Bohr\ :sup:`2` on water's
+derivatives of order ten.
 
 Projected onto mode :math:`i`,
 
@@ -338,8 +365,12 @@ Limits
 - **Static polarizability.** The derivative is of the zero-frequency
   polarizability, which is the usual approximation far from an electronic
   absorption and wrong near one: there is no resonance Raman here.
-- **The displaced calculations run one after another**, not distributed over
-  MPI ranks as the displacements of a semi-numerical Hessian are.
+- **Numerical, not analytic.** Either route differences an analytic quantity.
+  The fully analytic derivative needs no extra self-consistent fields at all
+  and is not built; for Kohn-Sham it would need the third functional
+  derivative.
+- **The extra calculations run one after another**, not distributed over MPI
+  ranks as the displacements of a semi-numerical Hessian are.
 - **Harmonic, like everything else on this page.**
 
 Thermochemistry (RRHO Approximation)

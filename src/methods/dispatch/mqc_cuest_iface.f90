@@ -104,6 +104,8 @@ module mqc_cuest_iface
          !! none were asked for.
       logical :: raman = .false.
          !! Raman activities from `properties.raman`; the CPU backend only.
+      character(len=16) :: raman_method = "field"
+         !! Which finite difference: "field" or "displacements"
       logical :: natural_orbitals = .false.
          !! Natural occupations from `properties.natural_orbitals`
       logical :: intrinsic_orbitals = .false.
@@ -255,7 +257,6 @@ contains
       if (allocated(properties%fukui_guess)) then
          settings%fukui_guess = properties%fukui_guess
       end if
-      settings%raman = properties%raman
       settings%fukui_scf = properties%fukui_scf
       if (allocated(properties%charges_scheme)) then
          settings%charges_scheme = properties%charges_scheme
@@ -263,6 +264,8 @@ contains
       if (allocated(properties%bond_order_scheme)) then
          settings%bond_order_scheme = properties%bond_order_scheme
       end if
+      settings%raman = properties%raman
+      settings%raman_method = properties%raman_method
       settings%natural_orbitals = properties%natural_orbitals
       settings%intrinsic_orbitals = properties%intrinsic_orbitals
       settings%intrinsic_exponent = properties%intrinsic_exponent

@@ -136,6 +136,9 @@ module mqc_config_types
       logical :: raman = .false.
          !! `properties.raman` was given: Raman activities beside the
          !! frequencies of a Hessian run.
+      character(len=:), allocatable :: raman_method
+         !! `properties.raman.method`: "field" or "displacements". Set to
+         !! "field" before the deck is read.
       character(len=16) :: properties_density = "scf"
          !! `properties.density`: which one-particle density the charges and
          !! bond orders partition, "scf" or "relaxed". See
