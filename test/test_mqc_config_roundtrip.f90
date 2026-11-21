@@ -17,7 +17,8 @@ module test_mqc_config_roundtrip
    use mqc_config_types, only: mqc_config_t
    use mqc_json_config_reader, only: read_json_config_file
    use mqc_config_adapter, only: driver_config_t, config_to_driver, &
-                                 check_counterpoise_support, check_interaction_energy_support
+                                 check_counterpoise_support, check_interaction_energy_support, &
+                                 check_property_support
    use mqc_calc_types, only: CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN, &
                              CALC_TYPE_OPTIMIZE, CALC_TYPE_INTERACTION_ENERGY
    use mqc_method_types, only: METHOD_TYPE_HF, METHOD_TYPE_GFN2, METHOD_TYPE_EFP2
@@ -50,6 +51,8 @@ contains
                                test_counterpoise_cuest_refused), &
                   new_unittest("interaction_energy_is_refused_where_it_is_not_defined", &
                                test_interaction_energy_support), &
+                  new_unittest("response_properties_over_fragments", &
+                               test_property_support), &
                   new_unittest("hf_settings_reach_the_method", test_hf_roundtrip), &
                   new_unittest("dft_settings_reach_the_method", test_dft_roundtrip), &
                   new_unittest("mcscf_active_space_reaches_the_method", test_mcscf_roundtrip), &
@@ -394,6 +397,61 @@ contains
                  "counterpoise with "//label//" must be refused, not ignored")
       call err%clear()
    end subroutine must_refuse
+
+   subroutine test_property_support(error)
+      !! Which fragmentations may carry `properties.nmr` and
+      !! `properties.spin_spin_coupling`, checked on the type directly
+      !!
+      !! A many-body expansion over disjoint fragments assembles shieldings and
+      !! nothing else here assembles either property. Before this check a
+      !! deck asking for one under FMO or overlapping fragments ran to the end
+      !! and wrote no section, which reads as a finished calculation.
+      type(error_type), allocatable, intent(out) :: error
+      type(driver_config_t) :: driver
+      type(error_t) :: err
+
+      ! Unfragmented: none of this check's business, whatever is asked.
+      driver%nlevel = 0
+      driver%method_config%properties%nmr_shielding = .true.
+      driver%method_config%properties%spin_spin_coupling = .true.
+      call check_property_support(driver, err)
+      call check(error,.not. err%has_error(), "an unfragmented run must pass: "// &
+                 err%get_message())
+      if (allocated(error)) return
+
+      ! Shieldings over a plain expansion are the supported fragmented case.
+      driver%nlevel = 2
+      driver%expansion_kind = "mbe"
+      driver%allow_overlapping_fragments = .false.
+      driver%method_config%properties%spin_spin_coupling = .false.
+      call check_property_support(driver, err)
+      call check(error,.not. err%has_error(), "shieldings over MBE must pass: "// &
+                 err%get_message())
+      if (allocated(error)) return
+
+      ! Couplings are refused there, by their own name.
+      driver%method_config%properties%spin_spin_coupling = .true.
+      call check_property_support(driver, err)
+      call check(error, err%has_error() .and. &
+                 index(err%get_message(), "properties.spin_spin_coupling") > 0, &
+                 "couplings over fragments were not refused by name")
+      if (allocated(error)) return
+      call err%clear()
+      driver%method_config%properties%spin_spin_coupling = .false.
+
+      ! Shieldings under a field, and over overlapping fragments.
+      driver%expansion_kind = "fmo"
+      call check_property_support(driver, err)
+      call check(error, err%has_error() .and. index(err%get_message(), "properties.nmr") > 0, &
+                 "shieldings under FMO were not refused by name")
+      if (allocated(error)) return
+      call err%clear()
+      driver%expansion_kind = "mbe"
+      driver%allow_overlapping_fragments = .true.
+      call check_property_support(driver, err)
+      call check(error, err%has_error() .and. index(err%get_message(), "properties.nmr") > 0, &
+                 "shieldings over overlapping fragments were not refused by name")
+   end subroutine test_property_support
 
    subroutine test_interaction_energy_support(error)
       !! What `check_interaction_energy_support` allows, and what it refuses

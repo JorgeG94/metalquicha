@@ -241,14 +241,15 @@ proton spectrum is usable at the second level and an oxygen one is not. The
 slow part is the polarisation of each molecule by all the others at once,
 which an expansion without embedding has to rebuild term by term.
 
-What is not assembled, and says so or is simply absent:
+What is not assembled:
 
-- The spin-spin couplings. Each term still computes them when asked, which is
-  wasted work; ask for them on an unfragmented run.
+- The spin-spin couplings, under any fragmentation: the deck is refused. A
+  coupling joins two nuclei that may sit in different fragments; ask for them
+  on an unfragmented run.
+- With overlapping fragments (GMBE), FMO, EE-MBE or EFMO: the deck is refused.
 - Under counterpoise, where the weights do not know a ghosted term from an
   ordinary one: a warning, and no shieldings.
-- With overlapping fragments (GMBE), and for an interaction-energy run, which
-  has no whole system to report on.
+- For an interaction-energy run, which has no whole system to report on.
 - With an embedding field, whose potential would need the same gauge term a
   continuum's surface charges do. It is not built for the embedding charges.
 

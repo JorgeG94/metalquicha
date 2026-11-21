@@ -299,6 +299,7 @@ contains
       type(mbe_result_t), intent(inout) :: mbe_result
       logical, intent(in) :: do_grad, do_hess, do_dipole_derivs
       logical, intent(in) :: do_shielding
+         !! Add this term's shielding tensors to `mbe_result%nmr_shielding`
 
       integer :: i_mon, i_atom, j_mon, j_atom, icart
       integer :: frag_atom_i, frag_atom_j, sys_atom_i, sys_atom_j
