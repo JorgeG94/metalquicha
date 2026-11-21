@@ -1358,7 +1358,8 @@ contains
                n_at = size(sys_geom%element_numbers)
                n_modes = size(frequencies)
                call compute_thermochemistry(sys_geom%coordinates, sys_geom%element_numbers, &
-                                            frequencies, n_at, n_modes, thermo_result)
+                                            frequencies, n_at, n_modes, thermo_result, &
+                                            spin_multiplicity=sys_geom%multiplicity)
 
                ! Print vibrational analysis to log
                if (allocated(ir_intensities)) then
@@ -1367,13 +1368,15 @@ contains
                                                   force_constants_mdyne=fc_mdyne, &
                                                   ir_intensities=ir_intensities, &
                                                   coordinates=sys_geom%coordinates, &
-                                                  electronic_energy=mbe_result%total_energy)
+                                                  electronic_energy=mbe_result%total_energy, &
+                                                  spin_multiplicity=sys_geom%multiplicity)
                else
                   call print_vibrational_analysis(frequencies, reduced_masses, force_constants, &
                                                   cart_disp, sys_geom%element_numbers, &
                                                   force_constants_mdyne=fc_mdyne, &
                                                   coordinates=sys_geom%coordinates, &
-                                                  electronic_energy=mbe_result%total_energy)
+                                                  electronic_energy=mbe_result%total_energy, &
+                                                  spin_multiplicity=sys_geom%multiplicity)
                end if
 
                ! Populate json_data for vibrational output if present
@@ -1764,7 +1767,8 @@ contains
                                                cart_disp, sys_geom%element_numbers, &
                                                force_constants_mdyne=fc_mdyne, &
                                                coordinates=sys_geom%coordinates, &
-                                               electronic_energy=total_energy)
+                                               electronic_energy=total_energy, &
+                                               spin_multiplicity=sys_geom%multiplicity)
                deallocate (frequencies, reduced_masses, force_constants, cart_disp, fc_mdyne)
             end if
          end block
