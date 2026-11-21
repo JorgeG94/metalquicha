@@ -283,6 +283,14 @@ contains
       call refuse_unsupported(settings, error)
       if (error%has_error()) return
 
+      if (settings%restricted_open) then
+         call error%set(ERROR_VALIDATION, "model.restricted_open asks for a "// &
+                        "restricted open-shell reference, which this bridge does "// &
+                        "not forward to terco. Refused rather than run unrestricted "// &
+                        "without saying so. Use the CPU backend.")
+         return
+      end if
+
       ! The CPU backend gives a ghost centre a full cavity sphere, as PySCF
       ! does, and terco gives it none. Which is right is not settled, so a
       ! ghosted fragment under a continuum is refused rather than answered

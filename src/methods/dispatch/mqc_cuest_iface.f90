@@ -203,6 +203,8 @@ module mqc_cuest_iface
          !! Node-local MPI rank; decides which GPU this rank binds to
       logical :: unrestricted = .false.
          !! Force UHF/UKS even for a closed shell
+      logical :: restricted_open = .false.
+         !! ROHF/ROKS for an open shell; the CPU backend only
 
       logical :: allow_crap_scf = .false.
          !! Keep a non-converged SCF instead of failing the fragment. Same
@@ -291,6 +293,7 @@ contains
       settings%freeze_core = options%freeze_core
       settings%n_frozen_core = options%n_frozen_core
       settings%unrestricted = options%unrestricted
+      settings%restricted_open = options%restricted_open
       settings%guess = options%guess
       if (allocated(options%guess_steps)) settings%guess_steps = options%guess_steps
       settings%max_iter = options%max_iter
