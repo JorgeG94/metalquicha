@@ -302,7 +302,8 @@ contains
       ! TODO(mqc): the warning branch below writes 100 characters into this
       ! 96-character buffer, so a sum rule that is actually violated raises an
       ! output-overflow runtime error instead of printing the warning.
-      character(len=96) :: line
+      ! Long enough for the longer of the two messages, which is 100.
+      character(len=128) :: line
 
       n_atoms = size(dipole_derivatives, 2)/3
       sums = 0.0_dp

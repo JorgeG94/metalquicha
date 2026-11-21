@@ -7,6 +7,7 @@ module test_mqc_mbe
                              create_monomer_list, get_nfrags, binomial
    use mqc_combinatorics, only: COUNTERPOISE_VMFC
    use pic_types, only: dp, int64
+   use mqc_physical_fragment, only: system_geometry_t
    implicit none
    private
    public :: collect_mqc_mbe_tests
@@ -35,7 +36,8 @@ contains
                   new_unittest("scf_only_run_has_no_split", test_no_correlation_no_split), &
                   new_unittest("checkpointed_term_withholds_split", test_checkpoint_withholds_split), &
                   new_unittest("mp2_spin_parts_add_up_by_level", test_mp2_parts), &
-                  new_unittest("cc_triples_expand_on_their_own", test_cc_parts) &
+                  new_unittest("cc_triples_expand_on_their_own", test_cc_parts), &
+                  new_unittest("raman_derivatives_expand_like_dipole_ones", test_raman_assembly) &
                   ]
    end subroutine collect_mqc_mbe_tests
 
@@ -963,6 +965,154 @@ contains
       call check(error, int(counts(size(counts))), 1, &
                  "the monomers in one failure each should rank last")
    end subroutine test_failures_name_their_culprit
+
+   subroutine test_raman_assembly(error)
+      !! Polarizability derivatives are assembled beside the dipole ones.
+      !!
+      !! Three monomers of two atoms through the pairs, with every term's
+      !! Hessian, dipole derivatives and polarizability derivatives made up
+      !! so that a two-body expansion is exact: a column of a term is the
+      !! atom's own column plus one increment for each other monomer in the
+      !! term. The assembled columns must then be the atom's own plus both
+      !! neighbours' increments, for all six components, which holds only if
+      !! the columns land on the right system coordinates with the right
+      !! weights. And the activities must come out of the vibrational
+      !! analysis, one per mode.
+      type(error_type), allocatable, intent(out) :: error
+
+      integer, parameter :: N_MON = 3, PER = 2, N_TERMS = 6, N_POL = 6
+      type(calculation_result_t), allocatable :: results(:)
+      type(mbe_result_t) :: mbe_result, without
+      type(system_geometry_t) :: sys_geom
+      integer, allocatable :: polymers(:, :)
+      real(dp) :: expected(N_POL)
+      integer :: iterm, slot, mon, other, atom, sys_atom, local, j, n_in_term, n3, icart, k
+
+      sys_geom%n_monomers = N_MON
+      sys_geom%atoms_per_monomer = PER
+      sys_geom%total_atoms = N_MON*PER
+      allocate (sys_geom%element_numbers(N_MON*PER), sys_geom%coordinates(3, N_MON*PER))
+      sys_geom%element_numbers = 1
+      ! Six hydrogens in general position: the analysis needs a geometry to
+      ! project rotations out of, and no two atoms may coincide.
+      do k = 1, N_MON*PER
+         sys_geom%coordinates(:, k) = [1.9_dp*k, 0.7_dp*k**2, -0.4_dp*k + 0.3_dp*mod(k, 2)]
+      end do
+
+      allocate (polymers(N_TERMS, 2), results(N_TERMS))
+      polymers = 0
+      polymers(1, 1) = 1
+      polymers(2, 1) = 2
+      polymers(3, 1) = 3
+      polymers(4, 1:2) = [1, 2]
+      polymers(5, 1:2) = [1, 3]
+      polymers(6, 1:2) = [2, 3]
+      do iterm = 1, N_TERMS
+         n_in_term = count(polymers(iterm, :) > 0)
+         n3 = 3*PER*n_in_term
+         results(iterm)%has_energy = .true.
+         results(iterm)%energy%scf = -1.0_dp*n_in_term
+         allocate (results(iterm)%gradient(3, PER*n_in_term))
+         results(iterm)%gradient = 0.0_dp
+         results(iterm)%has_gradient = .true.
+         ! A positive diagonal Hessian: every term's modes are real, and the
+         ! expansion of it is a positive diagonal too.
+         allocate (results(iterm)%hessian(n3, n3))
+         results(iterm)%hessian = 0.0_dp
+         do k = 1, n3
+            results(iterm)%hessian(k, k) = 0.5_dp
+         end do
+         results(iterm)%has_hessian = .true.
+         allocate (results(iterm)%dipole_derivatives(3, n3))
+         allocate (results(iterm)%polarizability_derivatives(N_POL, n3))
+         local = 0
+         do slot = 1, n_in_term
+            mon = polymers(iterm, slot)
+            do atom = 1, PER
+               local = local + 1
+               sys_atom = (mon - 1)*PER + atom
+               do icart = 1, 3
+                  expected = own_column(sys_atom, icart)
+                  do j = 1, n_in_term
+                     other = polymers(iterm, j)
+                     if (other /= mon) expected = expected + increment(sys_atom, icart, other)
+                  end do
+                  results(iterm)%polarizability_derivatives(:, 3*(local - 1) + icart) = expected
+                  results(iterm)%dipole_derivatives(:, 3*(local - 1) + icart) = expected(1:3)
+               end do
+            end do
+         end do
+         results(iterm)%has_dipole_derivatives = .true.
+      end do
+
+      allocate (mbe_result%gradient(3, N_MON*PER))
+      allocate (mbe_result%hessian(3*N_MON*PER, 3*N_MON*PER))
+      call compute_mbe(polymers, int(N_TERMS, int64), 2, results, mbe_result, sys_geom)
+      call check(error, allocated(mbe_result%polarizability_derivatives), &
+                 "the polarizability derivatives were not assembled")
+      if (allocated(error)) return
+      call check(error, size(mbe_result%polarizability_derivatives, 1) == N_POL .and. &
+                 size(mbe_result%polarizability_derivatives, 2) == 3*N_MON*PER, &
+                 "the assembled polarizability derivatives have the wrong shape")
+      if (allocated(error)) return
+      do mon = 1, N_MON
+         do atom = 1, PER
+            sys_atom = (mon - 1)*PER + atom
+            do icart = 1, 3
+               expected = own_column(sys_atom, icart)
+               do other = 1, N_MON
+                  if (other /= mon) expected = expected + increment(sys_atom, icart, other)
+               end do
+               call check(error, maxval(abs(mbe_result%polarizability_derivatives( &
+                                            :, 3*(sys_atom - 1) + icart) - expected)) < 1.0e-12_dp, &
+                          "an assembled polarizability-derivative column is wrong")
+               if (allocated(error)) return
+               ! The dipole derivatives went through the same path with the
+               ! first three components, so the two must agree there.
+               call check(error, maxval(abs(mbe_result%dipole_derivatives( &
+                                            :, 3*(sys_atom - 1) + icart) - expected(1:3))) &
+                          < 1.0e-12_dp, "an assembled dipole-derivative column is wrong")
+               if (allocated(error)) return
+            end do
+         end do
+      end do
+
+      ! One term without them and none are assembled, while the infrared
+      ! side is untouched.
+      deallocate (results(5)%polarizability_derivatives)
+      allocate (without%gradient(3, N_MON*PER))
+      allocate (without%hessian(3*N_MON*PER, 3*N_MON*PER))
+      call compute_mbe(polymers, int(N_TERMS, int64), 2, results, without, sys_geom)
+      call check(error,.not. allocated(without%polarizability_derivatives), &
+                 "polarizability derivatives were assembled from an incomplete set")
+      if (allocated(error)) return
+      call check(error, without%has_dipole_derivatives, &
+                 "losing the Raman input took the dipole derivatives with it")
+
+   contains
+
+      pure function own_column(sys_atom, icart) result(c)
+         !! One coordinate's column for the atom alone
+         integer, intent(in) :: sys_atom, icart
+         real(dp) :: c(N_POL)
+         integer :: comp
+
+         do comp = 1, N_POL
+            c(comp) = 2.0_dp*sys_atom + 0.31_dp*icart - 0.11_dp*comp**2
+         end do
+      end function own_column
+
+      pure function increment(sys_atom, icart, monomer) result(c)
+         !! What the presence of `monomer` adds to that column
+         integer, intent(in) :: sys_atom, icart, monomer
+         real(dp) :: c(N_POL)
+         integer :: comp
+
+         do comp = 1, N_POL
+            c(comp) = 0.05_dp*sys_atom*monomer - 0.02_dp*icart*comp + 0.003_dp*monomer*comp
+         end do
+      end function increment
+   end subroutine test_raman_assembly
 
 end module test_mqc_mbe
 

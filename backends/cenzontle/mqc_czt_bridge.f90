@@ -1314,9 +1314,14 @@ contains
             else if (len_trim(settings%ecp_set) > 0) then
                why = "the polarizability derivatives carry no effective core "// &
                      "potential"
-            else if (fragment%n_caps > 0 .or. any(fragment%ghost_mask())) then
-               why = "capped and ghosted fragments are not rebuilt at displaced "// &
-                     "geometries"
+            else if (any(fragment%ghost_mask())) then
+               why = "ghosted fragments are not handled"
+            else if (fragment%n_caps > 0 .and. &
+                     trim(settings%raman_method) == "displacements") then
+               ! The other two routes work at the one geometry the fragment
+               ! was built at, caps and all.
+               why = "a capped fragment is not rebuilt at displaced geometries; "// &
+                     "use the analytic or the finite-field method"
             else if (settings%hessian_method /= HESSIAN_METHOD_ANALYTIC) then
                why = "it accompanies the analytic Hessian"
             else if ((settings%second_order .or. settings%gdm) &
@@ -2935,49 +2940,7 @@ contains
                   result%has_dipole_derivatives = .true.
                end if
             end if
-            ! Raman activities need the polarizability's Cartesian
-            ! derivatives beside the Hessian. A failure is a warning: the
-            ! frequencies and infrared intensities above do not depend on it.
-            if (settings%raman .and. .not. error%has_error()) then
-               block
-                  type(error_t) :: raman_error
-                  real(dp), allocatable :: dalpha(:, :)
-                  real(dp) :: alpha0(3, 3)
-
-                  if (trim(settings%raman_method) == "displacements") then
-                     call polarizability_derivatives(settings, fragment%element_numbers, &
-                                                     symbols, fragment%coordinates, &
-                                                     nelec, scf%density, accel_kind, &
-                                                     diis_size, scf_conv, alpha0, &
-                                                     dalpha, raman_error)
-                  else if (trim(settings%raman_method) == "analytic" &
-                           .and. .not. xc%active) then
-                     call polarizability_derivatives_analytic(mol, scf%orbitals, &
-                                                              scf%orbital_energies, &
-                                                              scf%n_occupied, alpha0, &
-                                                              dalpha, raman_error)
-                  else
-                     ! The analytic route needs a functional's third
-                     ! derivative, which is not built.
-                     if (trim(settings%raman_method) == "analytic") then
-                        call logger%info("  Raman: no analytic route under a "// &
-                                         "functional; taking the finite-field one")
-                     end if
-                     call polarizability_derivatives_field(settings, mol, nelec, &
-                                                           scf%density, accel_kind, &
-                                                           diis_size, scf_conv, alpha0, &
-                                                           dalpha, raman_error, xc=xc)
-                  end if
-                  if (raman_error%has_error()) then
-                     call logger%warning("  Raman activities could not be computed: "// &
-                                         raman_error%get_message())
-                  else
-                     call move_alloc(dalpha, result%polarizability_derivatives)
-                     result%polarizability = alpha0
-                     result%has_polarizability = .true.
-                  end if
-               end block
-            end if
+            if (settings%raman .and. .not. error%has_error()) call raman_derivatives()
             deallocate (hess4)
             write (line, "(a,f10.2,a)") "  Hessian done in ", hess_clock%get_elapsed_time(), " s"
             call logger%info(trim(line))
@@ -3865,9 +3828,20 @@ contains
                                                           mol%necpbas > 0))
             end if
             call logger%warning("  taking it by central differences of the analytic gradient instead")
+            ! The differenced Hessian is built by the caller from displaced
+            ! gradients, none of which comes back here, so the polarizability
+            ! derivatives are taken now, at the reference geometry, and the
+            ! caller carries them across. The displacement route would repeat
+            ! the caller's own displacements and is left out.
             if (settings%raman) then
-               call logger%warning("  Raman activities accompany the analytic Hessian "// &
-                                   "and are not computed on this path")
+               if (trim(settings%raman_method) == "displacements") then
+                  call logger%warning("  Raman activities by displacements accompany "// &
+                                      "the analytic Hessian and are not computed on "// &
+                                      "this path; the analytic and finite-field "// &
+                                      "methods are")
+               else
+                  call raman_derivatives()
+               end if
             end if
          end if
       end if
@@ -3876,6 +3850,51 @@ contains
       call mol%destroy()
 
    contains
+
+      subroutine raman_derivatives()
+         !! The polarizability's Cartesian derivatives, for Raman activities
+         !!
+         !! A failure is a warning: the frequencies and infrared intensities
+         !! do not depend on it.
+         type(error_t) :: raman_error
+         real(dp), allocatable :: dalpha(:, :)
+         real(dp) :: alpha0(3, 3)
+
+         if (trim(settings%raman_method) == "displacements") then
+            call polarizability_derivatives(settings, fragment%element_numbers, &
+                                            symbols, fragment%coordinates, &
+                                            nelec, scf%density, accel_kind, &
+                                            diis_size, scf_conv, alpha0, &
+                                            dalpha, raman_error)
+         else if (trim(settings%raman_method) == "analytic" &
+                  .and. .not. xc%active .and. full_rank) then
+            call polarizability_derivatives_analytic(mol, scf%orbitals, &
+                                                     scf%orbital_energies, &
+                                                     scf%n_occupied, alpha0, &
+                                                     dalpha, raman_error)
+         else
+            ! The analytic route needs a functional's third derivative,
+            ! which is not built, and assumes no orbital was removed from
+            ! the basis, as the analytic Hessian does.
+            if (trim(settings%raman_method) == "analytic") then
+               call logger%info("  Raman: no analytic route under a functional or "// &
+                                "with orbitals removed for linear dependence; "// &
+                                "taking the finite-field one")
+            end if
+            call polarizability_derivatives_field(settings, mol, nelec, &
+                                                  scf%density, accel_kind, &
+                                                  diis_size, scf_conv, alpha0, &
+                                                  dalpha, raman_error, xc=xc)
+         end if
+         if (raman_error%has_error()) then
+            call logger%warning("  Raman activities could not be computed: "// &
+                                raman_error%get_message())
+         else
+            call move_alloc(dalpha, result%polarizability_derivatives)
+            result%polarizability = alpha0
+            result%has_polarizability = .true.
+         end if
+      end subroutine raman_derivatives
 
       subroutine report_intrinsic_orbitals()
          !! IAO charges and intrinsic bond orbitals of the reference

@@ -3,6 +3,7 @@ module mqc_mbe
    !! Implements hierarchical many-body expansion for fragment-based quantum chemistry
    !! calculations with MPI parallelization and energy/gradient computation.
    use pic_types, only: int32, int64, dp
+   use mqc_symmetric_tensor, only: N_SYMMETRIC
    use mqc_combinatorics, only: fragment_size_of, vmfc_row_subset_key, is_auxiliary_row, real_count_of, &
                                 rows_match_counterpoise, counterpoise_scheme_name, COUNTERPOISE_NONE, &
                                 COUNTERPOISE_VMFC, COUNTERPOISE_SSFC
@@ -214,7 +215,8 @@ contains
    end subroutine compute_mbe_coefficients
 
    subroutine accumulate_fragment_derivatives(frag_result, monomers, sys_geom, coeff, mbe_result, &
-                                              do_grad, do_hess, do_dipole_derivs, world_comm)
+                                              do_grad, do_hess, do_dipole_derivs, world_comm, &
+                                              do_raman)
       !! Fold coeff * (one fragment's derivatives) into the system-sized totals
       !!
       !! The fragment is rebuilt once and shared by all three quantities, each
@@ -231,9 +233,17 @@ contains
       type(mbe_result_t), intent(inout) :: mbe_result  !! Accumulation target
       logical, intent(in) :: do_grad, do_hess, do_dipole_derivs
       type(comm_t), intent(in), optional :: world_comm  !! MPI communicator for abort
+      logical, intent(in), optional :: do_raman
+         !! Fold the polarizability derivatives in too, by the dipole
+         !! derivatives' own rule: a column per Cartesian coordinate, a cap's
+         !! shared between the two atoms that move it.
 
       type(physical_fragment_t) :: fragment
       type(error_t) :: error
+      logical :: raman
+
+      raman = .false.
+      if (present(do_raman)) raman = do_raman
 
       if (allocated(sys_geom%bonds)) then
          ! Rebuild fragment to recover local->global mapping and cap information
@@ -257,17 +267,25 @@ contains
             call redistribute_cap_dipole_derivatives(fragment, frag_result%dipole_derivatives, &
                                                      mbe_result%dipole_derivatives, scale=coeff)
          end if
+         if (raman) then
+            ! The routine moves whole columns, so six rows go through it as
+            ! three do.
+            call redistribute_cap_dipole_derivatives(fragment, &
+                                                     frag_result%polarizability_derivatives, &
+                                                     mbe_result%polarizability_derivatives, &
+                                                     scale=coeff)
+         end if
 
          call fragment%destroy()
       else
          call accumulate_uncapped(frag_result, monomers, sys_geom, coeff, mbe_result, &
-                                  do_grad, do_hess, do_dipole_derivs)
+                                  do_grad, do_hess, do_dipole_derivs, raman)
       end if
 
    end subroutine accumulate_fragment_derivatives
 
    subroutine accumulate_uncapped(frag_result, monomers, sys_geom, coeff, mbe_result, &
-                                  do_grad, do_hess, do_dipole_derivs)
+                                  do_grad, do_hess, do_dipole_derivs, do_raman)
       !! Accumulation path for systems without bond connectivity
       !!
       !! With no caps and fixed-size monomers the local->global map is pure
@@ -279,6 +297,7 @@ contains
       real(dp), intent(in) :: coeff
       type(mbe_result_t), intent(inout) :: mbe_result
       logical, intent(in) :: do_grad, do_hess, do_dipole_derivs
+      logical, intent(in) :: do_raman
 
       integer :: i_mon, i_atom, j_mon, j_atom, icart
       integer :: frag_atom_i, frag_atom_j, sys_atom_i, sys_atom_j
@@ -303,6 +322,14 @@ contains
                   mbe_result%dipole_derivatives(:, (sys_atom_i - 1)*3 + icart) = &
                      mbe_result%dipole_derivatives(:, (sys_atom_i - 1)*3 + icart) + &
                      coeff*frag_result%dipole_derivatives(:, (frag_atom_i - 1)*3 + icart)
+               end do
+            end if
+
+            if (do_raman) then
+               do icart = 1, 3
+                  mbe_result%polarizability_derivatives(:, (sys_atom_i - 1)*3 + icart) = &
+                     mbe_result%polarizability_derivatives(:, (sys_atom_i - 1)*3 + icart) + &
+                     coeff*frag_result%polarizability_derivatives(:, (frag_atom_i - 1)*3 + icart)
                end do
             end if
 
@@ -910,6 +937,8 @@ contains
       real(dp), allocatable :: coeffs(:)  !! (fragment_count) collapsed MBE weight per fragment
       real(dp), allocatable :: ir_intensities(:)  !! IR intensities in km/mol
       logical :: do_detailed_print, compute_grad, compute_hess, compute_dipole, compute_dipole_derivs
+      logical :: compute_raman
+      real(dp), allocatable :: raman_activities(:), raman_depolarization(:)
       type(fragment_lookup_t) :: lookup
       type(timer_type) :: assembly_timer
       logical, allocatable :: joined_pairs(:, :)
@@ -991,6 +1020,19 @@ contains
          end do
       end if
 
+      ! Raman activities ride on the dipole derivatives: assembled when the
+      ! Hessian and they are, and every term carries its polarizability
+      ! derivatives as well.
+      compute_raman = compute_dipole_derivs
+      if (compute_raman) then
+         do i = 1_int64, fragment_count
+            if (.not. allocated(results(i)%polarizability_derivatives)) then
+               compute_raman = .false.
+               exit
+            end if
+         end do
+      end if
+
       ! Get logger configuration
       call logger%configuration(level=current_log_level)
       do_detailed_print = (current_log_level >= verbose_level)
@@ -1037,6 +1079,10 @@ contains
       if (compute_dipole_derivs) then
          allocate (mbe_result%dipole_derivatives(3, hess_dim))
          mbe_result%dipole_derivatives = 0.0_dp
+      end if
+      if (compute_raman) then
+         allocate (mbe_result%polarizability_derivatives(N_SYMMETRIC, hess_dim))
+         mbe_result%polarizability_derivatives = 0.0_dp
       end if
 
       ! Build hash table for fast fragment lookups
@@ -1203,7 +1249,7 @@ contains
 
             call accumulate_fragment_derivatives(results(i), polymers(i, 1:fragment_size), sys_geom, coeffs(i), &
                                                  mbe_result, compute_grad, compute_hess, compute_dipole_derivs, &
-                                                 world_comm)
+                                                 world_comm, do_raman=compute_raman)
          end do
          call assembly_timer%stop()
          call logger%debug("Time to assemble MBE derivatives: "// &
@@ -1279,21 +1325,19 @@ contains
             integer :: n_at, n_modes
 
             call logger%info("  Computing vibrational analysis (projecting trans/rot modes)...")
-            if (compute_dipole_derivs) then
-               call compute_vibrational_analysis(mbe_result%hessian, sys_geom%element_numbers, frequencies, &
-                                                 reduced_masses, force_constants, cart_disp, &
-                                                 coordinates=sys_geom%coordinates, &
-                                                 project_trans_rot=.true., &
-                                                 force_constants_mdyne=fc_mdyne, &
-                                                 dipole_derivatives=mbe_result%dipole_derivatives, &
-                                                 ir_intensities=ir_intensities)
-            else
-               call compute_vibrational_analysis(mbe_result%hessian, sys_geom%element_numbers, frequencies, &
-                                                 reduced_masses, force_constants, cart_disp, &
-                                                 coordinates=sys_geom%coordinates, &
-                                                 project_trans_rot=.true., &
-                                                 force_constants_mdyne=fc_mdyne)
-            end if
+            ! An unallocated derivative array is an absent argument, so one
+            ! call serves a run with neither, either or both.
+            call compute_vibrational_analysis(mbe_result%hessian, sys_geom%element_numbers, frequencies, &
+                                              reduced_masses, force_constants, cart_disp, &
+                                              coordinates=sys_geom%coordinates, &
+                                              project_trans_rot=.true., &
+                                              force_constants_mdyne=fc_mdyne, &
+                                              dipole_derivatives=mbe_result%dipole_derivatives, &
+                                              ir_intensities=ir_intensities, &
+                                              polarizability_derivatives= &
+                                              mbe_result%polarizability_derivatives, &
+                                              raman_activities=raman_activities, &
+                                              raman_depolarization=raman_depolarization)
 
             if (allocated(frequencies)) then
                ! Compute thermochemistry
@@ -1304,22 +1348,15 @@ contains
                                             spin_multiplicity=sys_geom%multiplicity)
 
                ! Print vibrational analysis to log
-               if (allocated(ir_intensities)) then
-                  call print_vibrational_analysis(frequencies, reduced_masses, force_constants, &
-                                                  cart_disp, sys_geom%element_numbers, &
-                                                  force_constants_mdyne=fc_mdyne, &
-                                                  ir_intensities=ir_intensities, &
-                                                  coordinates=sys_geom%coordinates, &
-                                                  electronic_energy=mbe_result%total_energy, &
-                                                  spin_multiplicity=sys_geom%multiplicity)
-               else
-                  call print_vibrational_analysis(frequencies, reduced_masses, force_constants, &
-                                                  cart_disp, sys_geom%element_numbers, &
-                                                  force_constants_mdyne=fc_mdyne, &
-                                                  coordinates=sys_geom%coordinates, &
-                                                  electronic_energy=mbe_result%total_energy, &
-                                                  spin_multiplicity=sys_geom%multiplicity)
-               end if
+               call print_vibrational_analysis(frequencies, reduced_masses, force_constants, &
+                                               cart_disp, sys_geom%element_numbers, &
+                                               force_constants_mdyne=fc_mdyne, &
+                                               ir_intensities=ir_intensities, &
+                                               coordinates=sys_geom%coordinates, &
+                                               electronic_energy=mbe_result%total_energy, &
+                                               raman_activities=raman_activities, &
+                                               raman_depolarization=raman_depolarization, &
+                                               spin_multiplicity=sys_geom%multiplicity)
 
                ! Populate json_data for vibrational output if present
                if (present(json_data)) then
@@ -1341,6 +1378,10 @@ contains
                      allocate (json_data%ir_intensities(n_modes))
                      json_data%ir_intensities = ir_intensities
                      json_data%has_ir_intensities = .true.
+                  end if
+                  if (allocated(raman_activities)) then
+                     json_data%raman_activities = raman_activities
+                     json_data%raman_depolarization = raman_depolarization
                   end if
 
                   ! Copy dipole if available

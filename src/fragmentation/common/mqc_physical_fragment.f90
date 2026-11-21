@@ -799,11 +799,13 @@ contains
    subroutine redistribute_cap_dipole_derivatives(fragment, fragment_dipole_derivs, system_dipole_derivs, scale)
       !! Accumulate fragment dipole derivatives into the system's
       !!
-      !! Shape (3, 3*n_atoms): one column per Cartesian coordinate, mapped like
-      !! the column dimension of the Hessian.
+      !! One column per Cartesian coordinate, mapped like the column dimension
+      !! of the Hessian. Whole columns are moved, so the leading extent is
+      !! whatever the caller's property has: three for a dipole's derivatives,
+      !! six for a polarizability's.
       type(physical_fragment_t), intent(in) :: fragment
-      real(dp), intent(in) :: fragment_dipole_derivs(:, :)   !! (3, 3*n_atoms_fragment)
-      real(dp), intent(inout) :: system_dipole_derivs(:, :)  !! (3, 3*n_atoms_system)
+      real(dp), intent(in) :: fragment_dipole_derivs(:, :)   !! (n, 3*n_atoms_fragment)
+      real(dp), intent(inout) :: system_dipole_derivs(:, :)  !! (n, 3*n_atoms_system)
       real(dp), intent(in), optional :: scale  !! Weight applied to this fragment (default 1)
 
       integer :: tgt(2)

@@ -391,22 +391,93 @@ translational sum rule: the derivatives along one direction must cancel over
 the atoms, and do to :math:`3\times10^{-5}` Bohr\ :sup:`2` on derivatives of
 order ten.
 
+In a fragmented run
+-------------------
+
+With ``keywords.fragmentation`` on a Hessian deck the activities are those of
+the whole system. Each term's polarizability derivatives are assembled over the
+many-body expansion beside its dipole derivatives, by the same rule -- a column
+per Cartesian coordinate, a cap hydrogen's shared between the two atoms that
+move it -- and projected onto the modes of the assembled Hessian.
+
+Against the unfragmented calculation at Hartree-Fock in 6-31G:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 30 12 29 29
+
+   * - System
+     - Level
+     - Stretch band, total activity
+     - Worst single mode
+   * - Three waters, stacked
+     - 1
+     - +14%
+     - 92 of 106
+   * -
+     - 2
+     - -1.0%
+     - 11
+   * -
+     - 3
+     - exact
+     - 8e-10
+   * - Six waters, the prism
+     - 2
+     - -0.2%
+     - 45
+   * -
+     - 3
+     - -1.3%
+     - 15
+
+Activities are in Angstrom\ :sup:`4`/amu. The third level of the trimer is the
+whole system, and reproduces it to the solver's precision.
+
+**Read the bands, not the single modes.** The integrated activity of the O-H
+stretch region is within a per cent or so from the pair level on. A single
+mode's activity can be wrong by half, and that is mostly not the
+polarizability derivatives: the stretches of a cluster are nearly degenerate,
+a small error in the assembled Hessian mixes them differently, and activity
+moves between neighbours a few wavenumbers apart. A broadened spectrum, which
+is what :doc:`spectra` draws, shows the band and is much less affected than a
+table of modes.
+
+**Under MPI a Raman request changes how the Hessian is spread over the
+ranks.** Ordinarily each fragment's Hessian is broken into displaced gradients
+that are queued individually, which uses more ranks than there are fragments.
+The polarizability derivatives come out of a fragment's own analytic Hessian
+calculation, so with ``properties.raman`` each fragment stays whole and goes to
+one rank. On four ranks the activities are the serial ones to
+:math:`2\times10^{-7}`.
+
+The displacement method is refused for a capped fragment, which it would have
+to rebuild at every displaced geometry; the analytic and finite-field methods
+work at the one geometry the fragment was built at. A capped fragment has no
+analytic Hessian, so its Hessian is differenced from gradients and its
+polarizability derivatives are taken beside that, at the reference geometry.
+A fragment that lost orbitals to linear dependence takes the finite-field
+method whichever was asked for. The capped path has been run end to end but
+has no external reference: hydrogen caps change the fragments, so no order of
+the expansion reproduces the unfragmented molecule.
+
+A deck with overlapping fragments is refused, and nothing is assembled under
+counterpoise.
+
 Limits
 ------
 
 - **Closed-shell Hartree-Fock and Kohn-Sham with exact integrals.** An open
   shell, a correlated method, a density-fitted reference, a continuum solvent,
-  an effective core potential and capped or ghosted fragments are refused by
-  name.
+  an effective core potential and ghosted fragments are refused by name.
 - **It accompanies the analytic Hessian.** Where the Hessian is taken by
   differences of gradients instead, the activities are skipped with a warning.
 - **Static polarizability.** The derivative is of the zero-frequency
   polarizability, which is the usual approximation far from an electronic
   absorption and wrong near one: there is no resonance Raman here.
-- **Numerical, not analytic.** Either route differences an analytic quantity.
-  The fully analytic derivative needs no extra self-consistent fields at all
-  and is not built; for Kohn-Sham it would need the third functional
-  derivative.
+- **Analytic for Hartree-Fock only.** Under a functional the derivative is
+  taken by finite field, since the analytic one would need the functional's
+  third derivative.
 - **The extra calculations run one after another**, not distributed over MPI
   ranks as the displacements of a semi-numerical Hessian are.
 - **Harmonic, like everything else on this page.**
