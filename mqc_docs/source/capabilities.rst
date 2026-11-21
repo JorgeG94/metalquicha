@@ -129,8 +129,9 @@ potentials. Everything below is validated against PySCF on
 the same geometries and the same basis data. Where it is named, the reference
 is GAMESS. The work is threaded with OpenMP throughout.
 
-- **Hartree-Fock**: restricted and unrestricted, with a direct, in-core or
-  density-fitted Fock build. Density fitting is restricted only. Initial
+- **Hartree-Fock**: restricted, unrestricted and restricted open-shell
+  (``model.restricted_open``, which Kohn-Sham takes too; see
+  :doc:`input_files`), with a direct, in-core or density-fitted Fock build. Density fitting is restricted only. Initial
   guesses are ``core``, ``gwh``, ``sac``, ``sad`` and ``auto``; see
   :doc:`scf_guess`.
 - **SCF convergence and stability**: DIIS, EDIIS and ADIIS, a level shift, and
