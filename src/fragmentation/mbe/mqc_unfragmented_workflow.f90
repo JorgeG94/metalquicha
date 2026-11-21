@@ -105,6 +105,10 @@ contains
                write (result_line, "(a,f25.15)") "    dispersion:     ", result%energy%dispersion
                call logger%info(trim(result_line))
             end if
+            if (result%energy%solvation /= 0.0_dp) then
+               write (result_line, "(a,f25.15)") "    solvation:      ", result%energy%solvation
+               call logger%info(trim(result_line))
+            end if
          end if
 
          if (result%has_dipole) then
@@ -276,6 +280,10 @@ contains
                         if (result%energy%dispersion /= 0.0_dp) then
                            json_data%dispersion_energy = result%energy%dispersion
                            json_data%has_dispersion = .true.
+                        end if
+                        if (result%energy%solvation /= 0.0_dp) then
+                           json_data%solvation_energy = result%energy%solvation
+                           json_data%has_solvation = .true.
                         end if
 
                         ! The excited-state spectrum, when
@@ -468,6 +476,7 @@ contains
                   json_data%spin_populations = result%spin_populations
                end if
                json_data%charge_scheme = result%charge_scheme
+               json_data%analysis_density = result%analysis_density
                json_data%has_charges = .true.
             end if
 
@@ -481,7 +490,28 @@ contains
                   json_data%bond_order_valences = result%bond_order_valences
                end if
                json_data%bond_order_scheme = result%bond_order_scheme
+               json_data%analysis_density = result%analysis_density
                json_data%has_bond_orders = .true.
+            end if
+            if (result%has_intrinsic_orbitals) then
+               json_data%iao_charges = result%iao_charges
+               json_data%ibo_populations = result%ibo_populations
+               if (allocated(result%iao_spin_populations)) then
+                  json_data%iao_spin_populations = result%iao_spin_populations
+               end if
+               if (allocated(result%ibo_populations_beta)) then
+                  json_data%ibo_populations_beta = result%ibo_populations_beta
+               end if
+               json_data%ibo_exponent = result%ibo_exponent
+               json_data%has_intrinsic_orbitals = .true.
+            end if
+            if (result%has_natural_orbitals) then
+               json_data%natural_occupations = result%natural_occupations
+               json_data%natural_orbital_density = result%natural_orbital_density
+               json_data%natural_unpaired_linear = result%natural_unpaired_linear
+               json_data%natural_unpaired_quadratic = result%natural_unpaired_quadratic
+               json_data%natural_fractional = result%natural_fractional
+               json_data%has_natural_orbitals = .true.
             end if
 
             ! Where the molecule reacts, when `properties.fukui` asked. Carried
@@ -506,6 +536,10 @@ contains
             if (result%energy%dispersion /= 0.0_dp) then
                json_data%dispersion_energy = result%energy%dispersion
                json_data%has_dispersion = .true.
+            end if
+            if (result%energy%solvation /= 0.0_dp) then
+               json_data%solvation_energy = result%energy%solvation
+               json_data%has_solvation = .true.
             end if
 
             ! The excited-state spectrum, when `keywords.excited_states` asked
