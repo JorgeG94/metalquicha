@@ -6,15 +6,21 @@ module mqc_nmr_isotopes
    !! spectrometer is usually tuned to. Carbon is 13C, not the abundant and
    !! spinless 12C.
    use pic_types, only: dp
+   use mqc_physical_constants, only: HARTREE_TO_HZ, HARTREE_TO_JOULE, &
+                                     NUCLEAR_MAGNETON_AU, NUCLEAR_MAGNETON_SI
    implicit none
    private
 
    public :: nmr_isotope
    public :: reduced_to_hertz
    public :: reduced_to_si
+   public :: ISOTOPE_LABEL_LEN
 
    integer, parameter :: N_TABLE = 17
    integer, parameter :: LABEL_LEN = 5
+      !! Length of the longest label in the table
+   integer, parameter :: ISOTOPE_LABEL_LEN = 8
+      !! Length a caller should give the label `nmr_isotope` fills
    character(len=LABEL_LEN), parameter :: LABELS(N_TABLE) = &
                                           [character(len=LABEL_LEN) :: &
                                            "1H", "3He", "7Li", "9Be", "11B", "13C", &
@@ -27,11 +33,8 @@ module mqc_nmr_isotopes
                           1.4566028_dp, -1.11058_dp, 2.26320_dp, 0.429214_dp, 0.5479162_dp]
       !! Magnetic moment in nuclear magnetons over the spin, H through Cl
 
-   real(dp), parameter :: HARTREE_TO_HZ = 6.579683920502e15_dp
-   real(dp), parameter :: HARTREE_TO_JOULE = 4.3597447222071e-18_dp
-   real(dp), parameter :: NUCLEAR_MAGNETON_SI = 5.0507837461e-27_dp   ! J/T
-   real(dp), parameter :: PROTON_ELECTRON_MASS = 1836.15267343_dp
-   real(dp), parameter :: NUCLEAR_MAGNETON_AU = 0.5_dp/PROTON_ELECTRON_MASS
+   real(dp), parameter :: SI_REPORT_SCALE = 1.0e-19_dp
+      !! The reduced coupling is quoted in units of 10^19 T^2/J
 
 contains
 
@@ -64,7 +67,7 @@ contains
       real(dp), intent(in) :: reduced
       real(dp) :: k
 
-      k = HARTREE_TO_JOULE*NUCLEAR_MAGNETON_AU**2*reduced/NUCLEAR_MAGNETON_SI**2*1.0e-19_dp
+      k = HARTREE_TO_JOULE*NUCLEAR_MAGNETON_AU**2*reduced/NUCLEAR_MAGNETON_SI**2*SI_REPORT_SCALE
    end function reduced_to_si
 
 end module mqc_nmr_isotopes
