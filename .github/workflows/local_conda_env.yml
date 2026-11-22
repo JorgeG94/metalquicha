@@ -408,6 +408,13 @@ jobs:
           python3 python/tests/test_bde.py
           MQC_LIBRARY=$PWD/build/libmqc.so MQC_EXECUTABLE=$PWD/build/mqc \
             PYTHONPATH=$PWD/python python3 python/examples/bde.py
+          # Spectra: the broadening and unit conversions against hand values
+          # with no build, then the example, which runs a Hessian and an
+          # excited-state deck for real and asserts that the area under each
+          # curve is the strength the run reported.
+          python3 python/tests/test_spectra.py
+          MQC_LIBRARY=$PWD/build/libmqc.so MQC_EXECUTABLE=$PWD/build/mqc \
+            PYTHONPATH=$PWD/python python3 python/examples/spectra.py
 
       # A geometry optimization, which is the only thing here that drives
       # DL-FIND rather than merely linking it. Water in STO-3G from a distorted
