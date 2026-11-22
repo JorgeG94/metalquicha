@@ -317,6 +317,16 @@ unfragmented molecule, as the largest error in an isotropic shielding:
      - 5
      - 0.046
      - 0.90
+   * - 3 carbons, advancing 2
+     - 2
+     - 5
+     - 0.93
+     - 9.1
+   * - 3 carbons, advancing 2
+     - 3
+     - 7
+     - 0.62
+     - 4.0
    * - 4 carbons, advancing 2
      - 2
      - 6
@@ -338,7 +348,10 @@ whole, and how much the fragments share.** Windows that overlap by one carbon
 leave that carbon beside a cap in every term containing it, and it is wrong by
 tens of ppm; an overlap of four carbons brings carbon under half a ppm at the
 first level. The second level, whose terms are unions of two fragments, is
-ten times better again. For the same largest term the overlapping expansion
+ten times better again. **A higher level does not repair a thin overlap**:
+windows sharing one carbon are still 4 ppm off at the third level, with terms
+of seven carbons, where windows sharing two reach 0.06 at the second with
+terms of six. For the same largest term the overlapping expansion
 beats the disjoint one: its intersections put a cap's error in with both
 signs, where a disjoint expansion can only outgrow it. At B3LYP the errors
 are the same size (0.039 and 0.31 ppm for six-carbon windows advancing two).
