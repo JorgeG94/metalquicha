@@ -433,8 +433,28 @@ symmetric**, first index the field and second the nuclear moment, and a
 transposed result passes any symmetric check. The reference is
 `pyscf.prop.nmr.RHF` from the separate `pyscf-properties` package, whose
 packaged response callback assumes three vectors a call and fails under
-current PySCF; pass it one that reshapes to any count. The two-electron
-field derivative computes every shell quartet with no screening.
+current PySCF; pass it one that reshapes to any count.
+**The two-electron field derivative is folded and screened**
+(`giao_coulomb_exchange`): the gauge factor of a pair is `(1/2)(R_i - R_j) x r`,
+so the integral vanishes on one centre, changes sign under `i <-> j` and keeps
+the ordinary symmetry in `k, l` -- a quarter of the quartets at most, each put
+in the four places the full sum would. The screen's estimate of that factor
+grows with the distance from the origin, so **test it with the molecule moved
+off the origin**; `test_folding` holds the routine to the full sum written
+out, 1e-14. **The field response builds its coupling matrix once**
+(`exchange_coupling`, through `build_hessian_mo`): the operator's two-electron
+part is `(A-B)` less its diagonal, scaled by the exact-exchange fraction, and
+`mo_transform_fits` decides whether it fits; otherwise every pass recomputes
+the integrals (`integral_direct` forces that, and a test holds the two routes
+together). A profile of a pass is all libfint -- the digestion is a tenth of
+it -- so nothing in the direct route is left to tune but the pass count. Two
+things that did not work: one Krylov subspace shared by the three directions
+took the same fourteen passes as three separate ones, and applying the
+operator to each new vector at its own shrinking length so the build could
+screen on it saved a third and then **failed to converge** on triglycine,
+its noise sitting at the 1e-10 tolerance. Measured on four threads, the
+shielding step of a water hexamer in cc-pVDZ went from 27.7 s to 8.8 s and
+triglycine's in 6-31G* from 78.8 s to 39.5 s direct, 28.9 s stored.
 **Under a functional the potential does not respond to the field**, so a
 pure functional has no coupled equations at all and `exchange_response`
 returns zero without touching an integral; a hybrid scales exchange by

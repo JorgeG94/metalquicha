@@ -20,6 +20,10 @@ module test_mqc_czt_nmr
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
    use mqc_czt_nmr, only: czt_nmr_shielding
+   use mqc_czt_giao, only: giao_coulomb_exchange
+   use mqc_czt_direct, only: schwarz_bounds
+   use mqc_czt_integrals, only: shell_dim
+   use libcint_fortran, only: libcint_2e_ig1_sph
    use mqc_czt_xc, only: xc_context_t, xc_context_create, xc_available
    use mqc_czt_pcm, only: pcm_context_t
    use mqc_method_config, only: pcm_config_t
@@ -84,6 +88,8 @@ contains
                   new_unittest("kohn_sham_tensors_match_pyscf", test_kohn_sham), &
                   new_unittest("kohn_sham_translation_and_refusals", test_kohn_sham_gauge), &
                   new_unittest("continuum_shieldings_do_not_move", test_continuum), &
+                  new_unittest("folded_two_electron_term_is_the_full_sum", test_folding), &
+                  new_unittest("stored_and_direct_response_agree", test_response_routes), &
                   new_unittest("summary_of_a_known_tensor", test_summary) &
                   ]
    end subroutine collect_mqc_czt_nmr_tests
@@ -149,6 +155,160 @@ contains
                              sigma, err, diamagnetic=dia, paramagnetic=para)
       call mol%destroy()
    end subroutine shield_water
+
+   subroutine test_folding(error)
+      !! The two-electron field derivative against its formulas as written.
+      !!
+      !! The routine computes a quarter of the shell quartets at most: only
+      !! pairs on different atoms, each pair in one order, and the second
+      !! pair in one order, with every value put in the four places the full
+      !! sum would have put it, and it skips what its screen calls
+      !! negligible. Here the full sum is done with none of that -- every
+      !! ordered quartet, contracted exactly as
+      !!
+      !!     vj_ij = sum_kl (g i j|k l) D_lk,      vk_il = sum_jk (g i j|k l) D_jk
+      !!
+      !! reads -- and the two have to agree. That is the sign of the
+      !! antisymmetry, the factor of two on the Coulomb term, the four
+      !! exchange placements and the screen at once. The molecule is moved
+      !! off the origin because the screen's estimate of the gauge factor
+      !! grows with the distance from it, and a molecule at the origin would
+      !! not notice an estimate that was too small.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      type(error_t) :: err
+      real(dp), allocatable :: vj(:, :, :), vk(:, :, :), vj_full(:, :, :), vk_full(:, :, :)
+      real(dp), allocatable :: vj_plain(:, :, :), vk_plain(:, :, :), bounds(:, :), buf(:)
+      real(dp) :: c(3, 3)
+      integer :: shls(4)
+      integer :: ish, jsh, ksh, lsh, di, dj, dk, dl, io, jo, ko, lo, i, j, k, l, comp, idx, n
+
+      c = reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                   0.0_dp, 0.0_dp, 0.9584_dp*ANG, &
+                   0.9268_dp*ANG, 0.0_dp, -0.2400_dp*ANG], [3, 3])
+      do i = 1, 3
+         c(:, i) = c(:, i) + [3.0_dp, -5.0_dp, 7.0_dp]
+      end do
+      call build_czt_molecule([8, 1, 1], ["O ", "H ", "H "], c, "6-31g", mol, err)
+      call run_czt_rhf(mol, 10, 200, 1.0e-12_dp, 1.0e-10_dp, .false., scf, err)
+      call check(error,.not. err%has_error() .and. scf%converged, &
+                 "water must converge: "//err%get_full_trace())
+      if (allocated(error)) return
+      n = mol%nao
+
+      allocate (vj_full(n, n, 3), vk_full(n, n, 3), buf(3*6**4))
+      vj_full = 0.0_dp
+      vk_full = 0.0_dp
+      do ish = 1, mol%nbas
+         do jsh = 1, mol%nbas
+            do ksh = 1, mol%nbas
+               do lsh = 1, mol%nbas
+                  di = shell_dim(mol%cartesian, ish - 1, mol%bas)
+                  dj = shell_dim(mol%cartesian, jsh - 1, mol%bas)
+                  dk = shell_dim(mol%cartesian, ksh - 1, mol%bas)
+                  dl = shell_dim(mol%cartesian, lsh - 1, mol%bas)
+                  io = mol%shell_offset(ish)
+                  jo = mol%shell_offset(jsh)
+                  ko = mol%shell_offset(ksh)
+                  lo = mol%shell_offset(lsh)
+                  shls = [ish - 1, jsh - 1, ksh - 1, lsh - 1]
+                  if (libcint_2e_ig1_sph(buf, shls, mol%atm, mol%natm, mol%bas, mol%nbas, &
+                                         mol%env) == 0) cycle
+                  idx = 0
+                  do comp = 1, 3
+                     do l = lo + 1, lo + dl
+                        do k = ko + 1, ko + dk
+                           do j = jo + 1, jo + dj
+                              do i = io + 1, io + di
+                                 idx = idx + 1
+                                 vj_full(i, j, comp) = vj_full(i, j, comp) &
+                                                       + buf(idx)*scf%density(l, k)
+                                 vk_full(i, l, comp) = vk_full(i, l, comp) &
+                                                       + buf(idx)*scf%density(j, k)
+                              end do
+                           end do
+                        end do
+                     end do
+                  end do
+               end do
+            end do
+         end do
+      end do
+
+      call schwarz_bounds(mol, bounds, err)
+      call giao_coulomb_exchange(mol, scf%density, vj, vk, err, bounds=bounds)
+      call giao_coulomb_exchange(mol, scf%density, vj_plain, vk_plain, err)
+      call check(error,.not. err%has_error(), "field derivative: "//err%get_full_trace())
+      if (allocated(error)) return
+      write (*, "(4x,a,2es10.2)") "folded and screened against the full sum, J and K ", &
+         maxval(abs(vj - vj_full)), maxval(abs(vk - vk_full))
+      write (*, "(4x,a,2es10.2)") "folded, unscreened, against the full sum, J and K ", &
+         maxval(abs(vj_plain - vj_full)), maxval(abs(vk_plain - vk_full))
+      call check(error, maxval(abs(vj_full)) > 1.0e-2_dp .and. maxval(abs(vk_full)) > 1.0e-2_dp, &
+                 "the reference sum is empty: nothing was compared")
+      if (allocated(error)) return
+      call check(error, maxval(abs(vj_plain - vj_full)) < 1.0e-11_dp &
+                 .and. maxval(abs(vk_plain - vk_full)) < 1.0e-11_dp, &
+                 "the folded two-electron field derivative is not the full sum")
+      if (allocated(error)) return
+      call check(error, maxval(abs(vj - vj_full)) < 1.0e-10_dp &
+                 .and. maxval(abs(vk - vk_full)) < 1.0e-10_dp, &
+                 "the screen dropped quartets of the field derivative that matter")
+      if (allocated(error)) return
+
+      ! With no exact exchange to feed, the Coulomb matrix is the same and
+      ! the exchange matrix is left at zero.
+      call giao_coulomb_exchange(mol, scf%density, vj, vk, err, bounds=bounds, &
+                                 coulomb_only=.true.)
+      call check(error, maxval(abs(vj - vj_full)) < 1.0e-10_dp, &
+                 "the Coulomb-only field derivative differs from the full one's")
+      if (allocated(error)) return
+      call check(error, maxval(abs(vk)) <= 0.0_dp, &
+                 "the Coulomb-only field derivative filled the exchange matrix")
+      call mol%destroy()
+   end subroutine test_folding
+
+   subroutine test_response_routes(error)
+      !! The field response gives the same tensors whether its coupling
+      !! matrix is built once by transforming the integrals or the integrals
+      !! are recomputed on every pass.
+      !!
+      !! Water is small enough that the stored route is always taken, so
+      !! without this the integral-direct route -- the one every molecule too
+      !! large for the matrix takes -- would be exercised by nothing. The
+      !! bound is the solver's own: both converge the same equations to the
+      !! same residual.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      type(error_t) :: err
+      real(dp), allocatable :: stored(:, :, :), direct(:, :, :)
+      real(dp) :: c(3, 3)
+
+      c = reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                   0.0_dp, 0.0_dp, 0.9584_dp*ANG, &
+                   0.9268_dp*ANG, 0.0_dp, -0.2400_dp*ANG], [3, 3])
+      call build_czt_molecule([8, 1, 1], ["O ", "H ", "H "], c, "6-31g", mol, err)
+      call run_czt_rhf(mol, 10, 200, 1.0e-13_dp, 1.0e-11_dp, .false., scf, err, &
+                       grad_tol=1.0e-10_dp)
+      call check(error,.not. err%has_error() .and. scf%converged, &
+                 "water must converge: "//err%get_full_trace())
+      if (allocated(error)) return
+      call czt_nmr_shielding(mol, scf%orbitals, scf%orbital_energies, scf%n_occupied, &
+                             stored, err)
+      call czt_nmr_shielding(mol, scf%orbitals, scf%orbital_energies, scf%n_occupied, &
+                             direct, err, integral_direct=.true.)
+      call check(error,.not. err%has_error(), "shielding: "//err%get_full_trace())
+      if (allocated(error)) return
+      write (*, "(4x,a,es10.2)") "stored against integral-direct response, ppm ", &
+         maxval(abs(stored - direct))
+      call check(error, maxval(abs(stored - direct)) < 1.0e-6_dp, &
+                 "the stored and integral-direct field responses disagree")
+      call mol%destroy()
+   end subroutine test_response_routes
 
    subroutine test_water(error)
       type(error_type), allocatable, intent(out) :: error

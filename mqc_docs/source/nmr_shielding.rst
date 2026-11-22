@@ -263,10 +263,14 @@ Limits
   built; so are range-separated hybrids and functionals with non-local
   correlation.
 - **No effective core potentials.**
-- **The two-electron GIAO term is not screened.** Every shell quartet is
-  computed, so this step grows as the fourth power of the basis size and is the
-  slowest part of a shielding. Fine for tens of atoms in a double-zeta basis;
-  it needs integral screening before it is used on anything large.
+- **A shielding costs a few Fock builds beyond the SCF.** The two-electron
+  GIAO term is computed over a quarter of the shell quartets and screened, and
+  the response to the field is solved from a coupling matrix built once by
+  transforming the integrals. That matrix is as large as the square of the
+  number of occupied-virtual pairs; where it does not fit in memory the
+  response recomputes the integrals on each of its dozen or so passes
+  instead, and is then the slowest step. ``system.memory_gb`` sets what the
+  run may plan on. The log gives the time of each phase.
 - **Hartree-Fock shieldings are a starting point, not a prediction.** Electron
   correlation changes them by tens of ppm for nuclei with lone pairs or multiple
   bonds, which is what a functional is for, and a basis built for energies

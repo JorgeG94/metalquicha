@@ -23,7 +23,8 @@ module mqc_czt_nmr
    !! the tests are held to it.
    use, intrinsic :: ieee_arithmetic, only: ieee_is_nan
    use pic_types, only: dp
-   use pic_blas_interfaces, only: pic_gemm
+   use pic_blas_interfaces, only: pic_gemm, pic_gemv
+   use pic_timer, only: timer_type
    use pic_lapack_interfaces, only: pic_getrf, pic_getrs
    use mqc_physical_constants, only: FINE_STRUCTURE
    use mqc_calculation_defaults, only: PROPERTY_RESPONSE_TOL
@@ -38,6 +39,7 @@ module mqc_czt_nmr
    use mqc_czt_pcm, only: pcm_context_t
    use mqc_czt_direct, only: schwarz_bounds
    use mqc_czt_response_product, only: response_mean_field
+   use mqc_czt_cphf, only: build_hessian_mo, mo_transform_fits
    use mqc_nmr_summary, only: shielding_summary
    use mqc_czt_giao, only: giao_one_electron, giao_coulomb_exchange, &
                            giao_smeared_charges, &
@@ -63,7 +65,7 @@ module mqc_czt_nmr
 contains
 
    subroutine czt_nmr_shielding(mol, coeff, orbital_energies, n_occ, shielding, error, &
-                                diamagnetic, paramagnetic, xc, pcm)
+                                diamagnetic, paramagnetic, xc, pcm, integral_direct)
       !! Shielding tensors of every nucleus, in parts per million
       type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: coeff(:, :)             !! (n_ao, n_mo), canonical
@@ -84,6 +86,11 @@ contains
          !! The continuum the reference was converged in. Absent or not
          !! enabled is the gas phase.
 
+      logical, intent(in), optional :: integral_direct
+         !! Have the field response recompute its integrals on every pass even
+         !! where its coupling matrix would fit in memory. Off when absent;
+         !! the two give the same tensors.
+
       real(dp), allocatable :: density(:, :), h10(:, :, :), s10(:, :, :), work(:, :, :)
       real(dp), allocatable :: vj(:, :, :), vk(:, :, :), bounds(:, :)
       real(dp), allocatable :: h1(:, :, :), s1(:, :, :), mo1(:, :, :), dm10(:, :, :)
@@ -92,6 +99,7 @@ contains
       real(dp) :: trace, exchange
       integer :: n_ao, n_mo, n_vir, x, y, iatom, i
       logical :: kohn_sham
+      type(timer_type) :: clock
 
       if (error%has_error()) return
       n_ao = mol%nao
@@ -146,17 +154,24 @@ contains
       call giao_one_electron(mol, GIAO_RXP, h10, error)
       if (error%has_error()) return
       h10 = -0.5_dp*h10
-      call giao_coulomb_exchange(mol, density, vj, vk, error)
+      call schwarz_bounds(mol, bounds, error)
       if (error%has_error()) return
+      call clock%start()
+      call giao_coulomb_exchange(mol, density, vj, vk, error, bounds=bounds, &
+                                 coulomb_only=abs(exchange) <= 0.0_dp)
+      if (error%has_error()) return
+      call phase_done(clock, "two-electron field derivative")
       do x = 1, 3
          h10(:, :, x) = h10(:, :, x) - vj(:, :, x) &
                         + 0.5_dp*exchange*(vk(:, :, x) - transpose(vk(:, :, x)))
       end do
       deallocate (vj, vk)
       if (kohn_sham) then
+         call clock%start()
          call giao_xc_potential(xc, mol, density, work, error)
          if (error%has_error()) return
          h10 = h10 - work
+         call phase_done(clock, "functional's gauge term")
       end if
       ! A continuum's surface charges answer the charge density, which the
       ! field does not change at first order: they stay as the reference
@@ -167,12 +182,14 @@ contains
             block
                real(dp), allocatable :: q(:)
 
+               call clock%start()
                call pcm%surface_charges(mol, density, q, error)
                if (error%has_error()) return
                call giao_smeared_charges(mol, pcm%surface%coords, pcm%surface%zeta, q, &
                                          work, error)
                if (error%has_error()) return
                h10 = h10 - work
+               call phase_done(clock, "continuum's gauge term")
             end block
          end if
       end if
@@ -192,17 +209,18 @@ contains
       deallocate (h10, s10)
 
       ! ---- the orbitals' response to the field -----------------------------
-      call schwarz_bounds(mol, bounds, error)
-      if (error%has_error()) return
+      call clock%start()
       call solve_field_response(mol, coeff, orbital_energies, n_occ, bounds, h1, s1, &
-                                exchange, mo1, error)
+                                exchange, mo1, error, integral_direct=integral_direct)
       if (error%has_error()) return
 
       ! The first-order density's generator, twice for the two electrons an
       ! orbital holds: C (2 mo1) C_occ^T.
       call generator_density(mo1, coeff, n_occ, dm10)
+      call phase_done(clock, "field response")
 
       ! ---- the two parts, nucleus by nucleus -------------------------------
+      call clock%start()
       allocate (dia(3, 3, mol%natm), para(3, 3, mol%natm))
       do iatom = 1, mol%natm
          call giao_one_electron(mol, GIAO_A11, a11, error, origin=mol%coords(:, iatom))
@@ -237,6 +255,8 @@ contains
          end do
       end do
 
+      call phase_done(clock, "nuclear-moment integrals")
+
       dia = TO_PPM*dia
       para = TO_PPM*para
       shielding = dia + para
@@ -244,8 +264,19 @@ contains
       if (present(paramagnetic)) call move_alloc(para, paramagnetic)
    end subroutine czt_nmr_shielding
 
+   subroutine phase_done(clock, what)
+      !! Report how long one phase of a shielding took
+      type(timer_type), intent(inout) :: clock   !! Started when the phase began
+      character(len=*), intent(in) :: what
+
+      character(len=LINE_LEN) :: line
+
+      write (line, "(a,f10.2,a)") "  shielding: "//what//" in ", clock%get_elapsed_time(), " s"
+      call logger%info(trim(line))
+   end subroutine phase_done
+
    subroutine solve_field_response(mol, coeff, eps, n_occ, bounds, h1, s1, exchange, &
-                                   mo1, error)
+                                   mo1, error, integral_direct)
       !! The imaginary first-order orbital coefficients, one set per direction
       !!
       !! The occupied-occupied block is fixed by the first-order overlap,
@@ -268,8 +299,13 @@ contains
          !! the equations are solved by the orbital-energy gaps in one step.
       real(dp), allocatable, intent(out) :: mo1(:, :, :)   !! (n_mo, n_occ, 3)
       type(error_t), intent(inout) :: error
+      logical, intent(in), optional :: integral_direct
+         !! Recompute the integrals on every pass even where the coupling
+         !! matrix would fit in memory. Off when absent.
 
       real(dp), allocatable :: gaps(:), rhs(:, :), resid(:, :), trial(:, :, :), image(:, :, :)
+      real(dp), allocatable :: coupling(:, :)
+      logical :: stored
       real(dp), allocatable :: small(:, :, :), proj(:, :), y(:), full(:, :, :), v(:, :, :)
       real(dp) :: rnorm(3)
       real(dp) :: norm
@@ -307,6 +343,20 @@ contains
          end do
       end do
 
+      ! The operator's two-electron part is exchange alone, and over the
+      ! occupied-virtual space that is the `(A-B)` of the response equations
+      ! less its orbital-energy diagonal. Where it fits it is built once, by
+      ! transforming the integrals, and every pass after that is a
+      ! matrix-vector product; otherwise each pass recomputes the integrals.
+      stored = abs(exchange) > 0.0_dp .and. mo_transform_fits(mol%nao, n_occ, n_vir, .true.)
+      if (present(integral_direct)) stored = stored .and. .not. integral_direct
+      if (stored) then
+         call exchange_coupling(mol, coeff, n_occ, gaps, exchange, coupling, error)
+         if (error%has_error()) return
+         call logger%info("  field response: coupling matrix built once, "// &
+                          "by integral transformation")
+      end if
+
       allocate (trial(n, CP_MAX_ITER, 3), image(n, CP_MAX_ITER, 3))
       allocate (small(CP_MAX_ITER, CP_MAX_ITER, 3), proj(CP_MAX_ITER, 3))
       allocate (full(n_mo, n_occ, 3))
@@ -340,11 +390,18 @@ contains
          end do
          if (.not. any(active)) exit
 
-         call exchange_response(mol, coeff, n_occ, bounds, exchange, full, v, error)
-         if (error%has_error()) return
+         if (.not. stored) then
+            call exchange_response(mol, coeff, n_occ, bounds, exchange, full, v, error)
+            if (error%has_error()) return
+         end if
          do x = 1, 3
             if (.not. active(x)) cycle
-            image(:, k, x) = gaps*trial(:, k, x) + reshape(v(n_occ + 1:, :, x), [n])
+            if (stored) then
+               call pic_gemv(coupling, trial(:, k, x), image(:, k, x), beta=0.0_dp)
+               image(:, k, x) = image(:, k, x) + gaps*trial(:, k, x)
+            else
+               image(:, k, x) = gaps*trial(:, k, x) + reshape(v(n_occ + 1:, :, x), [n])
+            end if
             do m = 1, k
                small(m, k, x) = dot_product(trial(:, m, x), image(:, k, x))
                small(k, m, x) = dot_product(trial(:, k, x), image(:, m, x))
@@ -374,6 +431,36 @@ contains
          " iterations, residual ", maxval(rnorm)
       call logger%verbose(trim(line))
    end subroutine solve_field_response
+
+   subroutine exchange_coupling(mol, coeff, n_occ, gaps, exchange, coupling, error)
+      !! The exchange part of the field-response operator, as a matrix
+      !!
+      !! `exchange * [(a j|i b) - (a b|i j)]` over the virtual-occupied pairs:
+      !! what `exchange_response` applies, restricted to that block.
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: coeff(:, :)   !! (n_ao, n_mo), canonical
+      integer, intent(in) :: n_occ
+      real(dp), intent(in) :: gaps(:)       !! `e_a - e_i` at `a + (i-1)*n_vir`
+      real(dp), intent(in) :: exchange      !! Fraction of exact exchange
+      real(dp), allocatable, intent(out) :: coupling(:, :)
+         !! (n_vir*n_occ, n_vir*n_occ), indexed as `gaps` is
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: aplus(:, :), no_eri(:, :, :, :)
+      integer :: n_vir, k
+
+      n_vir = size(coeff, 2) - n_occ
+      ! A zero-sized tensor has the transformation make its own integral pass.
+      allocate (no_eri(0, 0, 0, 0))
+      call build_hessian_mo(mol, no_eri, coeff(:, 1:n_occ), coeff(:, n_occ + 1:), &
+                            reshape(gaps, [n_vir, n_occ]), aplus, coupling, error)
+      if (error%has_error()) return
+      deallocate (aplus)
+      do k = 1, size(gaps)
+         coupling(k, k) = coupling(k, k) - gaps(k)
+      end do
+      coupling = exchange*coupling
+   end subroutine exchange_coupling
 
    subroutine exchange_response(mol, coeff, n_occ, bounds, exchange, mo1, v, error)
       !! The exchange response to a set of first-order coefficients
@@ -432,11 +519,13 @@ contains
 
       real(dp), allocatable :: rho(:), exc(:), vrho(:), gcoef(:, :)
       real(dp), allocatable :: ao(:, :), aog(:, :, :), aow(:, :), ig(:, :), dig(:, :)
-      real(dp), allocatable :: part(:, :), axes(:, :)
+      real(dp), allocatable :: part(:, :), axes(:, :, :), vmat_t(:, :, :)
       integer, allocatable :: owner(:)
       real(dp) :: r(3), cross(3), wv(3)
       real(dp) :: w0
-      integer :: n_ao, npts, g0, g1, nb, p, u, a, b
+      integer :: n_ao, npts, g0, g1, nb, p, u, a, b, iblock, n_blocks
+      type(error_t) :: block_error
+      logical :: failed
 
       if (error%has_error()) return
       n_ao = mol%nao
@@ -447,17 +536,48 @@ contains
       ! Which atom each basis function sits on.
       call ao_to_atom(mol, owner)
 
-      allocate (vmat(n_ao, n_ao, 3), part(n_ao, n_ao), axes(3, n_ao))
+      ! d/dr_a of (R x r)_b is (R x e_a)_b, the same at every grid point.
+      allocate (vmat(n_ao, n_ao, 3), axes(3, n_ao, 3))
+      do b = 1, 3
+         do u = 1, n_ao
+            axes(:, u, b) = cross_with_axes(mol%coords(:, owner(u)), b)
+         end do
+      end do
       vmat = 0.0_dp
-      do g0 = 1, npts, AO_POINT_BLOCK
+      n_blocks = (npts + AO_POINT_BLOCK - 1)/AO_POINT_BLOCK
+      failed = .false.
+
+      ! Threaded over blocks of grid points, each thread adding into its own
+      ! copy: the products are sequential-BLAS calls on block-sized arrays.
+      !$omp parallel default(none) &
+      !$omp    shared(xc, mol, owner, axes, vrho, gcoef, vmat, n_ao, npts, n_blocks, failed, &
+      !$omp           error) &
+      !$omp    private(iblock, g0, g1, nb, ao, aog, aow, ig, dig, part, vmat_t, r, cross, wv, &
+      !$omp            w0, p, u, a, b, block_error)
+      allocate (vmat_t(n_ao, n_ao, 3), part(n_ao, n_ao))
+      vmat_t = 0.0_dp
+      ! A private copy is not default-initialised.
+      call block_error%clear()
+      !$omp do schedule(dynamic)
+      do iblock = 1, n_blocks
+         if (failed) cycle
+         g0 = (iblock - 1)*AO_POINT_BLOCK + 1
          g1 = min(g0 + AO_POINT_BLOCK - 1, npts)
          nb = g1 - g0 + 1
          if (xc%any_gga) then
-            call eval_ao_block(mol, xc%grid%coords(:, g0:g1), ao, error, grad=aog)
+            call eval_ao_block(mol, xc%grid%coords(:, g0:g1), ao, block_error, grad=aog)
          else
-            call eval_ao_block(mol, xc%grid%coords(:, g0:g1), ao, error)
+            call eval_ao_block(mol, xc%grid%coords(:, g0:g1), ao, block_error)
          end if
-         if (error%has_error()) return
+         if (block_error%has_error()) then
+            !$omp critical (giao_xc_failure)
+            if (.not. failed) then
+               failed = .true.
+               error = block_error
+            end if
+            !$omp end critical (giao_xc_failure)
+            cycle
+         end if
          if (allocated(aow)) then
             if (size(aow, 1) /= nb) deallocate (aow, ig, dig)
          end if
@@ -484,10 +604,6 @@ contains
          do b = 1, 3
             ! The gauge derivative of every function along this direction,
             ! and for a GGA its gradient contracted with `w dE/d grad rho`.
-            ! d/dr_a of (R x r)_b is (R x e_a)_b, the same at every point.
-            do u = 1, n_ao
-               axes(:, u) = cross_with_axes(mol%coords(:, owner(u)), b)
-            end do
             do u = 1, n_ao
                do p = 1, nb
                   r = xc%grid%coords(:, g0 + p - 1)
@@ -496,7 +612,7 @@ contains
                   if (xc%any_gga) then
                      w0 = xc%grid%weights(g0 + p - 1)
                      wv = w0*gcoef(g0 + p - 1, :)
-                     dig(p, u) = 0.5_dp*(dot_product(wv, axes(:, u)) &
+                     dig(p, u) = 0.5_dp*(dot_product(wv, axes(:, u, b)) &
                                          *ao(p, u) &
                                          + cross(b)*(wv(1)*aog(p, u, 1) + wv(2)*aog(p, u, 2) &
                                                      + wv(3)*aog(p, u, 3)))
@@ -504,13 +620,20 @@ contains
                end do
             end do
             call pic_gemm(aow, ig, part, transa="T", beta=0.0_dp)
-            vmat(:, :, b) = vmat(:, :, b) + part
+            vmat_t(:, :, b) = vmat_t(:, :, b) + part
             if (xc%any_gga) then
                call pic_gemm(ao, dig, part, transa="T", beta=0.0_dp)
-               vmat(:, :, b) = vmat(:, :, b) + part
+               vmat_t(:, :, b) = vmat_t(:, :, b) + part
             end if
          end do
       end do
+      !$omp end do
+      !$omp critical (giao_xc_sum)
+      vmat = vmat + vmat_t
+      !$omp end critical (giao_xc_sum)
+      deallocate (vmat_t, part)
+      !$omp end parallel
+      if (failed) return
       do b = 1, 3
          vmat(:, :, b) = vmat(:, :, b) - transpose(vmat(:, :, b))
       end do

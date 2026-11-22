@@ -42,6 +42,12 @@ module mqc_czt_giao
       !! Components of an integral that is a vector in the field
    integer, parameter :: N_TENSOR = 9
       !! Components of one that is a tensor in field and nuclear moment
+   real(dp), parameter :: GIAO_SCREEN_TOL = 1.0e-12_dp
+      !! Estimated contribution to a first-order Fock element below which a
+      !! quartet of the two-electron field derivative is skipped
+   real(dp), parameter :: FUNCTION_EXTENT = 5.0_dp
+      !! Bohr added to a centre's distance from the origin when bounding how
+      !! large the gauge factor is over a pair of functions
 
 contains
 
@@ -254,6 +260,9 @@ contains
       mx = max_shell_dim(mol)
       slot = n_env + 1
 
+      ! The gauge factor vanishes between two functions on one centre and
+      ! changes sign when they are exchanged, so only pairs of shells on
+      ! different atoms are computed, each once.
       !$omp parallel default(none) &
       !$omp    shared(mol, matrix, atm, bas, mx, coords, zeta, charges, n_charges, n_env, slot) &
       !$omp    private(ish, jsh, di, dj, io, jo, i, j, comp, shls, buf, acc, have, env, k)
@@ -261,10 +270,11 @@ contains
       env(1:n_env) = mol%env
       env(n_env + 1:) = 0.0_dp
       !$omp do schedule(dynamic)
-      do ish = 1, mol%nbas
+      do ish = 2, mol%nbas
          di = shell_dim(mol%cartesian, ish - 1, mol%bas)
          io = mol%shell_offset(ish)
-         do jsh = 1, mol%nbas
+         do jsh = 1, ish - 1
+            if (mol%bas(LIBCINT_ATOM_OF, ish) == mol%bas(LIBCINT_ATOM_OF, jsh)) cycle
             dj = shell_dim(mol%cartesian, jsh - 1, mol%bas)
             jo = mol%shell_offset(jsh)
             shls = [ish - 1, jsh - 1]
@@ -286,6 +296,7 @@ contains
                do j = 1, dj
                   do i = 1, di
                      matrix(io + i, jo + j, comp) = acc(i + di*(j - 1 + dj*(comp - 1)))
+                     matrix(jo + j, io + i, comp) = -acc(i + di*(j - 1 + dj*(comp - 1)))
                   end do
                end do
             end do
@@ -296,7 +307,7 @@ contains
       !$omp end parallel
    end subroutine giao_smeared_charges
 
-   subroutine giao_coulomb_exchange(mol, density, vj, vk, error)
+   subroutine giao_coulomb_exchange(mol, density, vj, vk, error, bounds, coulomb_only)
       !! The field derivative of the two-electron integrals against a density
       !!
       !! With `(g i j|k l)` the integral differentiated through the gauge
@@ -306,71 +317,158 @@ contains
       !!
       !! for each of the three field directions. Neither is symmetrised or
       !! signed here; the caller applies the convention it wants.
-      ! TODO(mqc): every shell quartet is computed, with no Schwarz screening
-      ! and no use of the symmetry of the second pair, so this is the full
-      ! fourth power of the basis size and the slowest step of a shielding.
-      ! A bound on the differentiated integral would let it screen as the
-      ! Fock build does, and `(kl) = (lk)` would halve what is left.
       type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: density(:, :)   !! Symmetric
       real(dp), allocatable, intent(out) :: vj(:, :, :), vk(:, :, :)   !! (n_ao, n_ao, 3)
       type(error_t), intent(inout) :: error
+      real(dp), intent(in), optional :: bounds(:, :)
+         !! `schwarz_bounds` of `mol`, (n_shells, n_shells). With them a
+         !! quartet whose estimated contribution is below `GIAO_SCREEN_TOL` is
+         !! skipped; without them every quartet is computed.
+      logical, intent(in), optional :: coulomb_only
+         !! Leave `vk` zero: a reference with no exact exchange has no use for
+         !! it, and more quartets can then be skipped. Off when absent.
 
+      ! The gauge factor of a pair is `(1/2) (R_i - R_j) x r`, so the
+      ! differentiated integral
+      !   * vanishes when the two functions share a centre,
+      !   * changes sign when they are exchanged, and
+      !   * keeps the ordinary integral's symmetry in the second pair.
+      ! Only pairs `i > j` on different atoms and `k >= l` are computed, a
+      ! quarter of the quartets at most, and each lands in the four places
+      ! the full sum would have put it.
       real(dp), allocatable :: buf(:), vj_t(:, :, :), vk_t(:, :, :)
+      real(dp), allocatable :: dmax(:, :), reach(:, :)
+      integer, allocatable :: pair_i(:), pair_j(:), shell_atom(:)
       integer :: shls(4)
       integer :: ret
       integer :: ish, jsh, ksh, lsh, di, dj, dk, dl, io, jo, ko, lo
-      integer :: i, j, k, l, comp, mx, idx, n
-      real(dp) :: val
+      integer :: i, j, k, l, comp, mx, idx, n, n_pairs, ipair, nsh
+      real(dp) :: val, weight, estimate, d_here
+      logical :: screen, with_exchange
 
       if (error%has_error()) return
       n = mol%nao
+      nsh = mol%nbas
+      with_exchange = .true.
+      if (present(coulomb_only)) with_exchange = .not. coulomb_only
       mx = max_shell_dim(mol)
       allocate (vj(n, n, N_VECTOR), vk(n, n, N_VECTOR))
       vj = 0.0_dp
       vk = 0.0_dp
+      screen = present(bounds)
 
-      !$omp parallel default(none) shared(mol, density, vj, vk, mx, n) &
-      !$omp    private(ish, jsh, ksh, lsh, di, dj, dk, dl, io, jo, ko, lo, i, j, k, l, &
-      !$omp            comp, idx, val, shls, buf, ret, vj_t, vk_t)
+      allocate (shell_atom(nsh))
+      do ish = 1, nsh
+         shell_atom(ish) = mol%bas(LIBCINT_ATOM_OF, ish) + 1
+      end do
+
+      ! The pairs that can be non-zero, and for each how far the gauge factor
+      ! can reach: `(1/2) |R_i - R_j|` times the distance from the origin of
+      ! the farther centre, padded by the functions' own extent.
+      allocate (pair_i(nsh*(nsh - 1)/2), pair_j(nsh*(nsh - 1)/2), reach(nsh, nsh))
+      reach = 0.0_dp
+      n_pairs = 0
+      do ish = 2, nsh
+         do jsh = 1, ish - 1
+            if (shell_atom(ish) == shell_atom(jsh)) cycle
+            n_pairs = n_pairs + 1
+            pair_i(n_pairs) = ish
+            pair_j(n_pairs) = jsh
+            reach(ish, jsh) = 0.5_dp*norm2(mol%coords(:, shell_atom(ish)) &
+                                           - mol%coords(:, shell_atom(jsh))) &
+                              *(max(norm2(mol%coords(:, shell_atom(ish))), &
+                                    norm2(mol%coords(:, shell_atom(jsh)))) + FUNCTION_EXTENT)
+         end do
+      end do
+
+      ! Largest density element between each pair of shells.
+      allocate (dmax(nsh, nsh))
+      do jsh = 1, nsh
+         do ish = 1, nsh
+            dmax(ish, jsh) = maxval(abs(density(mol%shell_offset(ish) + 1:mol%shell_offset(ish + 1), &
+                                                mol%shell_offset(jsh) + 1:mol%shell_offset(jsh + 1))))
+         end do
+      end do
+
+      !$omp parallel default(none) &
+      !$omp    shared(mol, density, vj, vk, mx, n, nsh, n_pairs, pair_i, pair_j, reach, dmax, &
+      !$omp           bounds, screen, with_exchange) &
+      !$omp    private(ipair, ish, jsh, ksh, lsh, di, dj, dk, dl, io, jo, ko, lo, i, j, k, l, &
+      !$omp            comp, idx, val, weight, estimate, d_here, shls, buf, ret, vj_t, vk_t)
       allocate (buf(N_VECTOR*mx**4), vj_t(n, n, N_VECTOR), vk_t(n, n, N_VECTOR))
       vj_t = 0.0_dp
       vk_t = 0.0_dp
-      !$omp do schedule(dynamic) collapse(2)
-      do ish = 1, mol%nbas
-         do jsh = 1, mol%nbas
-            di = shell_dim(mol%cartesian, ish - 1, mol%bas)
-            dj = shell_dim(mol%cartesian, jsh - 1, mol%bas)
-            io = mol%shell_offset(ish)
-            jo = mol%shell_offset(jsh)
-            do ksh = 1, mol%nbas
-               dk = shell_dim(mol%cartesian, ksh - 1, mol%bas)
-               ko = mol%shell_offset(ksh)
-               do lsh = 1, mol%nbas
-                  dl = shell_dim(mol%cartesian, lsh - 1, mol%bas)
-                  lo = mol%shell_offset(lsh)
-                  shls = [ish - 1, jsh - 1, ksh - 1, lsh - 1]
-                  if (mol%cartesian) then
-                     ret = libcint_2e_ig1_cart(buf, shls, mol%atm, mol%natm, &
-                                               mol%bas, mol%nbas, mol%env)
-                  else
-                     ret = libcint_2e_ig1_sph(buf, shls, mol%atm, mol%natm, &
-                                              mol%bas, mol%nbas, mol%env)
+      !$omp do schedule(dynamic)
+      do ipair = 1, n_pairs
+         ish = pair_i(ipair)
+         jsh = pair_j(ipair)
+         di = shell_dim(mol%cartesian, ish - 1, mol%bas)
+         dj = shell_dim(mol%cartesian, jsh - 1, mol%bas)
+         io = mol%shell_offset(ish)
+         jo = mol%shell_offset(jsh)
+         do ksh = 1, nsh
+            dk = shell_dim(mol%cartesian, ksh - 1, mol%bas)
+            ko = mol%shell_offset(ksh)
+            do lsh = 1, ksh
+               if (screen) then
+                  ! The densities this quartet is contracted with: the second
+                  ! pair's for the Coulomb term, the four cross blocks for
+                  ! exchange.
+                  d_here = dmax(ksh, lsh)
+                  if (with_exchange) then
+                     d_here = max(d_here, dmax(jsh, ksh), dmax(jsh, lsh), &
+                                  dmax(ish, ksh), dmax(ish, lsh))
                   end if
-                  if (ret == 0) cycle
-                  idx = 0
+                  estimate = reach(ish, jsh)*bounds(ish, jsh)*bounds(ksh, lsh)*d_here
+                  if (estimate < GIAO_SCREEN_TOL) cycle
+               end if
+               dl = shell_dim(mol%cartesian, lsh - 1, mol%bas)
+               lo = mol%shell_offset(lsh)
+               shls = [ish - 1, jsh - 1, ksh - 1, lsh - 1]
+               if (mol%cartesian) then
+                  ret = libcint_2e_ig1_cart(buf, shls, mol%atm, mol%natm, &
+                                            mol%bas, mol%nbas, mol%env)
+               else
+                  ret = libcint_2e_ig1_sph(buf, shls, mol%atm, mol%natm, &
+                                           mol%bas, mol%nbas, mol%env)
+               end if
+               if (ret == 0) cycle
+               ! A second pair of two different shells stands for both of
+               ! its orders in the Coulomb sum.
+               weight = 2.0_dp
+               if (ksh == lsh) weight = 1.0_dp
+               idx = 0
+               if (.not. with_exchange) then
                   do comp = 1, N_VECTOR
-                     do l = 1, dl
-                        do k = 1, dk
-                           do j = 1, dj
-                              do i = 1, di
+                     do l = lo + 1, lo + dl
+                        do k = ko + 1, ko + dk
+                           do j = jo + 1, jo + dj
+                              do i = io + 1, io + di
                                  idx = idx + 1
-                                 val = buf(idx)
-                                 vj_t(io + i, jo + j, comp) = vj_t(io + i, jo + j, comp) &
-                                                              + val*density(lo + l, ko + k)
-                                 vk_t(io + i, lo + l, comp) = vk_t(io + i, lo + l, comp) &
-                                                              + val*density(jo + j, ko + k)
+                                 vj_t(i, j, comp) = vj_t(i, j, comp) &
+                                                    + weight*buf(idx)*density(l, k)
                               end do
+                           end do
+                        end do
+                     end do
+                  end do
+                  cycle
+               end if
+               do comp = 1, N_VECTOR
+                  do l = lo + 1, lo + dl
+                     do k = ko + 1, ko + dk
+                        do j = jo + 1, jo + dj
+                           do i = io + 1, io + di
+                              idx = idx + 1
+                              val = buf(idx)
+                              vj_t(i, j, comp) = vj_t(i, j, comp) + weight*val*density(l, k)
+                              vk_t(i, l, comp) = vk_t(i, l, comp) + val*density(j, k)
+                              vk_t(j, l, comp) = vk_t(j, l, comp) - val*density(i, k)
+                              if (ksh /= lsh) then
+                                 vk_t(i, k, comp) = vk_t(i, k, comp) + val*density(j, l)
+                                 vk_t(j, k, comp) = vk_t(j, k, comp) - val*density(i, l)
+                              end if
                            end do
                         end do
                      end do
@@ -386,6 +484,12 @@ contains
       !$omp end critical
       deallocate (buf, vj_t, vk_t)
       !$omp end parallel
+
+      ! The Coulomb matrix is antisymmetric in its own two indices, and only
+      ! the half with `i > j` was accumulated.
+      do comp = 1, N_VECTOR
+         vj(:, :, comp) = vj(:, :, comp) - transpose(vj(:, :, comp))
+      end do
    end subroutine giao_coulomb_exchange
 
 end module mqc_czt_giao
