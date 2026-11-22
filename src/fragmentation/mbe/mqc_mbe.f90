@@ -214,7 +214,8 @@ contains
    end subroutine compute_mbe_coefficients
 
    subroutine accumulate_fragment_derivatives(frag_result, monomers, sys_geom, coeff, mbe_result, &
-                                              do_grad, do_hess, do_dipole_derivs, world_comm)
+                                              do_grad, do_hess, do_dipole_derivs, world_comm, &
+                                              do_shielding)
       !! Fold coeff * (one fragment's derivatives) into the system-sized totals
       !!
       !! The fragment is rebuilt once and shared by all three quantities, each
@@ -231,9 +232,18 @@ contains
       type(mbe_result_t), intent(inout) :: mbe_result  !! Accumulation target
       logical, intent(in) :: do_grad, do_hess, do_dipole_derivs
       type(comm_t), intent(in), optional :: world_comm  !! MPI communicator for abort
+      logical, intent(in), optional :: do_shielding
+         !! Fold the fragment's shielding tensors in too. A property of one
+         !! atom, so each lands on the system atom it belongs to and a cap's,
+         !! which belongs to none, is dropped.
 
       type(physical_fragment_t) :: fragment
       type(error_t) :: error
+      logical :: shielding
+      integer :: iatom
+
+      shielding = .false.
+      if (present(do_shielding)) shielding = do_shielding
 
       if (allocated(sys_geom%bonds)) then
          ! Rebuild fragment to recover local->global mapping and cap information
@@ -257,17 +267,26 @@ contains
             call redistribute_cap_dipole_derivatives(fragment, frag_result%dipole_derivatives, &
                                                      mbe_result%dipole_derivatives, scale=coeff)
          end if
+         if (shielding) then
+            ! Caps sit at the end of the fragment's atom list and have no
+            ! entry in the map.
+            do iatom = 1, fragment%n_atoms - fragment%n_caps
+               mbe_result%nmr_shielding(:, :, fragment%local_to_global(iatom)) = &
+                  mbe_result%nmr_shielding(:, :, fragment%local_to_global(iatom)) &
+                  + coeff*frag_result%nmr_shielding(:, :, iatom)
+            end do
+         end if
 
          call fragment%destroy()
       else
          call accumulate_uncapped(frag_result, monomers, sys_geom, coeff, mbe_result, &
-                                  do_grad, do_hess, do_dipole_derivs)
+                                  do_grad, do_hess, do_dipole_derivs, shielding)
       end if
 
    end subroutine accumulate_fragment_derivatives
 
    subroutine accumulate_uncapped(frag_result, monomers, sys_geom, coeff, mbe_result, &
-                                  do_grad, do_hess, do_dipole_derivs)
+                                  do_grad, do_hess, do_dipole_derivs, do_shielding)
       !! Accumulation path for systems without bond connectivity
       !!
       !! With no caps and fixed-size monomers the local->global map is pure
@@ -279,6 +298,8 @@ contains
       real(dp), intent(in) :: coeff
       type(mbe_result_t), intent(inout) :: mbe_result
       logical, intent(in) :: do_grad, do_hess, do_dipole_derivs
+      logical, intent(in) :: do_shielding
+         !! Add this term's shielding tensors to `mbe_result%nmr_shielding`
 
       integer :: i_mon, i_atom, j_mon, j_atom, icart
       integer :: frag_atom_i, frag_atom_j, sys_atom_i, sys_atom_j
@@ -296,6 +317,12 @@ contains
             if (do_grad) then
                mbe_result%gradient(:, sys_atom_i) = mbe_result%gradient(:, sys_atom_i) + &
                                                     coeff*frag_result%gradient(:, frag_atom_i)
+            end if
+
+            if (do_shielding) then
+               mbe_result%nmr_shielding(:, :, sys_atom_i) = &
+                  mbe_result%nmr_shielding(:, :, sys_atom_i) &
+                  + coeff*frag_result%nmr_shielding(:, :, frag_atom_i)
             end if
 
             if (do_dipole_derivs) then
@@ -910,6 +937,7 @@ contains
       real(dp), allocatable :: coeffs(:)  !! (fragment_count) collapsed MBE weight per fragment
       real(dp), allocatable :: ir_intensities(:)  !! IR intensities in km/mol
       logical :: do_detailed_print, compute_grad, compute_hess, compute_dipole, compute_dipole_derivs
+      logical :: compute_shielding
       type(fragment_lookup_t) :: lookup
       type(timer_type) :: assembly_timer
       logical, allocatable :: joined_pairs(:, :)
@@ -990,6 +1018,21 @@ contains
             end if
          end do
       end if
+
+      ! Shieldings are assembled when every term carries its own: a property
+      ! of one atom, expanded as the gradient is, over the terms that hold
+      ! the atom. It needs the geometry for the map from a term's atoms to
+      ! the system's, and a reduced expansion has no system to report.
+      compute_shielding = present(sys_geom)
+      if (compute_shielding) then
+         do i = 1_int64, fragment_count
+            if (.not. allocated(results(i)%nmr_shielding)) then
+               compute_shielding = .false.
+               exit
+            end if
+         end do
+      end if
+      if (interaction) compute_shielding = .false.
 
       ! Get logger configuration
       call logger%configuration(level=current_log_level)
@@ -1157,6 +1200,14 @@ contains
       ! Collapse the delta recursion into one weight per fragment while the lookup
       ! table is still alive. Only needed for the quantities that are mapped into
       ! system coordinates; energy and dipole stay on the O(fragment_count) path.
+      if (scheme /= COUNTERPOISE_NONE .and. compute_shielding) then
+         ! The same weights, with the same blindness to ghosted rows, so the
+         ! shieldings are left out and the energy is still reported.
+         call logger%warning("shieldings are not assembled under counterpoise: "// &
+                             "the expansion's weights do not know a ghosted term "// &
+                             "from an ordinary one")
+         compute_shielding = .false.
+      end if
       if (scheme /= COUNTERPOISE_NONE .and. &
           (compute_grad .or. compute_hess .or. compute_dipole_derivs)) then
          ! `compute_mbe_coefficients` collapses the delta recursion with
@@ -1174,7 +1225,11 @@ contains
          error stop "counterpoise gradients are not implemented"
       end if
 
-      if (compute_grad .or. compute_hess .or. compute_dipole_derivs) then
+      if (compute_shielding) then
+         allocate (mbe_result%nmr_shielding(3, 3, sys_geom%total_atoms))
+         mbe_result%nmr_shielding = 0.0_dp
+      end if
+      if (compute_grad .or. compute_hess .or. compute_dipole_derivs .or. compute_shielding) then
          allocate (coeffs(fragment_count))
          call compute_mbe_coefficients(polymers, fragment_count, max_level, lookup, coeffs)
       end if
@@ -1203,7 +1258,7 @@ contains
 
             call accumulate_fragment_derivatives(results(i), polymers(i, 1:fragment_size), sys_geom, coeffs(i), &
                                                  mbe_result, compute_grad, compute_hess, compute_dipole_derivs, &
-                                                 world_comm)
+                                                 world_comm, do_shielding=compute_shielding)
          end do
          call assembly_timer%stop()
          call logger%debug("Time to assemble MBE derivatives: "// &
@@ -1212,6 +1267,10 @@ contains
          if (compute_grad) mbe_result%has_gradient = .true.
          if (compute_hess) mbe_result%has_hessian = .true.
          if (compute_dipole_derivs) mbe_result%has_dipole_derivatives = .true.
+         if (compute_shielding) then
+            call logger%info("MBE shieldings assembled for "// &
+                             to_char(sys_geom%total_atoms)//" atoms")
+         end if
       end if
 
       if (compute_dipole) then
@@ -1354,6 +1413,11 @@ contains
                   if (mbe_result%has_gradient) then
                      allocate (json_data%gradient, source=mbe_result%gradient)
                      json_data%has_gradient = .true.
+                  end if
+
+                  if (allocated(mbe_result%nmr_shielding)) then
+                     json_data%nmr_shielding = mbe_result%nmr_shielding
+                     json_data%atomic_numbers = sys_geom%element_numbers
                   end if
 
                   ! Copy hessian if available
@@ -1519,6 +1583,11 @@ contains
          if (mbe_result%has_gradient) then
             allocate (json_data%gradient, source=mbe_result%gradient)
             json_data%has_gradient = .true.
+         end if
+
+         if (allocated(mbe_result%nmr_shielding)) then
+            json_data%nmr_shielding = mbe_result%nmr_shielding
+            json_data%atomic_numbers = sys_geom%element_numbers
          end if
       end if
 

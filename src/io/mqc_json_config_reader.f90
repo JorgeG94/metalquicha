@@ -279,6 +279,8 @@ contains
                         "nuclear positions).")
          return
       end select
+      call json%info("properties.nmr", found=config%nmr_shielding)
+      call json%info("properties.spin_spin_coupling", found=config%spin_spin_coupling)
       call optional_string(json, "properties.bonding_analysis.type", &
                            config%bonding_analysis)
       call optional_real(json, "properties.bonding_analysis.energy_threshold", &

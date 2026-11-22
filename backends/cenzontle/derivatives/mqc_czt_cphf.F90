@@ -193,7 +193,7 @@ contains
 
    subroutine cphf_solve(mol, orbitals, orbital_energies, n_occ, perturbations, &
                          response, error, max_iter, tol, iterations, in_core, mo_rhs, &
-                         eri_in, bmat, xc, density)
+                         eri_in, bmat, xc, density, triplet)
       !! Solve the coupled-perturbed equations for one or more perturbations
       type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: orbitals(:, :)          !! MO coefficients, (n_ao, n_mo)
@@ -230,6 +230,11 @@ contains
          !! operator the fitted reference's own, so give it when and only when
          !! the SCF whose response this is was itself fitted. Mutually exclusive
          !! with `eri_in`.
+      logical, intent(in), optional :: triplet
+         !! Solve against the triplet operator: no Coulomb term, and the spin
+         !! kernel of a functional. For a perturbation that acts on the two
+         !! spins with opposite signs, as a nucleus's contact field does.
+         !! Off by default.
       real(dp), intent(in), optional :: mo_rhs(:, :, :)
          !! The right-hand side already in the occupied-virtual MO block,
          !! `(n_vir, n_occ, n_perturbations)`. The Z-vector equation of an MP2
@@ -351,7 +356,7 @@ contains
       ! density per grid block and run libxc over it again. They depend on the
       ! reference alone, which does not move here.
       if (present(xc) .and. present(density)) then
-         call xc_kernel_cache_fill(xc, mol, density, kernel_cache, error)
+         call xc_kernel_cache_fill(xc, mol, density, kernel_cache, error, triplet=triplet)
          if (error%has_error()) return
       end if
 
@@ -388,13 +393,13 @@ contains
             ! four cases the operator used to be dispatched by are one call.
             call response_operator(mol, direct, eri, bounds, zero_h, c_occ, c_vir, &
                                    gaps, p, ap, error, bmat=bmat, xc=xc, &
-                                   density=density, cache=kernel_cache)
+                                   density=density, cache=kernel_cache, triplet=triplet)
             if (error%has_error()) return
             pap = sum(p*ap)
             if (pap <= 0.0_dp) then
                call error%set(ERROR_VALIDATION, "CPHF: the response operator is not "// &
                               "positive definite along a search direction, which means "// &
-                              "the reference SCF is a saddle point")
+                              "the reference SCF is a saddle point"//instability_kind())
                return
             end if
             step = rz/pap
@@ -423,10 +428,22 @@ contains
       if (allocated(eri_own)) deallocate (eri_own)
       call kernel_cache%destroy()
       deallocate (bounds, c_occ, c_vir, gaps, rhs, x, r, z, p, ap, work, zero_h)
+
+   contains
+
+      function instability_kind() result(text)
+         !! Which instability an indefinite operator means
+         character(len=:), allocatable :: text
+
+         text = ""
+         if (present(triplet)) then
+            if (triplet) text = " towards a spin-polarised solution (a triplet instability)"
+         end if
+      end function instability_kind
    end subroutine cphf_solve
 
    subroutine response_operator(mol, direct, eri, bounds, zero_h, c_occ, c_vir, &
-                                gaps, u, au, error, bmat, xc, density, cache)
+                                gaps, u, au, error, bmat, xc, density, cache, triplet)
       !! Apply the coupled-perturbed operator to a trial rotation
       !!
       !! `(A+B)` on one vector, which is what a conjugate-gradient iteration
@@ -456,6 +473,7 @@ contains
       type(xc_kernel_cache_t), intent(in), optional :: cache
          !! The reference's kernel coefficients, filled once by the caller.
          !! An unfilled one is ignored, so it may be passed unconditionally.
+      logical, intent(in), optional :: triplet   !! The triplet operator; off by default
 
       real(dp), allocatable :: one_u(:, :, :), one_au(:, :, :)
       integer :: one_idx(1)
@@ -467,7 +485,7 @@ contains
       call response_product(mol, c_occ, c_vir, gaps, zero_h, one_u, one_idx, 1, &
                             .false., one_au, error, direct=direct, eri=eri, &
                             bounds=bounds, xc=xc, reference=density, cache=cache, &
-                            bmat=bmat)
+                            bmat=bmat, triplet=triplet)
       if (.not. error%has_error()) au = one_au(:, :, 1)
       deallocate (one_u, one_au)
    end subroutine response_operator
