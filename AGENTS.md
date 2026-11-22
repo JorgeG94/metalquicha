@@ -485,6 +485,60 @@ not 12C) and turns it into hertz in the writer. **No basis set made for
 couplings is in `basis_sets/`**, and the contact term is the property most
 sensitive to that. See `mqc_docs/source/spin_spin_coupling.rst`.
 
+Raman activities are `properties.raman` on a Hessian deck, closed-shell HF or
+KS with exact integrals. `mqc_czt_raman` has three routes to the polarizability's
+Cartesian derivatives. The default, `polarizability_derivatives_analytic`, is
+Hartree-Fock only and differences nothing: the gradient formula holds in a
+field, so its second field derivative is the same contraction at `D^kl` and
+`W^kl`, plus `Tr(D^k G^x[D^l])`. `D^kl` is six more `cphf_solve`s through
+`mo_rhs`, with its diagonal blocks fixed by idempotency; `W^kl` is the product
+rule on `(1/2) D F D`. **The two-electron term goes through
+`two_electron_gradient`, which is quadratic in one density**, so a product of
+two different densities is taken by polarisation -- eighteen calls in all. Its
+check is the translational sum rule, 1e-13, and PySCF's differences
+*extrapolated to zero step*; the plain ones are 3e-5 off, their own error. A
+Kohn-Sham reference takes the next route instead, since the analytic one
+would need the functional's third derivative. `polarizability_derivatives_field`
+differences the analytic gradient twice over twelve electric fields --
+thirteen SCFs and gradients whatever the molecule's size, the field entering
+through `run_czt_rhf`'s `h_extra` and its own gradient term added by hand,
+since `czt_scf_gradient` does not know about it. The other,
+`polarizability_derivatives`, differences `static_polarizability`
+over `6N` displaced geometries, each a fresh molecule, SCF and response solve.
+**The mixed second difference does not vanish where symmetry says the
+derivative does**: its error carries `F_k^2 F_l^2` terms, which are even, so
+a small nonzero `xy` component is truncation and not noise -- it falls by
+four when the field is halved. **A fragmented Hessian run assembles them
+too**: `compute_mbe` sets `compute_raman` when the dipole derivatives are
+being assembled and every term carries `polarizability_derivatives`, and they
+go through `redistribute_cap_dipole_derivatives`, which moves whole columns
+and so takes six rows as it takes three. Over MPI they follow the dipole
+derivatives in both sends and both receives. **The MPI coordinator ordinarily
+flattens a fragmented Hessian into displaced gradients, and a queue of
+gradients never computes a polarizability derivative**: the activities were
+silently absent on more than one rank until `expand_displacements` learned to
+stand down for `properties%raman`, leaving each fragment whole on one rank.
+Found by running it under `mpirun`, not by reading it. The full expansion of a water
+trimer reproduces the unfragmented activities to 8e-10; at the pair level a
+*band's* total is within a per cent while single modes are off by half,
+because the assembled Hessian mixes near-degenerate stretches differently --
+compare bands. The bridge calls any route on the analytic-Hessian branch,
+and the analytic and finite-field ones on a declined Hessian too
+(`raman_derivatives`, contained in `run_czt_hf`): a capped fragment has no
+analytic Hessian, and `hf_calc_hessian` carries the derivatives across the
+`result%destroy()` that precedes the differenced one. **That capped path runs
+and is unvalidated** -- caps change the fragments, so no expansion order
+reproduces the whole molecule to check against;
+`compute_raman_activities` in `mqc_vibrational_analysis` projects the result
+on the modes beside the IR intensities. Two things cost time to find. **The
+displaced SCFs need an orbital gradient of 1e-10**: at 1e-8 the derivatives
+were 3e-6 off, the noise divided by the step. **A reference built from
+another program's Hessian has to project out rotations too**, or a mode that
+mixes with one differs by 0.1 cm-1 and 0.1 in its activity at a geometry
+that is not a stationary point, which every sample geometry is not. The
+reference is PySCF's Hessian with PySCF's own coupled-perturbed
+polarizability differenced, through `cphf.solve`.
+
 RIJCOSX is not a method name either. `keywords.scf.exchange: "cosx"` beside
 `keywords.scf.density_fitting` builds the Coulomb matrix from the fit and the
 exchange matrix by chain-of-spheres quadrature (`mqc_czt_cosx`), for a
@@ -914,7 +968,7 @@ under `cpu/mqc/` is deleted by the next regeneration.
 
 Validation categories under `cpu/mqc/` are `bond_orders ccsd ccsd-t charges cosx counterpoise
 df-dft df-hf df-uhf dft dh ecp efmo efp fmo fukui gdm gradient hessian interaction_energy
-makefp mcscf mp2 neo nmr optimize pcm quao rhf ri-ccsd ri-ccsd-t ri-mp2 sapt scs-mp2
+makefp mcscf mp2 neo nmr optimize pcm quao raman rhf ri-ccsd ri-ccsd-t ri-mp2 sapt scs-mp2
 rohf soscf sos-mp2 tddft udft uhf` -- worth checking against before assuming
 something is untested. That list is `ls validation/inputs/cpu/mqc/`; it went stale twice
 because it was maintained by hand, so check the directory rather than this

@@ -133,6 +133,12 @@ module mqc_config_types
          !! atomic partial charges; "mulliken" (the default), "chelpg",
          !! "hirshfeld" or "mbis" chooses how the converged density is
          !! partitioned.
+      logical :: raman = .false.
+         !! `properties.raman` was given: Raman activities beside the
+         !! frequencies of a Hessian run.
+      character(len=:), allocatable :: raman_method
+         !! `properties.raman.method`: "analytic", "field" or
+         !! "displacements". Set to "analytic" before the deck is read.
       logical :: nmr_shielding = .false.
          !! `properties.nmr` was given: nuclear magnetic shielding tensors of
          !! every nucleus, over gauge-including orbitals.

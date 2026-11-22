@@ -229,10 +229,29 @@ contains
       if (result%has_hessian) return
 
       ! Declined. The finite-difference path runs its own reference point, so
-      ! nothing computed above is reusable.
-      call result%destroy()
-      call finite_difference_hessian(this, fragment, result, verbose=this%options%verbose, &
-                                     displacement_in=this%options%hessian_displacement)
+      ! nothing computed above is reusable -- except the polarizability
+      ! derivatives of a Raman request, which the backend takes at the
+      ! reference geometry on a declined Hessian too and which no displaced
+      ! gradient can supply.
+      block
+         real(dp), allocatable :: dalpha(:, :)
+         real(dp) :: alpha(3, 3)
+         logical :: has_alpha
+
+         if (allocated(result%polarizability_derivatives)) then
+            call move_alloc(result%polarizability_derivatives, dalpha)
+         end if
+         has_alpha = result%has_polarizability
+         alpha = result%polarizability
+         call result%destroy()
+         call finite_difference_hessian(this, fragment, result, verbose=this%options%verbose, &
+                                        displacement_in=this%options%hessian_displacement)
+         if (allocated(dalpha) .and. .not. result%has_error) then
+            call move_alloc(dalpha, result%polarizability_derivatives)
+            result%polarizability = alpha
+            result%has_polarizability = has_alpha
+         end if
+      end block
       call suggest_numerical_hessian(result)
    end subroutine hf_calc_hessian
 

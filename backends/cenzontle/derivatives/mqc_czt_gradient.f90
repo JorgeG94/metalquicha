@@ -72,17 +72,17 @@ module mqc_czt_gradient
    public :: two_electron_deriv_many
       !! Exposed for the SA-CASSCF gradient, which contracts several densities.
    public :: gamma_fill_i   !! The Gamma callback `two_electron_deriv_many` takes
-   ! `two_electron_gradient` and `hellmann_feynman_gradient` are deliberately
-   ! NOT public: nothing outside this module calls either, and both are steps of
-   ! `czt_scf_gradient` rather than pieces a caller assembles for itself.
+   public :: two_electron_gradient
+   public :: hellmann_feynman_gradient
+      !! Steps of `czt_scf_gradient`, exposed for a derivative of the gradient
+      !! itself, which contracts the same integrals with a response density,
+      !! and for the unrestricted correlated gradients, which put a relaxed
+      !! density through the two-electron term.
    public :: iprinv_deriv_at
    public :: nuclear_attraction_deriv_at
    public :: xc_potential_gradient
    public :: vv10_gradient_fixed_grid     !! The VV10 Hessian differences this
    public :: fitted_reference_gradient
-   public :: two_electron_gradient
-      !! The two-electron term from any pair of spin densities, which the
-      !! unrestricted correlated gradients contract a relaxed density through
    public :: DERIV_OVLP, DERIV_KIN, DERIV_NUC
 
    ! Which one-electron derivative `one_electron_deriv` should build.

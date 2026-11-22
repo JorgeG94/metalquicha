@@ -6,7 +6,9 @@ module mqc_vibrational_analysis
    use pic_lapack_interfaces, only: pic_syev, pic_gesvd
    use mqc_elements, only: element_mass, element_number_to_symbol
    use pic_logger, only: logger => global_logger, verbose_level
-   use mqc_physical_constants, only: AU_TO_CM1, AU_TO_MDYNE_ANG, AU_TO_KMMOL, AMU_TO_AU
+   use mqc_physical_constants, only: AU_TO_CM1, AU_TO_MDYNE_ANG, AU_TO_KMMOL, AMU_TO_AU, &
+                                     BOHR_TO_ANGSTROM
+   use mqc_symmetric_tensor, only: N_SYMMETRIC
    use mqc_thermochemistry, only: thermochemistry_result_t, compute_thermochemistry, print_thermochemistry
    implicit none
    private
@@ -19,6 +21,7 @@ module mqc_vibrational_analysis
    public :: compute_force_constants
    public :: compute_cartesian_displacements
    public :: compute_ir_intensities
+   public :: compute_raman_activities
    public :: print_vibrational_analysis
 
    real(dp), parameter :: TR_NULL_TOL = 1.0e-10_dp
@@ -153,7 +156,9 @@ contains
                                            eigenvalues_out, eigenvectors_out, &
                                            coordinates, project_trans_rot, &
                                            force_constants_mdyne, &
-                                           dipole_derivatives, ir_intensities)
+                                           dipole_derivatives, ir_intensities, &
+                                           polarizability_derivatives, raman_activities, &
+                                           raman_depolarization)
       !! Perform complete vibrational analysis from Hessian matrix.
       !!
       !! Frequencies, reduced masses, force constants, normalized Cartesian
@@ -185,6 +190,14 @@ contains
          !! Cartesian dipole derivatives (3, 3*N) in a.u. for IR intensities
       real(dp), allocatable, intent(out), optional :: ir_intensities(:)
          !! IR intensities in km/mol
+      real(dp), intent(in), optional :: polarizability_derivatives(:, :)
+         !! Cartesian polarizability derivatives (6, 3*N) in Bohr^2, components
+         !! xx, yy, zz, xy, xz, yz, for Raman activities
+      real(dp), allocatable, intent(out), optional :: raman_activities(:)
+         !! Raman scattering activities in Angstrom^4/amu. Left unallocated
+         !! when no polarizability derivatives were given.
+      real(dp), allocatable, intent(out), optional :: raman_depolarization(:)
+         !! Depolarization ratios for linearly polarized light, 0 to 3/4
 
       real(dp), allocatable :: eigenvalues(:)
       real(dp), allocatable :: eigenvectors(:, :)
@@ -211,6 +224,12 @@ contains
       if (present(dipole_derivatives) .and. present(ir_intensities)) then
          call compute_ir_intensities(dipole_derivatives, eigenvectors, element_numbers, &
                                      ir_intensities)
+      end if
+
+      if (present(polarizability_derivatives) .and. present(raman_activities)) then
+         call compute_raman_activities(polarizability_derivatives, eigenvectors, &
+                                       element_numbers, raman_activities, &
+                                       raman_depolarization)
       end if
 
       ! Optionally return eigenvalues and eigenvectors
@@ -641,12 +660,79 @@ contains
 
    end subroutine compute_ir_intensities
 
+   subroutine compute_raman_activities(polarizability_derivatives, eigenvectors, &
+                                       element_numbers, activities, depolarization)
+      !! Raman scattering activities from polarizability derivatives and modes
+      !!
+      !! The polarizability derivative along normal coordinate `Q_i` is
+      !!
+      !!     alpha'_i = sum_j (d alpha / d x_j) L(j, i) / sqrt(m_j)
+      !!
+      !! with `L` the mass-weighted eigenvector. From its mean
+      !! `a = tr(alpha')/3` and its anisotropy
+      !!
+      !!     g^2 = [(axx-ayy)^2 + (ayy-azz)^2 + (azz-axx)^2]/2 + 3 (axy^2 + axz^2 + ayz^2)
+      !!
+      !! the activity is `45 a^2 + 7 g^2` and the depolarization ratio for
+      !! linearly polarized light `3 g^2 / (45 a^2 + 4 g^2)`.
+      !!
+      !! An activity is a property of the molecule alone. The intensity a
+      !! spectrometer records also carries the laser frequency and the
+      !! temperature, which are not in it.
+      real(dp), intent(in) :: polarizability_derivatives(:, :)
+         !! (6, 3*N) in Bohr^2: xx, yy, zz, xy, xz, yz
+      real(dp), intent(in) :: eigenvectors(:, :)
+         !! Mass-weighted eigenvectors from Hessian diagonalization (3*N x 3*N)
+      integer, intent(in) :: element_numbers(:)
+      real(dp), allocatable, intent(out) :: activities(:)
+         !! Angstrom^4/amu, one per mode
+      real(dp), allocatable, intent(out), optional :: depolarization(:)
+         !! One per mode; zero where the activity vanishes
+
+      ! The rotational averages of Placzek's theory for linearly polarized
+      ! light observed at a right angle: the scattering activity is
+      ! `45 a^2 + 7 g^2`, and the ratio of the perpendicular to the parallel
+      ! component `3 g^2 / (45 a^2 + 4 g^2)`.
+      real(dp), parameter :: ISOTROPIC_WEIGHT = 45.0_dp
+      real(dp), parameter :: ACTIVITY_ANISOTROPY = 7.0_dp
+      real(dp), parameter :: POLARIZED_ANISOTROPY = 4.0_dp
+      real(dp), parameter :: DEPOLARIZED_ANISOTROPY = 3.0_dp
+      integer :: n_coords, iatom, i, j
+      real(dp) :: d(N_SYMMETRIC)
+      real(dp) :: mean, aniso2, denominator
+      real(dp), allocatable :: ratio(:)
+
+      n_coords = 3*size(element_numbers)
+      allocate (activities(n_coords), ratio(n_coords))
+      do i = 1, n_coords
+         d = 0.0_dp
+         do j = 1, n_coords
+            iatom = (j - 1)/3 + 1
+            d = d + polarizability_derivatives(:, j)*eigenvectors(j, i) &
+                /sqrt(element_mass(element_numbers(iatom)))
+         end do
+         ! Bohr^2 per root amu to Angstrom^2 per root amu.
+         d = d*BOHR_TO_ANGSTROM**2
+         mean = (d(1) + d(2) + d(3))/3.0_dp
+         aniso2 = 0.5_dp*((d(1) - d(2))**2 + (d(2) - d(3))**2 + (d(3) - d(1))**2) &
+                  + 3.0_dp*(d(4)**2 + d(5)**2 + d(6)**2)
+         activities(i) = ISOTROPIC_WEIGHT*mean**2 + ACTIVITY_ANISOTROPY*aniso2
+         denominator = ISOTROPIC_WEIGHT*mean**2 + POLARIZED_ANISOTROPY*aniso2
+         ratio(i) = 0.0_dp
+         if (denominator > tiny(1.0_dp)) then
+            ratio(i) = DEPOLARIZED_ANISOTROPY*aniso2/denominator
+         end if
+      end do
+      if (present(depolarization)) call move_alloc(ratio, depolarization)
+   end subroutine compute_raman_activities
+
    subroutine print_vibrational_analysis(frequencies, reduced_masses, force_constants, &
                                          cartesian_displacements, element_numbers, &
                                          force_constants_mdyne, print_displacements, &
                                          n_atoms, ir_intensities, &
                                          coordinates, electronic_energy, &
-                                         temperature, pressure, spin_multiplicity)
+                                         temperature, pressure, raman_activities, &
+                                         raman_depolarization, spin_multiplicity)
       !! Print vibrational analysis results in a formatted table.
       !!
       !! Output format is similar to Gaussian, with frequencies grouped in columns.
@@ -682,6 +768,10 @@ contains
          !! Temperature for thermochemistry in K (default: 298.15)
       real(dp), intent(in), optional :: pressure
          !! Pressure for thermochemistry in atm (default: 1.0)
+      real(dp), intent(in), optional :: raman_activities(:)
+         !! Raman activities in Angstrom^4/amu
+      real(dp), intent(in), optional :: raman_depolarization(:)
+         !! Raman depolarization ratios
       integer, intent(in), optional :: spin_multiplicity
          !! The system's 2S+1, for the electronic entropy (default: 1)
 
@@ -773,6 +863,24 @@ contains
             line = " IR Intens  --  "
             do k = mode_start, mode_end
                write (ir_str, "(f12.4)") ir_intensities(k)
+               line = trim(line)//ir_str
+            end do
+            call logger%info(trim(line))
+         end if
+
+         ! Raman activities and depolarization ratios (if provided)
+         if (present(raman_activities)) then
+            line = " Raman Act  --  "
+            do k = mode_start, mode_end
+               write (ir_str, "(f12.4)") raman_activities(k)
+               line = trim(line)//ir_str
+            end do
+            call logger%info(trim(line))
+         end if
+         if (present(raman_depolarization)) then
+            line = " Depolar    --  "
+            do k = mode_start, mode_end
+               write (ir_str, "(f12.4)") raman_depolarization(k)
                line = trim(line)//ir_str
             end do
             call logger%info(trim(line))

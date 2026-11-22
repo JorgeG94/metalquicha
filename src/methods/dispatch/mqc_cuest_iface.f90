@@ -102,6 +102,10 @@ module mqc_cuest_iface
       character(len=:), allocatable :: charges_scheme
          !! Atomic partial charges from `properties.charges`, unallocated when
          !! none were asked for.
+      logical :: raman = .false.
+         !! Raman activities from `properties.raman`; the CPU backend only.
+      character(len=16) :: raman_method = "analytic"
+         !! "analytic", or which finite difference: "field" or "displacements"
       logical :: nmr_shielding = .false.
          !! Nuclear magnetic shielding tensors from `properties.nmr`; the CPU
          !! backend only.
@@ -266,6 +270,8 @@ contains
       if (allocated(properties%bond_order_scheme)) then
          settings%bond_order_scheme = properties%bond_order_scheme
       end if
+      settings%raman = properties%raman
+      settings%raman_method = properties%raman_method
       settings%nmr_shielding = properties%nmr_shielding
       settings%natural_orbitals = properties%natural_orbitals
       settings%intrinsic_orbitals = properties%intrinsic_orbitals

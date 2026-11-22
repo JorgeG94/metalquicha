@@ -497,6 +497,12 @@ HAND_MAINTAINED = {
     # test/test_mqc_czt_nmr.f90.
     "cpu/mqc/nmr/cpu_water_6-31g_nmr.json",
     "cpu/mqc/charges/cpu_water_6-31g_mbis.json",
+    # Raman activities beside a Hessian. The manifest checks the energy and
+    # the Hessian of the plain case, which asking for them must leave alone,
+    # and the run is the assertion that the property goes end to end. The
+    # polarizability derivatives are pinned against PySCF in
+    # test/test_mqc_czt_raman.f90.
+    "cpu/mqc/raman/cpu_water_sto-3g_raman.json",
     "cpu/mqc/charges/cpu_o2_cc-pvdz_mbis.json",
     # The ions given their own SCF group, and the neutral's energy pinned to the
     # same number as the chelpg case above. `properties.fukui.scf` configures

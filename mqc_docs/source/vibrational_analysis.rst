@@ -233,6 +233,255 @@ The intensity is:
    I_i \text{ (km/mol)} = \text{AU\_TO\_KMMOL} \times \sum_\alpha \left(\frac{\partial \mu_\alpha}{\partial Q_i}\right)^2
 
 
+Raman Activities from Polarizability Derivatives
+================================================
+
+A mode is Raman active to the extent that the molecule's polarizability changes
+along it, as it is infrared active to the extent its dipole does. Ask for the
+activities beside the frequencies with
+
+.. code-block:: json
+
+   "model": {"method": "hf", "basis": "cc-pVDZ"},
+   "driver": "Hessian",
+   "properties": {"raman": {}}
+
+``properties.raman`` is a request by its presence and is refused on any driver
+but ``Hessian``. Its one setting, ``method``, chooses how the polarizability
+derivatives are obtained: ``"analytic"`` (the default), ``"field"`` or
+``"displacements"``.
+
+How it is computed
+------------------
+
+What is needed is the Cartesian derivative of the static polarizability,
+:math:`\partial\alpha/\partial x_j`: a third derivative of the energy, twice in
+the electric field and once in a nuclear coordinate. There are three routes
+to it: one with no finite difference, for Hartree-Fock, and two that
+difference something analytic.
+
+**Analytically** (``"method": "analytic"``, the default). The nuclear gradient
+has the same form in a uniform field as without one,
+
+.. math::
+
+   g_x = \mathrm{Tr}(D h^x) + \tfrac12 \mathrm{Tr}(D\,G^x[D])
+         - \mathrm{Tr}(W S^x) + \mathbf{F}\cdot\mathrm{Tr}(D\,\mathbf{r}^x)
+
+and the derivative wanted is minus its second field derivative. None of the
+integrals depends on the field, so that is the same contraction with the
+density's and the energy-weighted density's field derivatives in place of the
+matrices themselves:
+
+.. math::
+
+   \frac{\partial \alpha_{kl}}{\partial x}
+     = -\Big[\mathrm{Tr}(D^{kl} h^x) - \mathrm{Tr}(W^{kl} S^x)
+       + \mathrm{Tr}(D^{kl} G^x[D]) + \mathrm{Tr}(D^{k} G^x[D^{l}])
+       + \mathrm{Tr}(D^{k} r_l^x) + \mathrm{Tr}(D^{l} r_k^x)\Big]
+
+:math:`D^k` comes from the three coupled-perturbed solves the polarizability
+itself needs. :math:`D^{kl}` has its occupied-occupied and virtual-virtual
+blocks fixed by idempotency and the block between them from six more solves
+against the same operator. **No response to a nuclear displacement is solved**,
+so beyond the nine solves the cost is that of eighteen two-electron gradient
+contractions, whatever the size of the molecule. The translational sum rule,
+which a finite difference satisfies to its truncation error, holds to
+:math:`10^{-13}` on water.
+
+It is built for closed-shell Hartree-Fock. Under a functional the same
+derivation needs the functional's third derivative, which is not built, and a
+Kohn-Sham reference asked for ``"analytic"`` -- which is every Kohn-Sham
+reference that does not say otherwise -- takes the field route below, and the
+log says so.
+
+**By field** (``"method": "field"``). In a uniform field
+:math:`\mathbf{F}` the energy is
+:math:`E_0 - \boldsymbol\mu\cdot\mathbf{F} - \tfrac12\mathbf{F}\alpha\mathbf{F}`,
+so
+
+.. math::
+
+   \frac{\partial \alpha_{kl}}{\partial x_j}
+     = -\frac{\partial^2 g_j}{\partial F_k\,\partial F_l}
+
+with :math:`g` the analytic nuclear gradient. The reference is reconverged in
+twelve fields of 0.001 atomic units -- plus and minus each axis, and plus and
+minus each pair of axes together -- and the gradient taken in each. **Thirteen
+self-consistent fields and gradients, whatever the size of the molecule**, all
+at one geometry, so the molecule and its quadrature grid are built once.
+
+**By displacement** (``"method": "displacements"``). Each coordinate is moved
+by 0.005 Bohr both ways, the reference reconverged, and the coupled-perturbed
+polarizability evaluated there: :math:`6N` self-consistent fields and
+:math:`6N` response solves. It costs more than the field route from three
+atoms up and grows with the molecule, and is kept because it shares nothing
+with the other past the reference: it is what the field route is checked
+against.
+
+The two are different finite differences of the same quantity and agree to the
+error of each, about :math:`3\times10^{-5}` Bohr\ :sup:`2` on water's
+derivatives of order ten. The analytic route agrees with either to that error
+and with their extrapolation to zero step to :math:`4\times10^{-7}`.
+
+Projected onto mode :math:`i`,
+
+.. math::
+
+   \alpha'_i = \sum_j \frac{\partial \alpha}{\partial x_j}\,\frac{L_{ji}}{\sqrt{m_j}}
+
+with :math:`L` the mass-weighted eigenvectors, the same projection the infrared
+intensities use. From its mean :math:`a = \mathrm{tr}(\alpha')/3` and its
+anisotropy
+
+.. math::
+
+   \gamma^2 = \tfrac12\left[(\alpha'_{xx}-\alpha'_{yy})^2 + (\alpha'_{yy}-\alpha'_{zz})^2
+              + (\alpha'_{zz}-\alpha'_{xx})^2\right]
+              + 3\left(\alpha'^2_{xy} + \alpha'^2_{xz} + \alpha'^2_{yz}\right)
+
+the **Raman scattering activity** is :math:`S = 45a^2 + 7\gamma^2`, in
+:math:`\text{\AA}^4/\mathrm{amu}`, and the **depolarization ratio** for
+linearly polarized light is :math:`\rho = 3\gamma^2/(45a^2 + 4\gamma^2)`. The
+ratio runs from 0, a totally symmetric mode with no anisotropy, to 3/4, any
+mode that is not totally symmetric.
+
+What it reports
+---------------
+
+Two more rows in the vibrational table,
+
+.. code-block:: text
+
+    Frequencies --   1807.9869   3874.1341   3993.3734
+    IR Intens  --    105.6565      1.9052     34.0227
+    Raman Act  --     12.2241     93.9477     46.8233
+    Depolar    --      0.4023      0.2072      0.7500
+
+(water at Hartree-Fock/6-31G: the antisymmetric stretch is the one at 3/4), and
+in the output file ``raman_activities_A4_amu``, ``raman_depolarization_ratios``
+and the static polarizability itself, ``polarizability_bohr3``, under
+``vibrational_analysis``.
+
+**An activity is not an intensity.** It is a property of the molecule. What a
+spectrometer records also depends on the laser frequency :math:`\nu_0` and the
+temperature,
+
+.. math::
+
+   I_i \propto \frac{(\nu_0 - \nu_i)^4}{\nu_i\left[1 - e^{-h c \nu_i / k_B T}\right]}\, S_i
+
+and applying that, and a line shape, is left to whoever plots the spectrum.
+
+Validation
+----------
+
+The reference is PySCF used twice, sharing nothing with this program: its
+analytic Hessian for the modes, and its own coupled-perturbed polarizability
+differenced over the same displacements. Water at Hartree-Fock, B3LYP and PBE
+in 6-31G and ammonia at Hartree-Fock in cc-pVDZ agree to
+:math:`2\times10^{-5}\ \text{\AA}^4/\mathrm{amu}` on activities between 6 and
+124, and to the five decimals printed on every depolarization ratio.
+``test_mqc_czt_raman`` pins three of water's Cartesian derivatives to that
+reference, and ``test_mqc_vibrational_analysis`` holds the activity formula to
+three tensors whose answer is known by hand.
+
+The error of the central differences themselves is measured by the
+translational sum rule: the derivatives along one direction must cancel over
+the atoms, and do to :math:`3\times10^{-5}` Bohr\ :sup:`2` on derivatives of
+order ten.
+
+In a fragmented run
+-------------------
+
+With ``keywords.fragmentation`` on a Hessian deck the activities are those of
+the whole system. Each term's polarizability derivatives are assembled over the
+many-body expansion beside its dipole derivatives, by the same rule -- a column
+per Cartesian coordinate, a cap hydrogen's shared between the two atoms that
+move it -- and projected onto the modes of the assembled Hessian.
+
+Against the unfragmented calculation at Hartree-Fock in 6-31G:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 30 12 29 29
+
+   * - System
+     - Level
+     - Stretch band, total activity
+     - Worst single mode
+   * - Three waters, stacked
+     - 1
+     - +14%
+     - 92 of 106
+   * -
+     - 2
+     - -1.0%
+     - 11
+   * -
+     - 3
+     - exact
+     - 8e-10
+   * - Six waters, the prism
+     - 2
+     - -0.2%
+     - 45
+   * -
+     - 3
+     - -1.3%
+     - 15
+
+Activities are in Angstrom\ :sup:`4`/amu. The third level of the trimer is the
+whole system, and reproduces it to the solver's precision.
+
+**Read the bands, not the single modes.** The integrated activity of the O-H
+stretch region is within a per cent or so from the pair level on. A single
+mode's activity can be wrong by half, and that is mostly not the
+polarizability derivatives: the stretches of a cluster are nearly degenerate,
+a small error in the assembled Hessian mixes them differently, and activity
+moves between neighbours a few wavenumbers apart. A broadened spectrum, which
+is what :doc:`spectra` draws, shows the band and is much less affected than a
+table of modes.
+
+**Under MPI a Raman request changes how the Hessian is spread over the
+ranks.** Ordinarily each fragment's Hessian is broken into displaced gradients
+that are queued individually, which uses more ranks than there are fragments.
+The polarizability derivatives come out of a fragment's own analytic Hessian
+calculation, so with ``properties.raman`` each fragment stays whole and goes to
+one rank. On four ranks the activities are the serial ones to
+:math:`2\times10^{-7}`.
+
+The displacement method is refused for a capped fragment, which it would have
+to rebuild at every displaced geometry; the analytic and finite-field methods
+work at the one geometry the fragment was built at. A capped fragment has no
+analytic Hessian, so its Hessian is differenced from gradients and its
+polarizability derivatives are taken beside that, at the reference geometry.
+A fragment that lost orbitals to linear dependence takes the finite-field
+method whichever was asked for. The capped path has been run end to end but
+has no external reference: hydrogen caps change the fragments, so no order of
+the expansion reproduces the unfragmented molecule.
+
+A deck with overlapping fragments is refused, and nothing is assembled under
+counterpoise.
+
+Limits
+------
+
+- **Closed-shell Hartree-Fock and Kohn-Sham with exact integrals.** An open
+  shell, a correlated method, a density-fitted reference, a continuum solvent,
+  an effective core potential and ghosted fragments are refused by name.
+- **It accompanies the analytic Hessian.** Where the Hessian is taken by
+  differences of gradients instead, the activities are skipped with a warning.
+- **Static polarizability.** The derivative is of the zero-frequency
+  polarizability, which is the usual approximation far from an electronic
+  absorption and wrong near one: there is no resonance Raman here.
+- **Analytic for Hartree-Fock only.** Under a functional the derivative is
+  taken by finite field, since the analytic one would need the functional's
+  third derivative.
+- **The extra calculations run one after another**, not distributed over MPI
+  ranks as the displacements of a semi-numerical Hessian are.
+- **Harmonic, like everything else on this page.**
+
 Thermochemistry (RRHO Approximation)
 ====================================
 

@@ -181,6 +181,10 @@ is GAMESS. The work is threaded with OpenMP throughout.
   conventional or density-fitted perturbative terms. The energy works for
   restricted and unrestricted references. The gradient and the Hessian need a
   closed shell (below).
+- **Raman activities**: scattering activities and depolarization ratios per
+  normal mode, from the static polarizability differenced along each
+  Cartesian coordinate. Closed-shell Hartree-Fock and Kohn-Sham, beside an
+  analytic Hessian. ``properties.raman``; see :doc:`vibrational_analysis`.
 - **Nuclear magnetic shielding**: the shielding tensor of every nucleus over
   gauge-including atomic orbitals, with its isotropic value and anisotropy.
   Closed-shell Hartree-Fock, and Kohn-Sham with an LDA, a GGA or a global

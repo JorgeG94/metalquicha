@@ -24,6 +24,18 @@ module mqc_calculation_defaults
    !! Krylov cycles the solve may take before it reports non-convergence.
 
    ! =========================================================================
+   ! Self-consistent fields that are differenced
+   ! =========================================================================
+   real(dp), parameter, public :: DIFFERENCED_SCF_ENERGY_TOL = 1.0e-12_dp
+   !! Energy change at which an SCF whose result is differenced stops.
+   real(dp), parameter, public :: DIFFERENCED_SCF_DENSITY_TOL = 1.0e-10_dp
+   !! Density change at which it stops.
+   real(dp), parameter, public :: DIFFERENCED_SCF_GRADIENT_TOL = 1.0e-10_dp
+   !! Orbital gradient at which it stops. Far tighter than an energy needs: a
+   !! finite difference divides the noise by the step, and 1e-8 left
+   !! polarizability derivatives 3e-6 off.
+
+   ! =========================================================================
    ! Response properties
    ! =========================================================================
    real(dp), parameter, public :: PROPERTY_RESPONSE_TOL = 1.0e-10_dp
