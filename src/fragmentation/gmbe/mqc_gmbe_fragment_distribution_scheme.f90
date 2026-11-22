@@ -15,7 +15,8 @@ module mqc_gmbe_fragment_distribution_scheme
                            TAG_NODE_SCALAR_RESULT, &
                            TAG_GROUP_ASSIGN, TAG_GROUP_POLYMERS, TAG_GROUP_RESULT, TAG_GROUP_DONE
    use mqc_physical_fragment, only: system_geometry_t, physical_fragment_t, build_fragment_from_indices, &
-                                    build_fragment_from_atom_list
+                                    build_fragment_from_atom_list, accumulate_fragment_shielding
+   use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_result_types, only: calculation_result_t, result_send, result_isend, &
                                result_recv, result_irecv, mbe_result_t
    use mqc_mbe_fragment_distribution_scheme, only: do_fragment_work
@@ -40,6 +41,7 @@ module mqc_gmbe_fragment_distribution_scheme
    public :: serial_gmbe_pie_processor  !! PIE-based serial processor
    public :: gmbe_pie_coordinator  !! PIE-based MPI coordinator
    public :: gmbe_group_global_coordinator
+   public :: assemble_pie_shieldings  !! Shieldings of the system from those of the PIE terms
 
 contains
 
@@ -338,6 +340,9 @@ contains
          end if
       end if
 
+      call publish_pie_shieldings(pie_atom_sets, pie_coefficients, n_pie_terms, sys_geom, &
+                                  results, json_data)
+
       deallocate (pie_energies, results)
       if (allocated(total_gradient)) deallocate (total_gradient)
       if (allocated(term_gradient)) deallocate (term_gradient)
@@ -347,6 +352,106 @@ contains
       if (allocated(term_dipole_derivs)) deallocate (term_dipole_derivs)
 
    end subroutine serial_gmbe_pie_processor
+
+   subroutine assemble_pie_shieldings(pie_atom_sets, pie_coefficients, n_pie_terms, sys_geom, &
+                                      results, shielding, error)
+      !! Shielding tensors of the system's atoms from those of the PIE terms
+      !!
+      !! An atom's tensor is the sum, over the terms that contain it, of its
+      !! tensor in the term times the term's coefficient. Those coefficients
+      !! add to one for every atom, which is what inclusion-exclusion counts,
+      !! so where the terms agree the sum is their common value. A cap
+      !! hydrogen's tensor belongs to no atom of the system and is dropped.
+      !! An intersection carries its caps where the two fragments it joins
+      !! carry theirs, so what a cap does to a nearby atom enters once with
+      !! each sign.
+      !!
+      !! `shielding` comes back unallocated, with no error, when some term
+      !! with a coefficient carries no tensors: nothing asked for them.
+      integer, intent(in) :: pie_atom_sets(:, :)
+         !! (max_atoms, n_pie_terms), 0-based system atoms, a negative entry
+         !! ending each column
+      integer, intent(in) :: pie_coefficients(:)
+      integer(int64), intent(in) :: n_pie_terms
+      type(system_geometry_t), intent(in) :: sys_geom
+      type(calculation_result_t), intent(in) :: results(:)  !! One per term, in term order
+      real(dp), allocatable, intent(out) :: shielding(:, :, :)  !! (3, 3, total_atoms), ppm
+      type(error_t), intent(out) :: error
+
+      type(physical_fragment_t) :: phys_frag
+      integer(int64) :: term_idx
+      integer :: n_atoms, max_atoms
+
+      max_atoms = size(pie_atom_sets, 1)
+      do term_idx = 1_int64, n_pie_terms
+         if (pie_coefficients(term_idx) == 0) cycle
+         if (pie_atom_sets(1, term_idx) < 0) cycle
+         if (.not. allocated(results(term_idx)%nmr_shielding)) return
+      end do
+
+      allocate (shielding(3, 3, sys_geom%total_atoms))
+      shielding = 0.0_dp
+      do term_idx = 1_int64, n_pie_terms
+         if (pie_coefficients(term_idx) == 0) cycle
+         ! The bound and the sentinel are tested in separate statements:
+         ! Fortran does not promise to short-circuit `.and.`.
+         n_atoms = 0
+         do while (n_atoms < max_atoms)
+            if (pie_atom_sets(n_atoms + 1, term_idx) < 0) exit
+            n_atoms = n_atoms + 1
+         end do
+         if (n_atoms == 0) cycle
+
+         call build_fragment_from_atom_list(sys_geom, pie_atom_sets(1:n_atoms, term_idx), n_atoms, &
+                                            phys_frag, error, sys_geom%bonds)
+         if (error%has_error()) then
+            deallocate (shielding)
+            return
+         end if
+         if (size(results(term_idx)%nmr_shielding, 3) /= phys_frag%n_atoms) then
+            call error%set(ERROR_VALIDATION, "PIE term "//to_char(term_idx)//" returned "// &
+                           to_char(size(results(term_idx)%nmr_shielding, 3))// &
+                           " shielding tensors for a fragment of "// &
+                           to_char(phys_frag%n_atoms)//" atoms")
+            call phys_frag%destroy()
+            deallocate (shielding)
+            return
+         end if
+         call accumulate_fragment_shielding(phys_frag, results(term_idx)%nmr_shielding, shielding, &
+                                            scale=real(pie_coefficients(term_idx), dp))
+         call phys_frag%destroy()
+      end do
+   end subroutine assemble_pie_shieldings
+
+   subroutine publish_pie_shieldings(pie_atom_sets, pie_coefficients, n_pie_terms, sys_geom, &
+                                     results, json_data)
+      !! Assemble the shieldings and hand them to the output, when both exist
+      !!
+      !! A failure to assemble is a warning and leaves the energy standing,
+      !! as a failed property does everywhere else.
+      integer, intent(in) :: pie_atom_sets(:, :)
+      integer, intent(in) :: pie_coefficients(:)
+      integer(int64), intent(in) :: n_pie_terms
+      type(system_geometry_t), intent(in) :: sys_geom
+      type(calculation_result_t), intent(in) :: results(:)
+      type(json_output_data_t), intent(inout), optional :: json_data
+
+      real(dp), allocatable :: shielding(:, :, :)
+      type(error_t) :: error
+
+      call assemble_pie_shieldings(pie_atom_sets, pie_coefficients, n_pie_terms, sys_geom, &
+                                   results, shielding, error)
+      if (error%has_error()) then
+         call logger%warning("GMBE shieldings were not assembled: "//error%get_message())
+         return
+      end if
+      if (.not. allocated(shielding)) return
+      call logger%info("GMBE shieldings assembled for "//to_char(sys_geom%total_atoms)//" atoms")
+      if (present(json_data)) then
+         json_data%nmr_shielding = shielding
+         json_data%atomic_numbers = sys_geom%element_numbers
+      end if
+   end subroutine publish_pie_shieldings
 
    subroutine build_gmbe_task_table(pie_atom_sets, n_pie_terms, sys_geom, expand, &
                                     task_atom_sets, task_offset, term_natoms, total_tasks, world_comm)
@@ -1146,6 +1251,9 @@ contains
             deallocate (pie_energies)
          end block
       end if
+
+      call publish_pie_shieldings(pie_atom_sets, pie_coefficients, n_pie_terms, sys_geom, &
+                                  results, json_data)
 
       if (allocated(task_atom_sets)) deallocate (task_atom_sets)
       if (allocated(task_offset)) deallocate (task_offset)

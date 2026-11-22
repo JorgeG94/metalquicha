@@ -485,8 +485,19 @@ over MPI flattened to `(9, n_atoms)` after the dipole derivatives, in both
 `send` routines and through `recv_shielding` in both receives; **the four have
 to stay in step**. On four ranks the result is the serial one to 1e-11 ppm. The check that
 needs no reference: at the level that reaches the whole system the result is
-the unfragmented one, 1e-11 ppm on a water trimer. Couplings, GMBE,
-counterpoise and embedding are not assembled. See
+the unfragmented one, 1e-11 ppm on a water trimer. **Overlapping fragments
+(GMBE) assemble them too, and are the way to cut through covalent bonds**:
+`assemble_pie_shieldings` in `mqc_gmbe_fragment_distribution_scheme`, called
+by the serial processor and the MPI coordinator alike, sums each atom over
+the inclusion-exclusion terms that contain it. An intersection carries its
+caps where its two fragments carry theirs, so a cap's disturbance enters
+with both signs; measured on decane, six-carbon windows advancing two leave
+carbon 0.41 ppm off, where disjoint two-carbon fragments at MBE(2) leave
+18. **Reading each atom from the one fragment where it is furthest from a
+cap was tried and is worse** -- 5.5 ppm on the same windows -- because a cap
+two bonds away is still worth ppm to a carbon and nothing cancels it. A
+window that overlaps its neighbour by one atom leaves that atom beside a cap
+in every term. Couplings, counterpoise and embedding are not assembled. See
 `mqc_docs/source/nmr_shielding.rst`.
 
 Spin-spin couplings are `properties.spin_spin_coupling`, a separate request

@@ -224,7 +224,8 @@ contains
       !! temporary. Bond connectivity comes from `sys_geom%bonds`.
       use mqc_result_types, only: calculation_result_t, mbe_result_t
       use mqc_physical_fragment, only: build_fragment_from_indices, redistribute_cap_gradients, &
-                                       redistribute_cap_hessian, redistribute_cap_dipole_derivatives
+                                       redistribute_cap_hessian, redistribute_cap_dipole_derivatives, &
+                                       accumulate_fragment_shielding
       use mqc_error, only: error_t
       type(calculation_result_t), intent(in) :: frag_result
       integer, intent(in) :: monomers(:)  !! Monomer indices making up this fragment
@@ -246,7 +247,6 @@ contains
       type(physical_fragment_t) :: fragment
       type(error_t) :: error
       logical :: shielding
-      integer :: iatom
 
       logical :: raman
 
@@ -286,13 +286,8 @@ contains
                                                      scale=coeff)
          end if
          if (shielding) then
-            ! Caps sit at the end of the fragment's atom list and have no
-            ! entry in the map.
-            do iatom = 1, fragment%n_atoms - fragment%n_caps
-               mbe_result%nmr_shielding(:, :, fragment%local_to_global(iatom)) = &
-                  mbe_result%nmr_shielding(:, :, fragment%local_to_global(iatom)) &
-                  + coeff*frag_result%nmr_shielding(:, :, iatom)
-            end do
+            call accumulate_fragment_shielding(fragment, frag_result%nmr_shielding, &
+                                               mbe_result%nmr_shielding, scale=coeff)
          end if
 
          call fragment%destroy()

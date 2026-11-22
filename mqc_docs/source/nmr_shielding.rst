@@ -190,7 +190,8 @@ In a fragmented run
 -------------------
 
 With ``keywords.fragmentation`` on the deck the shieldings are assembled over
-the many-body expansion and written in the same ``nmr_shielding`` section.
+the many-body expansion, with disjoint fragments or overlapping ones, and
+written in the same ``nmr_shielding`` section.
 
 A shielding belongs to one atom, so its expansion runs over the terms that
 contain that atom: its value in its own monomer, plus the change it sees in
@@ -241,12 +242,127 @@ proton spectrum is usable at the second level and an oxygen one is not. The
 slow part is the polarisation of each molecule by all the others at once,
 which an expansion without embedding has to rebuild term by term.
 
+Across covalent bonds
+~~~~~~~~~~~~~~~~~~~~~
+
+A molecule that has to be cut through its bonds -- a chain, a peptide -- is
+fragmented with hydrogen caps (``connectivity`` on the molecule), and the
+shieldings are assembled from the capped fragments. A cap's own tensor is
+dropped. What a cap does to its neighbours cannot be dropped: a carbon that had
+a carbon beside it and now has a hydrogen is shielded differently by tens of
+ppm, and its neighbour by several.
+
+**Overlapping fragments are what make that cancel.** With
+``"method": "gmbe"`` the fragments share atoms, and the expansion's terms are
+the fragments, less their intersections, by inclusion-exclusion. An
+intersection carries its caps exactly where the two fragments it joins carry
+theirs, so the disturbance from each cap enters an atom's shielding once with
+each sign, and what survives is how two caps at opposite ends interfere. An
+atom's shielding is the sum over the terms that contain it of its value there
+times the term's coefficient; those coefficients add to one for every atom.
+
+.. code-block:: json
+
+   "molecules": [{
+     "xyz": "decane.xyz",
+     "connectivity": [[0, 4, 1], [4, 7, 1], [7, 10, 1], [10, 13, 1]],
+     "fragments": [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+                   [7, 8, 9, 10, 11, 12, 13, 14, 15]],
+     "fragment_charges": [0, 0],
+     "fragment_multiplicities": [1, 1]
+   }],
+   "keywords": {"fragmentation": {"method": "gmbe", "level": 1}},
+   "properties": {"nmr": {}}
+
+(the first two of five fragments of three carbons, sharing one). Decane at Hartree-Fock in 6-31G,
+cut into windows of so many carbons that advance by so many, against the
+unfragmented molecule, as the largest error in an isotropic shielding:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 30 14 14 21 21
+
+   * - Fragments
+     - Level
+     - Largest term
+     - Worst hydrogen (ppm)
+     - Worst carbon (ppm)
+   * - 3 carbons, advancing 2
+     - 1
+     - 3 carbons
+     - 1.05
+     - 28.6
+   * - 4 carbons, advancing 2
+     - 1
+     - 4
+     - 0.56
+     - 10.6
+   * - 5 carbons, advancing 2
+     - 1
+     - 5
+     - 0.28
+     - 1.5
+   * - 6 carbons, advancing 2
+     - 1
+     - 6
+     - 0.046
+     - 0.41
+   * - 4 carbons, advancing 1
+     - 1
+     - 4
+     - 0.28
+     - 2.7
+   * - 5 carbons, advancing 1
+     - 1
+     - 5
+     - 0.046
+     - 0.90
+   * - 4 carbons, advancing 2
+     - 2
+     - 6
+     - 0.006
+     - 0.058
+   * - 2 carbons, disjoint (MBE)
+     - 2
+     - 4
+     - 0.59
+     - 18.4
+   * - 2 carbons, disjoint (MBE)
+     - 3
+     - 6
+     - 0.057
+     - 0.72
+
+**What matters is how far every atom is from a cap in the term that keeps it
+whole, and how much the fragments share.** Windows that overlap by one carbon
+leave that carbon beside a cap in every term containing it, and it is wrong by
+tens of ppm; an overlap of four carbons brings carbon under half a ppm at the
+first level. The second level, whose terms are unions of two fragments, is
+ten times better again. For the same largest term the overlapping expansion
+beats the disjoint one: its intersections put a cap's error in with both
+signs, where a disjoint expansion can only outgrow it. At B3LYP the errors
+are the same size (0.039 and 0.31 ppm for six-carbon windows advancing two).
+
+Triglycine, cut at three backbone bonds into three overlapping fragments,
+keeps hydrogen within 0.09 ppm and carbon within 0.5 at the first level, with
+nitrogen at 1.4 and oxygen at 4.6: the lone-pair nuclei are the slow ones, as
+in a hydrogen-bonded cluster. Its second level reaches the whole molecule and
+reproduces the unfragmented tensors to :math:`4\times10^{-10}` ppm, which is
+the check on the assembly that needs no reference. On four MPI ranks the
+tensors are the serial ones to :math:`3\times10^{-10}` ppm.
+
+One rule was tried against this and lost: reading each atom from the single
+fragment where it is furthest from any cap, summing nothing. For six-carbon
+windows that leaves carbon 5.5 ppm off where inclusion-exclusion leaves 0.41.
+A cap two bonds away is still worth several ppm to a carbon, and only the
+cancellation removes it.
+
 What is not assembled:
 
 - The spin-spin couplings, under any fragmentation: the deck is refused. A
   coupling joins two nuclei that may sit in different fragments; ask for them
   on an unfragmented run.
-- With overlapping fragments (GMBE), FMO, EE-MBE or EFMO: the deck is refused.
+- With FMO, EE-MBE or EFMO: the deck is refused.
 - Under counterpoise, where the weights do not know a ghosted term from an
   ordinary one: a warning, and no shieldings.
 - For an interaction-energy run, which has no whole system to report on.

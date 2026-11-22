@@ -443,10 +443,10 @@ contains
       !! Which fragmentations may carry `properties.nmr` and
       !! `properties.spin_spin_coupling`, checked on the type directly
       !!
-      !! A many-body expansion over disjoint fragments assembles shieldings and
-      !! nothing else here assembles either property. Before this check a
-      !! deck asking for one under FMO or overlapping fragments ran to the end
-      !! and wrote no section, which reads as a finished calculation.
+      !! A many-body expansion assembles shieldings, over disjoint fragments
+      !! or overlapping ones, and nothing else here assembles either property.
+      !! Before this check a deck asking for one under FMO ran to the end and
+      !! wrote no section, which reads as a finished calculation.
       type(error_type), allocatable, intent(out) :: error
       type(driver_config_t) :: driver
       type(error_t) :: err
@@ -480,7 +480,8 @@ contains
       call err%clear()
       driver%method_config%properties%spin_spin_coupling = .false.
 
-      ! Shieldings under a field, and over overlapping fragments.
+      ! Shieldings under a field are refused; over overlapping fragments the
+      ! inclusion-exclusion terms assemble them and the deck passes.
       driver%expansion_kind = "fmo"
       call check_property_support(driver, err)
       call check(error, err%has_error() .and. index(err%get_message(), "properties.nmr") > 0, &
@@ -490,8 +491,8 @@ contains
       driver%expansion_kind = "mbe"
       driver%allow_overlapping_fragments = .true.
       call check_property_support(driver, err)
-      call check(error, err%has_error() .and. index(err%get_message(), "properties.nmr") > 0, &
-                 "shieldings over overlapping fragments were not refused by name")
+      call check(error,.not. err%has_error(), "shieldings over overlapping fragments "// &
+                 "must pass: "//err%get_message())
    end subroutine test_property_support
 
    subroutine test_interaction_energy_support(error)

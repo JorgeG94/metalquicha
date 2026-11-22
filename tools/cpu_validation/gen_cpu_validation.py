@@ -496,6 +496,14 @@ HAND_MAINTAINED = {
     # property goes end to end. The tensors are pinned against PySCF in
     # test/test_mqc_czt_nmr.f90.
     "cpu/mqc/nmr/cpu_water_6-31g_nmr.json",
+    # Shieldings over overlapping, capped fragments: triglycine cut at three
+    # backbone bonds into three overlapping pieces, at the level whose
+    # inclusion-exclusion terms reach the whole molecule. The energy is then
+    # the unfragmented one, which is what the manifest pins, and the
+    # shieldings are the unfragmented ones too (1e-10 ppm, measured). Every
+    # smaller term is capped and cancels exactly, so the run exercises the
+    # caps being dropped and the coefficients being applied per atom.
+    "cpu/mqc/nmr/cpu_gly3_sto-3g_gmbe_nmr.json",
     "cpu/mqc/charges/cpu_water_6-31g_mbis.json",
     # Raman activities beside a Hessian. The manifest checks the energy and
     # the Hessian of the plain case, which asking for them must leave alone,

@@ -4830,6 +4830,14 @@
             "reference_note": "The ordinary RHF energy, which asking for shieldings must not move; the manifest has nowhere to put a tensor. What the run exercises is the shielding end to end: the gauge-including integrals from libfint, the coupled-perturbed solve for the field, and the tensors written to the JSON. The tensors themselves are pinned against PySCF, element by element, in test/test_mqc_czt_nmr.f90."
         },
         {
+            "name": "GMBE(2) with NMR shieldings, capped triglycine STO-3G (CPU)",
+            "input": "inputs/cpu/mqc/nmr/cpu_gly3_sto-3g_gmbe_nmr.json",
+            "expected_energy": -687.343081551244,
+            "tolerance": 1e-08,
+            "type": "fragmented",
+            "reference_note": "The unfragmented RHF/STO-3G energy of the same geometry from this program, which the inclusion-exclusion terms of three overlapping fragments reproduce at the level that reaches the whole molecule; the fragmented run lands 1.4e-12 away. PySCF with its own STO-3G table gives -687.3430814295, 1.2e-7 off, the usual difference between its Pople tables and this repository's basis JSON. The manifest has nowhere to put a tensor: what the run exercises is shieldings assembled over capped, overlapping fragments, where every term but the whole molecule carries hydrogen caps whose tensors are dropped and whose terms cancel. The assembled tensors agree with the unfragmented run's to 1e-10 ppm, and the assembly itself is pinned in test/test_mqc_physical_fragment.f90."
+        },
+        {
             "name": "RHF with MBIS charges H2O 6-31g (CPU)",
             "input": "inputs/cpu/mqc/charges/cpu_water_6-31g_mbis.json",
             "expected_energy": -75.984779843967,

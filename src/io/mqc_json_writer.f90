@@ -1364,6 +1364,8 @@ contains
          call add_hessian(json, main_obj, data%hessian)
       end if
 
+      call write_nmr_section(json, main_obj, data)
+
       ! Count non-zero coefficient terms
       if (allocated(data%pie_coefficients)) then
          n_nonzero_terms = count(data%pie_coefficients(1:data%n_pie_terms) /= 0)
