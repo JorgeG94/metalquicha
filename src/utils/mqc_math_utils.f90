@@ -1,12 +1,14 @@
-!! Small exact-arithmetic helpers with no domain of their own
+!! Small arithmetic helpers with no domain of their own
 module mqc_math_utils
-   !! Pure combinatorial arithmetic, shared rather than reimplemented: a
-   !! fragment count and a determinant count want the same function.
-   use pic_types, only: int32, int64
+   !! Pure arithmetic, shared rather than reimplemented: a fragment count and
+   !! a determinant count want the same binomial, and a local frame and a
+   !! gauge factor the same vector product.
+   use pic_types, only: int32, int64, dp
    implicit none
    private
 
    public :: binomial
+   public :: cross_product
 
    interface binomial
       !! `C(n, k)`, exactly, in 64-bit integers, for either integer kind.
@@ -19,6 +21,16 @@ module mqc_math_utils
    end interface binomial
 
 contains
+
+   pure function cross_product(a, b) result(c)
+      !! The vector product `a x b`
+      real(dp), intent(in) :: a(3), b(3)
+      real(dp) :: c(3)
+
+      c(1) = a(2)*b(3) - a(3)*b(2)
+      c(2) = a(3)*b(1) - a(1)*b(3)
+      c(3) = a(1)*b(2) - a(2)*b(1)
+   end function cross_product
 
    pure function binomial_i32(n, k) result(c)
       !! `C(n, k)` from default-kind arguments

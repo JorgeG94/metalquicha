@@ -40,6 +40,7 @@ module mqc_config_adapter
    public :: check_counterpoise_support  !! Refuse a counterpoise this expansion cannot honour
    public :: check_pieda_support  !! Refuse a PIEDA request this expansion or driver cannot honour
    public :: check_interaction_energy_support
+   public :: check_property_support
       !! Refuse an interaction-energy run the reduced expansion cannot honour
 
    type :: driver_config_t
@@ -430,6 +431,9 @@ contains
             mqc_config%charges_scheme
       end if
       driver_config%method_config%properties%raman = mqc_config%raman
+      driver_config%method_config%properties%nmr_shielding = mqc_config%nmr_shielding
+      driver_config%method_config%properties%spin_spin_coupling = &
+         mqc_config%spin_spin_coupling
       if (allocated(mqc_config%bond_order_scheme)) then
          driver_config%method_config%properties%bond_order_scheme = &
             mqc_config%bond_order_scheme
@@ -564,6 +568,9 @@ contains
          if (.not. error%has_error()) then
             call check_interaction_energy_support(driver_config, nfrag_to_use, error)
          end if
+      end if
+      if (present(error)) then
+         if (.not. error%has_error()) call check_property_support(driver_config, error)
       end if
 
       ! Output control
@@ -1100,6 +1107,38 @@ contains
          end if
       end if
    end subroutine check_pieda_support
+
+   subroutine check_property_support(driver_config, error)
+      !! Refuse a response property the chosen fragmentation does not assemble
+      !!
+      !! Silent for an unfragmented run. A many-body expansion with disjoint
+      !! fragments assembles shieldings; nothing assembles spin-spin
+      !! couplings, and FMO, EE-MBE, EFMO and overlapping fragments assemble
+      !! neither.
+      type(driver_config_t), intent(in) :: driver_config
+      type(error_t), intent(inout) :: error
+
+      logical :: plain_mbe
+
+      if (driver_config%nlevel <= 0) return
+      plain_mbe = trim(driver_config%expansion_kind) == "mbe" &
+                  .and. .not. driver_config%allow_overlapping_fragments
+      if (driver_config%method_config%properties%spin_spin_coupling) then
+         call error%set(ERROR_VALIDATION, "properties.spin_spin_coupling is not "// &
+                        "assembled over fragments: a coupling joins two nuclei that "// &
+                        "may sit in different ones. Run it unfragmented.")
+         return
+      end if
+      if (driver_config%method_config%properties%nmr_shielding .and. .not. plain_mbe) then
+         call error%set(ERROR_VALIDATION, "properties.nmr is assembled only by a "// &
+                        "many-body expansion over disjoint fragments "// &
+                        "(keywords.fragmentation.method 'mbe'). FMO, EE-MBE and EFMO "// &
+                        "solve their fragments in each other's field and overlapping "// &
+                        "fragments carry inclusion-exclusion terms; none of those "// &
+                        "sums to the property of the whole here.")
+         return
+      end if
+   end subroutine check_property_support
 
    subroutine check_interaction_energy_support(driver_config, n_fragments, error)
       !! Refuse an interaction-energy run the reduced expansion cannot honour

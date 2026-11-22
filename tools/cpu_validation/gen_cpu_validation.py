@@ -491,6 +491,11 @@ HAND_MAINTAINED = {
     # rather than solved as free atoms. Pinned against denspart in
     # test/test_mqc_mbis.f90, by tools/mbis/mbis_reference.py. Needs nothing
     # beyond the integrals.
+    # Nuclear magnetic shieldings. The manifest checks the SCF energy, which
+    # asking for them must leave alone, and the run is the assertion that the
+    # property goes end to end. The tensors are pinned against PySCF in
+    # test/test_mqc_czt_nmr.f90.
+    "cpu/mqc/nmr/cpu_water_6-31g_nmr.json",
     "cpu/mqc/charges/cpu_water_6-31g_mbis.json",
     # Raman activities beside a Hessian. The manifest checks the energy and
     # the Hessian of the plain case, which asking for them must leave alone,

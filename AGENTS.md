@@ -401,6 +401,73 @@ separately. meta-GGA, VV10, density fitting, PCM, capped fragments, a
 correlated reference and cuEST are refused by name rather than approximated.
 See `mqc_docs/source/excited_states.rst`.
 
+NMR shieldings are `properties.nmr` on an energy deck: the shielding tensor
+of every nucleus over gauge-including (London) orbitals, closed-shell
+Hartree-Fock or Kohn-Sham (LDA, GGA, global hybrids) with exact integrals,
+everything else refused by name. Two
+modules. `mqc_czt_giao` is the integrals, through the field-derivative
+entry points `libcint_fortran` exports from libfint v0.9.0 on
+(`libcint_1e_igovlp_*` through `libcint_2e_ig1_*`). `mqc_czt_nmr` is the physics, term
+for term `pyscf.prop.nmr.rhf`: the field is an imaginary antisymmetric
+perturbation, so the coupled-perturbed operator is exchange only
+(`response_mean_field` with `minus`), and the occupied-occupied block of the
+first-order coefficients is fixed at `-s1/2`. **The tensor is not
+symmetric**, first index the field and second the nuclear moment, and a
+transposed result passes any symmetric check. The reference is
+`pyscf.prop.nmr.RHF` from the separate `pyscf-properties` package, whose
+packaged response callback assumes three vectors a call and fails under
+current PySCF; pass it one that reshapes to any count. The two-electron
+field derivative computes every shell quartet with no screening.
+**Under a functional the potential does not respond to the field**, so a
+pure functional has no coupled equations at all and `exchange_response`
+returns zero without touching an integral; a hybrid scales exchange by
+`xc%exx_fraction` in the first-order Fock matrix and the response alike.
+What the functional adds is `giao_xc_potential`: the potential between a
+function and the gauge derivative of another, `(1/2)(R x r) chi`, less its
+transpose, on the grid, with that derivative's gradient for a GGA.
+`pyscf.prop.nmr.rks`'s own `get_vxc_giao` fails under current PySCF (a block
+size that is not a multiple of the grid's), so the reference is the same
+formulas in one pass, held to the two numbers in that module's self-test --
+and those were made with the old B3LYP, `b3lyp5` now, which is 0.02 ppm from
+today's. **In a continuum the surface charges do not respond either**, to
+the field or to a nucleus's contact field, so the couplings need nothing but
+the solvated orbitals and the shieldings need one term: the gauge derivative
+of the charges' potential, `giao_smeared_charges`. The charges are Gaussians,
+and `int1e_ignuc` sums integer charges over every atom it is told of, so each
+charge is put first in the atom list as a unit Gaussian nucleus and the
+integral told there is one atom -- it still finds each shell's centre further
+down the list. One pass over the shell pairs per surface point. No other
+program here does a shielding in a continuum, so **the check is translation**:
+6e-8 ppm with the term, 87 ppm without.
+**In a fragmented run the shieldings are assembled like a gradient**:
+`compute_mbe` notices that every term carries `nmr_shielding`, and
+`accumulate_fragment_derivatives` folds each term's tensors onto the system
+atoms with the expansion's collapsed weights, dropping caps. Nothing asks for
+it -- the caller allocates nothing, unlike the gradient. The tensors travel
+over MPI flattened to `(9, n_atoms)` after the dipole derivatives, in both
+`send` routines and through `recv_shielding` in both receives; **the four have
+to stay in step**. On four ranks the result is the serial one to 1e-11 ppm. The check that
+needs no reference: at the level that reaches the whole system the result is
+the unfragmented one, 1e-11 ppm on a water trimer. Couplings, GMBE,
+counterpoise and embedding are not assembled. See
+`mqc_docs/source/nmr_shielding.rst`.
+
+Spin-spin couplings are `properties.spin_spin_coupling`, a separate request
+from the shieldings: a deck may want either without the other.
+`mqc_czt_spin_coupling` computes **the Fermi-contact term only**, term for
+term `pyscf.prop.ssc`'s `make_fc`: the right-hand side for nucleus `A` is
+`(4 pi / 3) phi_a(R_A) phi_i(R_A)`, from `eval_ao_block` at the nuclei, and
+the response is a *triplet* one, through `cphf_solve(..., triplet=.true.)`.
+**That flag has to reach `xc_kernel_cache_fill` as well as the operator**: a
+cache filled for singlets is refused by the triplet kernel, which is how it
+was found. A triplet-unstable reference makes the operator indefinite and the
+solve says so; at Hartree-Fock that is common and is the method's failure,
+not a bug. What is stored is the reduced coupling in atomic units;
+`mqc_nmr_isotopes` holds the observed isotope and g factor per element (13C,
+not 12C) and turns it into hertz in the writer. **No basis set made for
+couplings is in `basis_sets/`**, and the contact term is the property most
+sensitive to that. See `mqc_docs/source/spin_spin_coupling.rst`.
+
 Raman activities are `properties.raman` on a Hessian deck, closed-shell HF or
 KS with exact integrals. `mqc_czt_raman` differences `static_polarizability`
 over `6N` displaced geometries, each a fresh molecule, SCF and response solve,
@@ -844,7 +911,7 @@ under `cpu/mqc/` is deleted by the next regeneration.
 
 Validation categories under `cpu/mqc/` are `bond_orders ccsd ccsd-t charges cosx counterpoise
 df-dft df-hf df-uhf dft dh ecp efmo efp fmo fukui gdm gradient hessian interaction_energy
-makefp mcscf mp2 neo optimize pcm quao raman rhf ri-ccsd ri-ccsd-t ri-mp2 sapt scs-mp2
+makefp mcscf mp2 neo nmr optimize pcm quao raman rhf ri-ccsd ri-ccsd-t ri-mp2 sapt scs-mp2
 rohf soscf sos-mp2 tddft udft uhf` -- worth checking against before assuming
 something is untested. That list is `ls validation/inputs/cpu/mqc/`; it went stale twice
 because it was maintained by hand, so check the directory rather than this

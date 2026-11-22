@@ -9,4 +9,6 @@ target_sources(
           mqc_czt_rpa_solver.f90
           mqc_czt_tddft.f90
           mqc_czt_tddft_properties.f90
-          mqc_czt_raman.f90)
+          mqc_czt_raman.f90
+          mqc_czt_nmr.f90
+          mqc_czt_spin_coupling.f90)

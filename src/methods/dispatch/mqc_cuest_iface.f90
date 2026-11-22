@@ -104,6 +104,11 @@ module mqc_cuest_iface
          !! none were asked for.
       logical :: raman = .false.
          !! Raman activities from `properties.raman`; the CPU backend only.
+      logical :: nmr_shielding = .false.
+         !! Nuclear magnetic shielding tensors from `properties.nmr`; the CPU
+         !! backend only.
+      logical :: spin_spin_coupling = .false.
+         !! Fermi-contact couplings from `properties.spin_spin_coupling`
       logical :: natural_orbitals = .false.
          !! Natural occupations from `properties.natural_orbitals`
       logical :: intrinsic_orbitals = .false.
@@ -257,12 +262,14 @@ contains
       end if
       settings%raman = properties%raman
       settings%fukui_scf = properties%fukui_scf
+      settings%spin_spin_coupling = properties%spin_spin_coupling
       if (allocated(properties%charges_scheme)) then
          settings%charges_scheme = properties%charges_scheme
       end if
       if (allocated(properties%bond_order_scheme)) then
          settings%bond_order_scheme = properties%bond_order_scheme
       end if
+      settings%nmr_shielding = properties%nmr_shielding
       settings%natural_orbitals = properties%natural_orbitals
       settings%intrinsic_orbitals = properties%intrinsic_orbitals
       settings%intrinsic_exponent = properties%intrinsic_exponent
