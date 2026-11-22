@@ -263,6 +263,22 @@ contains
                               config%bond_order_scheme)
       end if
       ! The object is the request; it has no settings to read.
+      call json%info("properties.raman", found=config%raman)
+      config%raman_method = "analytic"
+      call optional_string(json, "properties.raman.method", config%raman_method)
+      select case (trim(config%raman_method))
+      case ("analytic", "field", "displacements")
+         continue
+      case default
+         call error%set(ERROR_VALIDATION, "properties.raman.method is '"// &
+                        trim(config%raman_method)//"'. Accepted: 'analytic' (the "// &
+                        "default: no finite difference, Hartree-Fock only, and a "// &
+                        "Kohn-Sham reference takes 'field' in its place), 'field' "// &
+                        "(the gradient differenced over electric fields) and "// &
+                        "'displacements' (the polarizability differenced over "// &
+                        "nuclear positions).")
+         return
+      end select
       call json%info("properties.nmr", found=config%nmr_shielding)
       call json%info("properties.spin_spin_coupling", found=config%spin_spin_coupling)
       call optional_string(json, "properties.bonding_analysis.type", &
@@ -295,6 +311,21 @@ contains
          call error%set(ERROR_VALIDATION, "unknown driver '"//trim(text)// &
                         "'. Accepted: energy, gradient, hessian, optimize, "// &
                         "makefp, conformers, interactionenergy")
+         return
+      end if
+      ! Raman activities are a column beside the frequencies: without a
+      ! Hessian there are no modes to project the polarizability onto.
+      if (config%raman .and. config%calc_type /= CALC_TYPE_HESSIAN) then
+         call error%set(ERROR_VALIDATION, "properties.raman needs driver 'Hessian': "// &
+                        "the activities are computed per normal mode.")
+         return
+      end if
+      ! Nothing else has a polarizability derivative, and a semi-empirical
+      ! Hessian would otherwise finish with the column missing.
+      if (config%raman .and. config%method /= METHOD_TYPE_HF &
+          .and. config%method /= METHOD_TYPE_DFT) then
+         call error%set(ERROR_VALIDATION, "properties.raman is implemented for "// &
+                        "Hartree-Fock and Kohn-Sham (model.method 'hf' or 'dft').")
          return
       end if
 

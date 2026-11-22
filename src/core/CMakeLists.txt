@@ -4,6 +4,7 @@ target_sources(
           mqc_calculation_defaults.f90
           mqc_calculation_keywords.f90
           mqc_physical_constants.F90
+          mqc_symmetric_tensor.f90
           mqc_program_limits.f90
           mqc_version.f90
           mqc_elements.f90

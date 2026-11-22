@@ -825,6 +825,22 @@ class Result:
         return list(intensities) if intensities is not None else None
 
     @property
+    def raman_activities(self):
+        """Raman scattering activities in Angstrom^4/amu, one per mode, or None.
+
+        Written when the Hessian deck asked for ``properties.raman``. An
+        activity is a property of the molecule alone; the intensity a
+        spectrometer records also carries the laser frequency and the
+        temperature. The depolarization ratios are
+        ``raman_depolarization_ratios`` on `vibrational_analysis`.
+        """
+        analysis = self.vibrational_analysis
+        if not analysis:
+            return None
+        activities = analysis.get("raman_activities_A4_amu")
+        return list(activities) if activities is not None else None
+
+    @property
     def vibrational_analysis(self):
         """The whole vibrational block, or None.
 

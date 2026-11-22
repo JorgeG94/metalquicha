@@ -148,6 +148,7 @@ contains
                   new_unittest("scf_convergence_metric", test_convergence_metric), &
                   new_unittest("restricted_open_keyword", test_restricted_open), &
                   new_unittest("nmr_property_request", test_nmr_request), &
+                  new_unittest("raman_property_request", test_raman_request), &
                   new_unittest("error_malformed_json", test_malformed) &
                   ]
    end subroutine collect_mqc_json_reader_tests
@@ -4293,6 +4294,62 @@ contains
       call check(error, parse_error%has_error(), &
                  "an unknown key under properties.spin_spin_coupling was accepted")
    end subroutine test_nmr_request
+
+   subroutine test_raman_request(error)
+      !! `properties.raman` is a request by its presence and belongs to a
+      !! Hessian run: the activities are per normal mode, so on any other
+      !! driver there is nothing to attach them to and the deck is refused
+      !! rather than run without them.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "hf", "basis": "6-31g"', "Hessian", "", "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error,.not. config%raman, "Raman must be off by default")
+      if (allocated(error)) return
+
+      call write_deck('"method": "hf", "basis": "6-31g"', "Hessian", "", "", two_atoms(), &
+                      root='"properties": {"raman": {}}')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%raman, "properties.raman was not read")
+      if (allocated(error)) return
+
+      call write_deck('"method": "hf", "basis": "6-31g"', "Energy", "", "", two_atoms(), &
+                      root='"properties": {"raman": {}}')
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error() .and. &
+                 index(parse_error%get_message(), "Hessian") > 0, &
+                 "properties.raman on an energy run was accepted")
+      if (allocated(error)) return
+
+      ! The default method is the analytic one, the others are selectable,
+      ! and an unknown one is refused with the names in the message.
+      call write_deck('"method": "hf", "basis": "6-31g"', "Hessian", "", "", two_atoms(), &
+                      root='"properties": {"raman": {}}')
+      call read_deck(config, parse_error)
+      call check(error, config%raman_method == "analytic", &
+                 "the Raman method must default to the analytic one")
+      if (allocated(error)) return
+      call write_deck('"method": "hf", "basis": "6-31g"', "Hessian", "", "", two_atoms(), &
+                      root='"properties": {"raman": {"method": "displacements"}}')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error() &
+                 .and. config%raman_method == "displacements", &
+                 "properties.raman.method was not read")
+      if (allocated(error)) return
+      call write_deck('"method": "hf", "basis": "6-31g"', "Hessian", "", "", two_atoms(), &
+                      root='"properties": {"raman": {"method": "numerical"}}')
+      call read_deck(config, parse_error)
+      call check(error, parse_error%has_error() .and. &
+                 index(parse_error%get_message(), "displacements") > 0, &
+                 "an unknown Raman method was accepted")
+   end subroutine test_raman_request
 
    subroutine test_maxiter_named(error)
       !! Whether the deck named `keywords.scf.maxiter`, not just its value
