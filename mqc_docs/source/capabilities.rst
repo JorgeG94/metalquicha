@@ -185,6 +185,14 @@ is GAMESS. The work is threaded with OpenMP throughout.
   normal mode, from the static polarizability differenced along each
   Cartesian coordinate. Closed-shell Hartree-Fock and Kohn-Sham, beside an
   analytic Hessian. ``properties.raman``; see :doc:`vibrational_analysis`.
+- **Nuclear magnetic shielding**: the shielding tensor of every nucleus over
+  gauge-including atomic orbitals, with its isotropic value and anisotropy.
+  Closed-shell Hartree-Fock, and Kohn-Sham with an LDA, a GGA or a global
+  hybrid. ``properties.nmr``; see :doc:`nmr_shielding`.
+- **Spin-spin couplings**: the indirect nuclear coupling constants that split
+  an NMR line, Fermi-contact term, in hertz for the observed isotopes and as
+  reduced couplings. Closed-shell Hartree-Fock and Kohn-Sham.
+  ``properties.spin_spin_coupling``; see :doc:`spin_spin_coupling`.
 - **Empirical dispersion**: ``keywords.dft.dispersion`` adds D3(BJ)
   (``"d3bj"``) or D4 with its three-body term (``"d4"``) to a Kohn-Sham energy
   and gradient. The values come from simple-dftd3 and dftd4. Both are LGPL, so

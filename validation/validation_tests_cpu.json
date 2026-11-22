@@ -4823,6 +4823,13 @@
             "requires": "libxc"
         },
         {
+            "name": "RHF with NMR shieldings H2O 6-31g (CPU)",
+            "input": "inputs/cpu/mqc/nmr/cpu_water_6-31g_nmr.json",
+            "expected_energy": -75.984779843967,
+            "type": "unfragmented",
+            "reference_note": "The ordinary RHF energy, which asking for shieldings must not move; the manifest has nowhere to put a tensor. What the run exercises is the shielding end to end: the gauge-including integrals from libfint, the coupled-perturbed solve for the field, and the tensors written to the JSON. The tensors themselves are pinned against PySCF, element by element, in test/test_mqc_czt_nmr.f90."
+        },
+        {
             "name": "RHF with MBIS charges H2O 6-31g (CPU)",
             "input": "inputs/cpu/mqc/charges/cpu_water_6-31g_mbis.json",
             "expected_energy": -75.984779843967,

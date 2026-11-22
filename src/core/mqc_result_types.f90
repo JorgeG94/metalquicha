@@ -141,6 +141,16 @@ module mqc_result_types
       character(len=16) :: bond_order_scheme = ""
          !! Which definition produced them: "mayer" or "xtb". Empty means
          !! nothing has.
+      real(dp), allocatable :: nmr_shielding(:, :, :)
+         !! (3, 3, natoms) nuclear magnetic shielding tensors in ppm, when
+         !! `properties.nmr` asked. First index the field's direction, second
+         !! the nuclear moment's; not symmetric.
+      real(dp), allocatable :: nmr_diamagnetic(:, :, :), nmr_paramagnetic(:, :, :)
+         !! Its two parts, same shape. Only their sum is gauge independent.
+      real(dp), allocatable :: spin_spin_coupling(:, :)
+         !! (n_atoms, n_atoms) reduced indirect spin-spin couplings in atomic
+         !! units, Fermi-contact term, from `properties.spin_spin_coupling`.
+         !! Symmetric, zero on the diagonal; unallocated when not asked for.
       real(dp), allocatable :: iao_charges(:)
          !! (natoms) intrinsic atomic orbital charges, when
          !! `properties.intrinsic_orbitals` asked
@@ -376,6 +386,10 @@ module mqc_result_types
       real(dp), allocatable :: hessian(:, :)         !! Total Hessian (3*natoms, 3*natoms)
       real(dp), allocatable :: dipole(:)             !! Total dipole moment (3) (e*Bohr)
       real(dp), allocatable :: dipole_derivatives(:, :)  !! Dipole derivatives (3, 3*natoms) for IR intensities
+      real(dp), allocatable :: nmr_shielding(:, :, :)
+         !! (3, 3, total_atoms) shielding tensors in ppm, assembled from the
+         !! fragments' when every one of them carries its own. Allocated by
+         !! `compute_mbe`, not by the caller.
       real(dp), allocatable :: polarizability_derivatives(:, :)
          !! (6, 3*natoms) polarizability derivatives for Raman activities,
          !! components xx, yy, zz, xy, xz, yz. Allocated by `compute_mbe`
@@ -425,6 +439,10 @@ module mqc_result_types
       procedure :: allocate_hessian => mbe_result_allocate_hessian
       procedure :: allocate_dipole => mbe_result_allocate_dipole
    end type mbe_result_t
+
+   integer, parameter :: N_CARTESIAN = 3
+   integer, parameter :: NMR_TENSOR_SIZE = N_CARTESIAN*N_CARTESIAN
+      !! Elements of one shielding tensor, the leading extent it is sent with
 
 contains
 
@@ -552,6 +570,10 @@ contains
       if (allocated(this%hessian)) deallocate (this%hessian)
       if (allocated(this%dipole)) deallocate (this%dipole)
       if (allocated(this%dipole_derivatives)) deallocate (this%dipole_derivatives)
+      if (allocated(this%nmr_shielding)) deallocate (this%nmr_shielding)
+      if (allocated(this%nmr_diamagnetic)) deallocate (this%nmr_diamagnetic)
+      if (allocated(this%nmr_paramagnetic)) deallocate (this%nmr_paramagnetic)
+      if (allocated(this%spin_spin_coupling)) deallocate (this%spin_spin_coupling)
       if (allocated(this%polarizability_derivatives)) deallocate (this%polarizability_derivatives)
       if (allocated(this%atomic_charges)) deallocate (this%atomic_charges)
       if (allocated(this%spin_populations)) deallocate (this%spin_populations)
@@ -645,6 +667,7 @@ contains
       if (allocated(this%hessian)) deallocate (this%hessian)
       if (allocated(this%dipole)) deallocate (this%dipole)
       if (allocated(this%dipole_derivatives)) deallocate (this%dipole_derivatives)
+      if (allocated(this%nmr_shielding)) deallocate (this%nmr_shielding)
       if (allocated(this%polarizability_derivatives)) deallocate (this%polarizability_derivatives)
       if (allocated(this%correlation_by_level)) deallocate (this%correlation_by_level)
       if (allocated(this%correlation_parts_by_level)) deallocate (this%correlation_parts_by_level)
@@ -812,6 +835,38 @@ contains
       if (present_here) call recv(comm, result%polarizability_derivatives, source, tag, status)
    end subroutine recv_polarizability_derivatives
 
+   subroutine send_shielding(result, comm, dest, tag)
+      !! The shielding tensors, flattened to one column of nine per atom
+      !!
+      !! The diamagnetic and paramagnetic parts are not sent: only their sum
+      !! is assembled across fragments.
+      type(calculation_result_t), intent(in) :: result
+      type(comm_t), intent(in) :: comm
+      integer, intent(in) :: dest, tag
+
+      call send(comm, allocated(result%nmr_shielding), dest, tag)
+      if (allocated(result%nmr_shielding)) then
+         call send(comm, reshape(result%nmr_shielding, &
+                                 [NMR_TENSOR_SIZE, size(result%nmr_shielding, 3)]), dest, tag)
+      end if
+   end subroutine send_shielding
+
+   subroutine recv_shielding(result, comm, source, tag, status)
+      !! The shielding tensors, as `send_shielding` flattened them
+      type(calculation_result_t), intent(inout) :: result
+      type(comm_t), intent(in) :: comm
+      integer, intent(in) :: source, tag
+      type(MPI_Status), intent(inout) :: status
+
+      real(dp), allocatable :: flat(:, :)
+      logical :: present_here
+
+      call recv(comm, present_here, source, tag, status)
+      if (.not. present_here) return
+      call recv(comm, flat, source, tag, status)
+      result%nmr_shielding = reshape(flat, [N_CARTESIAN, N_CARTESIAN, size(flat, 2)])
+   end subroutine recv_shielding
+
    subroutine recv_quao_rows(result, comm, source, tag)
       !! The bonding-analysis rows, into a result `destroy` has emptied
       type(calculation_result_t), intent(inout) :: result
@@ -895,6 +950,7 @@ contains
          call send(comm, result%dipole_derivatives, dest, tag)
       end if
 
+      call send_shielding(result, comm, dest, tag)
       call send_polarizability_derivatives(result, comm, dest, tag)
 
       ! Excited states, every array under one flag: the solver and the
@@ -1003,6 +1059,7 @@ contains
          call send(comm, result%dipole_derivatives, dest, tag)
       end if
 
+      call send_shielding(result, comm, dest, tag)
       call send_polarizability_derivatives(result, comm, dest, tag)
 
       ! Excited states, every array under one flag: the solver and the
@@ -1123,6 +1180,7 @@ contains
          call recv(comm, result%dipole_derivatives, source, tag, status)
       end if
 
+      call recv_shielding(result, comm, source, tag, status)
       call recv_polarizability_derivatives(result, comm, source, tag, status)
 
       ! Receive excited states, every array under one flag
@@ -1247,6 +1305,7 @@ contains
          call recv(comm, result%dipole_derivatives, source, tag, status)
       end if
 
+      call recv_shielding(result, comm, source, tag, status)
       call recv_polarizability_derivatives(result, comm, source, tag, status)
 
       ! Receive excited states, every array under one flag

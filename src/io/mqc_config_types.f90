@@ -139,6 +139,12 @@ module mqc_config_types
       character(len=:), allocatable :: raman_method
          !! `properties.raman.method`: "analytic", "field" or
          !! "displacements". Set to "analytic" before the deck is read.
+      logical :: nmr_shielding = .false.
+         !! `properties.nmr` was given: nuclear magnetic shielding tensors of
+         !! every nucleus, over gauge-including orbitals.
+      logical :: spin_spin_coupling = .false.
+         !! `properties.spin_spin_coupling` was given: the indirect nuclear
+         !! spin-spin couplings, Fermi-contact term.
       character(len=16) :: properties_density = "scf"
          !! `properties.density`: which one-particle density the charges and
          !! bond orders partition, "scf" or "relaxed". See

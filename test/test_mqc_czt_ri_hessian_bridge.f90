@@ -76,7 +76,9 @@ contains
                   new_unittest("b2plyp_dropped_mode_takes_the_semi_numerical_hessian", &
                                dh_declined), &
                   new_unittest("b2plyp_fitted_hessian_and_dipole_derivatives", &
-                               dh_fitted_against_conventional) &
+                               dh_fitted_against_conventional), &
+                  new_unittest("coupled_cluster_gradient_refuses_what_it_cannot_do", &
+                               cc_gradient_refusals) &
                   ]
    end subroutine collect_mqc_czt_ri_hessian_bridge_tests
 
@@ -257,6 +259,73 @@ contains
       if (allocated(error)) return
       call compare_hessians(error, declined%hessian, analytic%hessian, FD_TOL_DH, "B2PLYP")
    end subroutine dh_declined
+
+   subroutine cc_gradient_refusals(error)
+      !! A coupled cluster gradient exists for one combination, and every
+      !! other is refused before anything is computed.
+      !!
+      !! The gradient code further down assumes the refusal ran: it is
+      !! written for fitted, spin-adapted amplitudes over an exact closed
+      !! shell and checks none of that itself. The refusal was once deleted
+      !! by an unrelated edit and nothing noticed, which is what this is for.
+      !! Each case is turned away at the door, so no SCF is run.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(cuest_scf_settings_t) :: settings
+      type(physical_fragment_t) :: fragment
+      type(calculation_result_t) :: result
+
+      call water_fragment(fragment)
+      settings%basis_set = "6-31g"
+      settings%run_cc = .true.
+
+      ! Conventional integrals.
+      settings%corr_density_fitting = .false.
+      call run_czt_hf(settings, fragment, result, want_gradient=.true.)
+      call check(error, result%has_error, &
+                 "a conventional coupled cluster gradient was not refused")
+      if (allocated(error)) return
+      call check(error, index(result%error%get_message(), "coupled cluster gradient") > 0 &
+                 .and. index(result%error%get_message(), "conventional") > 0, &
+                 "the refusal does not name conventional integrals: "// &
+                 result%error%get_message())
+      if (allocated(error)) return
+
+      ! Fitted, in the spin-orbital formulation.
+      call result%destroy()
+      settings%corr_density_fitting = .true.
+      settings%cc_spin_adapted = .false.
+      call run_czt_hf(settings, fragment, result, want_gradient=.true.)
+      call check(error, result%has_error .and. &
+                 index(result%error%get_message(), "spin-orbital") > 0, &
+                 "a spin-orbital coupled cluster gradient was not refused by name: "// &
+                 result%error%get_message())
+      if (allocated(error)) return
+
+      ! Fitted and spin-adapted, over a fitted reference.
+      call result%destroy()
+      settings%cc_spin_adapted = .true.
+      settings%density_fitting = .true.
+      call run_czt_hf(settings, fragment, result, want_gradient=.true.)
+      call check(error, result%has_error .and. &
+                 index(result%error%get_message(), "density-fitted reference") > 0, &
+                 "a coupled cluster gradient over a fitted reference was not "// &
+                 "refused by name: "//result%error%get_message())
+      if (allocated(error)) return
+
+      ! And the energy of the first case is not refused by this check: the
+      ! refusal is of the gradient alone.
+      call result%destroy()
+      settings%density_fitting = .false.
+      settings%corr_density_fitting = .false.
+      settings%energy_tol = 1.0e-8_dp
+      settings%density_tol = 1.0e-6_dp
+      settings%max_iter = 100
+      call run_czt_hf(settings, fragment, result)
+      call check(error,.not. result%has_error, &
+                 "a conventional coupled cluster energy was refused: "// &
+                 result%error%get_message())
+   end subroutine cc_gradient_refusals
 
    subroutine dh_run(aux, named, result)
       character(len=*), intent(in) :: aux

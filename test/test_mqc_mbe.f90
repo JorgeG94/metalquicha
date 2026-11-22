@@ -37,6 +37,7 @@ contains
                   new_unittest("checkpointed_term_withholds_split", test_checkpoint_withholds_split), &
                   new_unittest("mp2_spin_parts_add_up_by_level", test_mp2_parts), &
                   new_unittest("cc_triples_expand_on_their_own", test_cc_parts), &
+                  new_unittest("shieldings_expand_atom_by_atom", test_shielding_assembly), &
                   new_unittest("raman_derivatives_expand_like_dipole_ones", test_raman_assembly) &
                   ]
    end subroutine collect_mqc_mbe_tests
@@ -1113,6 +1114,121 @@ contains
          end do
       end function increment
    end subroutine test_raman_assembly
+
+   subroutine test_shielding_assembly(error)
+      !! Shielding tensors are expanded per atom, over the terms that hold it.
+      !!
+      !! Three monomers of two atoms and every term through the pairs. Each
+      !! term's tensors are made up so that the answer is known: an atom's
+      !! shielding in a term is its own value plus one increment for each
+      !! *other* monomer in the term. A two-body expansion of that is exact,
+      !! so every atom must come out as its own value plus its increments
+      !! from both neighbours -- which holds only if a pair's tensors land on
+      !! the right system atoms with the right weights, and only the terms
+      !! containing an atom touch it.
+      type(error_type), allocatable, intent(out) :: error
+
+      integer, parameter :: N_MON = 3, PER = 2, N_TERMS = 6
+      type(calculation_result_t), allocatable :: results(:)
+      type(mbe_result_t) :: mbe_result, without
+      type(system_geometry_t) :: sys_geom
+      integer, allocatable :: polymers(:, :)
+      real(dp) :: expected(3, 3)
+      integer :: iterm, slot, mon, other, atom, sys_atom, local, j, n_in_term
+
+      sys_geom%n_monomers = N_MON
+      sys_geom%atoms_per_monomer = PER
+      sys_geom%total_atoms = N_MON*PER
+      allocate (sys_geom%element_numbers(N_MON*PER), sys_geom%coordinates(3, N_MON*PER))
+      sys_geom%element_numbers = 1
+      sys_geom%coordinates = 0.0_dp
+
+      allocate (polymers(N_TERMS, 2), results(N_TERMS))
+      polymers = 0
+      polymers(1, 1) = 1
+      polymers(2, 1) = 2
+      polymers(3, 1) = 3
+      polymers(4, 1:2) = [1, 2]
+      polymers(5, 1:2) = [1, 3]
+      polymers(6, 1:2) = [2, 3]
+      do iterm = 1, N_TERMS
+         n_in_term = count(polymers(iterm, :) > 0)
+         results(iterm)%has_energy = .true.
+         results(iterm)%energy%scf = -1.0_dp*n_in_term
+         allocate (results(iterm)%nmr_shielding(3, 3, PER*n_in_term))
+         local = 0
+         do slot = 1, n_in_term
+            mon = polymers(iterm, slot)
+            do atom = 1, PER
+               local = local + 1
+               sys_atom = (mon - 1)*PER + atom
+               results(iterm)%nmr_shielding(:, :, local) = own_value(sys_atom)
+               do j = 1, n_in_term
+                  other = polymers(iterm, j)
+                  if (other /= mon) results(iterm)%nmr_shielding(:, :, local) = &
+                     results(iterm)%nmr_shielding(:, :, local) + increment(sys_atom, other)
+               end do
+            end do
+         end do
+      end do
+
+      call compute_mbe(polymers, int(N_TERMS, int64), 2, results, mbe_result, sys_geom)
+      call check(error, allocated(mbe_result%nmr_shielding), &
+                 "the shieldings were not assembled")
+      if (allocated(error)) return
+      do mon = 1, N_MON
+         do atom = 1, PER
+            sys_atom = (mon - 1)*PER + atom
+            expected = own_value(sys_atom)
+            do other = 1, N_MON
+               if (other /= mon) expected = expected + increment(sys_atom, other)
+            end do
+            call check(error, maxval(abs(mbe_result%nmr_shielding(:, :, sys_atom) - expected)) &
+                       < 1.0e-12_dp, "an atom's assembled shielding is wrong")
+            if (allocated(error)) return
+         end do
+      end do
+      ! Not symmetric going in, so not symmetrised coming out.
+      call check(error, abs(mbe_result%nmr_shielding(1, 2, 1) &
+                            - mbe_result%nmr_shielding(2, 1, 1)) > 1.0e-3_dp, &
+                 "the assembled tensor was symmetrised")
+      if (allocated(error)) return
+
+      ! One term without its tensors and nothing is assembled: a partial sum
+      ! would be the shielding of no system.
+      deallocate (results(5)%nmr_shielding)
+      call compute_mbe(polymers, int(N_TERMS, int64), 2, results, without, sys_geom)
+      call check(error,.not. allocated(without%nmr_shielding), &
+                 "shieldings were assembled from an incomplete set of terms")
+
+   contains
+
+      pure function own_value(sys_atom) result(t)
+         !! An atom's shielding alone, different in every element
+         integer, intent(in) :: sys_atom
+         real(dp) :: t(3, 3)
+         integer :: x, y
+
+         do y = 1, 3
+            do x = 1, 3
+               t(x, y) = 30.0_dp*sys_atom + 1.0_dp*x - 0.37_dp*y**2
+            end do
+         end do
+      end function own_value
+
+      pure function increment(sys_atom, monomer) result(t)
+         !! What the presence of `monomer` adds to an atom's shielding
+         integer, intent(in) :: sys_atom, monomer
+         real(dp) :: t(3, 3)
+         integer :: x, y
+
+         do y = 1, 3
+            do x = 1, 3
+               t(x, y) = 0.1_dp*sys_atom*monomer + 0.013_dp*x*monomer - 0.007_dp*y*sys_atom
+            end do
+         end do
+      end function increment
+   end subroutine test_shielding_assembly
 
 end module test_mqc_mbe
 
