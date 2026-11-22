@@ -106,6 +106,11 @@ module mqc_cuest_iface
          !! Raman activities from `properties.raman`; the CPU backend only.
       character(len=16) :: raman_method = "field"
          !! Which finite difference: "field" or "displacements"
+      logical :: nmr_shielding = .false.
+         !! Nuclear magnetic shielding tensors from `properties.nmr`; the CPU
+         !! backend only.
+      logical :: spin_spin_coupling = .false.
+         !! Fermi-contact couplings from `properties.spin_spin_coupling`
       logical :: natural_orbitals = .false.
          !! Natural occupations from `properties.natural_orbitals`
       logical :: intrinsic_orbitals = .false.
@@ -258,6 +263,7 @@ contains
          settings%fukui_guess = properties%fukui_guess
       end if
       settings%fukui_scf = properties%fukui_scf
+      settings%spin_spin_coupling = properties%spin_spin_coupling
       if (allocated(properties%charges_scheme)) then
          settings%charges_scheme = properties%charges_scheme
       end if
@@ -266,6 +272,7 @@ contains
       end if
       settings%raman = properties%raman
       settings%raman_method = properties%raman_method
+      settings%nmr_shielding = properties%nmr_shielding
       settings%natural_orbitals = properties%natural_orbitals
       settings%intrinsic_orbitals = properties%intrinsic_orbitals
       settings%intrinsic_exponent = properties%intrinsic_exponent

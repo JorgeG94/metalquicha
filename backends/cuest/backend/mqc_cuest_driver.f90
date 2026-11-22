@@ -529,6 +529,16 @@ contains
       ! CPU one, and Mayer's open-shell form is a sum over spins, so the one
       ! line that splits it is exactly the line that cannot be checked without
       ! a GPU. Saying so beats shipping an unverified factor of two.
+      if (settings%nmr_shielding) then
+         call logger%warning("  shieldings could not be computed: properties.nmr is "// &
+                             "not implemented on the GPU backend. Run it on the CPU "// &
+                             "backend.")
+      end if
+      if (settings%spin_spin_coupling) then
+         call logger%warning("  spin-spin couplings could not be computed: properties.spin_spin_coupling is "// &
+                             "not implemented on the GPU backend. Run it on the CPU "// &
+                             "backend.")
+      end if
       if (allocated(settings%bond_order_scheme)) then
          call logger%warning("  bond orders could not be computed: "// &
                              "properties.bond_orders is not implemented on the GPU "// &
