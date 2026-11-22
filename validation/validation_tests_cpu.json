@@ -8253,6 +8253,96 @@
             "type": "unfragmented"
         },
         {
+            "name": "RI-MP2 gradient over UHF/cc-pvdz-rifit OH cc-pvdz multiplicity 2 frozen 0 (CPU)",
+            "input": "inputs/cpu/mqc/ri-mp2/cpu_oh_cc-pvdz_rimp2_f0_m2_grad.json",
+            "expected_energy": -75.544839306214,
+            "expected_gradient": [
+                [
+                    0.0,
+                    0.0,
+                    0.0047521611
+                ],
+                [
+                    0.0,
+                    0.0,
+                    -0.004752161
+                ]
+            ],
+            "gradient_tolerance": 2e-08,
+            "check_translation": true,
+            "type": "unfragmented"
+        },
+        {
+            "name": "RI-MP2 gradient over UHF/cc-pvdz-rifit OH cc-pvdz multiplicity 2 frozen 1 (CPU)",
+            "input": "inputs/cpu/mqc/ri-mp2/cpu_oh_cc-pvdz_rimp2_f1_m2_grad.json",
+            "expected_energy": -75.542816206756,
+            "expected_gradient": [
+                [
+                    0.0,
+                    0.0,
+                    0.0052477353
+                ],
+                [
+                    0.0,
+                    0.0,
+                    -0.0052477352
+                ]
+            ],
+            "gradient_tolerance": 2e-08,
+            "check_translation": true,
+            "type": "unfragmented"
+        },
+        {
+            "name": "RI-MP2 gradient over UHF/cc-pvdz-rifit CH3 cc-pvdz multiplicity 2 frozen 1 (CPU)",
+            "input": "inputs/cpu/mqc/ri-mp2/cpu_ch3_cc-pvdz_rimp2_f1_m2_grad.json",
+            "expected_energy": -39.690372710835,
+            "expected_gradient": [
+                [
+                    0.0,
+                    -0.0,
+                    0.0
+                ],
+                [
+                    -0.0079063748,
+                    -0.0,
+                    0.0
+                ],
+                [
+                    0.0039531874,
+                    -0.0068471214,
+                    0.0
+                ],
+                [
+                    0.0039531874,
+                    0.0068471214,
+                    0.0
+                ]
+            ],
+            "gradient_tolerance": 2e-08,
+            "check_translation": true,
+            "type": "unfragmented"
+        },
+        {
+            "name": "RI-MP2 gradient over UHF/cc-pvdz-rifit O2 cc-pvdz multiplicity 3 frozen 2 (CPU)",
+            "input": "inputs/cpu/mqc/ri-mp2/cpu_o2_cc-pvdz_rimp2_f2_m3_grad.json",
+            "expected_energy": -149.972597962153,
+            "expected_gradient": [
+                [
+                    0.0,
+                    0.0,
+                    0.0314951509
+                ],
+                [
+                    0.0,
+                    0.0,
+                    -0.0314951518
+                ]
+            ],
+            "gradient_tolerance": 2e-08,
+            "check_translation": true,
+            "type": "unfragmented"
+        },
+        {
             "name": "ROHF OH cc-pvdz multiplicity 2 (CPU)",
             "input": "inputs/cpu/mqc/rohf/cpu_oh_cc-pvdz_m2.json",
             "expected_energy": -75.390010389244,

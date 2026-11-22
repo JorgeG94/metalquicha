@@ -975,8 +975,13 @@ does not apply.
    carries much of the effect for the valence, which is why ECPs are used on
    heavy elements as much for that as for the cost. It is not a relativistic
    Hamiltonian and does not become one
-2. **Open-shell correlation**: unrestricted MP2 is an energy only, and the
-   MP2 and double-hybrid derivatives need a restricted reference. Coupled
+2. **Open-shell correlation**: unrestricted MP2 has one gradient, RI-MP2 over
+   an exact reference (``czt_uri_mp2_gradient``), which is also what a Hessian
+   of it differences. It matches differences of PySCF's fitted unrestricted
+   MP2 energy to :math:`1.4\times10^{-9}` hartree/bohr on the hydroxyl and
+   methyl radicals and triplet oxygen. Conventional unrestricted MP2, RI-MP2
+   over a fitted unrestricted reference, the spin-scaled variants and the
+   double hybrids still need a restricted reference for their derivatives. Coupled
    cluster takes an unrestricted reference, but density-fitted coupled cluster
    does not. An unrestricted SCF can be density-fitted, Hartree-Fock or
    Kohn-Sham, energy and gradient; MP2 runs over that fitted reference, and
@@ -1044,8 +1049,9 @@ Planned Features
      unrestricted reference; the fitted one does not, because its three-index
      block carries no spin blocks, and a deck asking for both is refused rather
      than given the restricted answer built from the alpha orbitals
-   - The unrestricted MP2 gradient, and the open-shell double-hybrid gradient
-     that needs the same relaxed density
+   - The unrestricted gradient of conventional MP2, of RI-MP2 over a fitted
+     reference, and of a double hybrid. RI-MP2 over an exact unrestricted
+     reference has one
    - Multireference perturbation theory (NEVPT2) on top of CASSCF
    - Excited-state gradients. The Z-vector pieces mostly exist; the assembly
      does not

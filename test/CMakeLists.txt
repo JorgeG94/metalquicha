@@ -545,6 +545,12 @@ if(MQC_ENABLE_CZT)
   addtest(mqc_czt_mp2)
   target_link_libraries(test_mqc_czt_mp2 PRIVATE ${MQC_INTEGRALS_LIBS})
 
+  # The unrestricted RI-MP2 gradient, against central differences of the energy
+  # it differentiates and against the restricted gradient.
+  addtest(mqc_czt_uri_mp2_gradient)
+  target_link_libraries(test_mqc_czt_uri_mp2_gradient
+                        PRIVATE ${MQC_INTEGRALS_LIBS})
+
   # CPHF, which is the one response property needing no external reference: the
   # analytical polarizability is differenced out of the same SCF in a field, so
   # this belongs in the suite rather than in validation/.

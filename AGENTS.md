@@ -303,7 +303,24 @@ The methods:
   hybrids, whose long-range exchange needs the direct build
 - `MP2`, `SCS-MP2`, `SOS-MP2`, `RI-MP2` - restricted, or unrestricted as an
   energy only (`run_czt_ump2`, `run_czt_uri_mp2`, exact or fitted reference;
-  frozen orbitals are counted per spin). Gradients and Hessians are RHF only.
+  frozen orbitals are counted per spin). Gradients and Hessians are RHF only,
+  with one exception: **RI-MP2 over an exact UHF reference has an analytic
+  gradient**, `czt_uri_mp2_gradient` in `mqc_czt_uri_mp2_gradient`, and its
+  Hessian is that gradient differenced. It is written from the Hylleraas
+  functional per spin, not translated from the closed-shell routine, and its
+  header states the functional. Three things to know: the coupled-perturbed
+  operator is `response_product_uhf`, exact and integral-direct, so a fitted
+  reference is refused rather than given the wrong operator; the Z-vector
+  solve is a Galerkin Krylov one and not conjugate gradients, because **an
+  unrestricted reference is often a saddle** (triplet water in 6-31G is) and
+  its gradient is still defined; and the reference's two-electron term and
+  the cross term come from `two_electron_gradient` called at
+  reference-plus-relaxed and at relaxed alone, the energy being quadratic.
+  PySCF has no analytic gradient for its fitted unrestricted MP2, so the
+  validation references are its energy differenced and extrapolated
+  (`pyscf_uri_mp2_gradient` in the generator), good to 1e-9. **Central
+  differences at 1e-3 bohr are 3e-7 off on a stiff bond**: extrapolate
+  before concluding a gradient is wrong.
   Analytic Hessians: MP2 and RI-MP2 over an exact RHF reference (frozen core
   allowed), and a double hybrid's perturbative term, fitted when
   `model.aux_basis` is named (`mqc_czt_ri_mp2_hessian`, no four-index array).

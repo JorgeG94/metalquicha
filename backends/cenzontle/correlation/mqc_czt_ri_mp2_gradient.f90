@@ -50,6 +50,7 @@ module mqc_czt_ri_mp2_gradient
    public :: czt_ri_mp2_gradient
    public :: relaxation_input_t
    public :: relaxed_fitted_gradient
+   public :: fitted_two_particle_gradient   !! Shared with the unrestricted gradient
 
    type :: relaxation_input_t
       !! What a fitted correlation method hands to `relaxed_fitted_gradient`
