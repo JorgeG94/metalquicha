@@ -99,6 +99,7 @@ contains
       call check_grandchild_object(core, root, "properties", "intrinsic_orbitals", &
                                    intrinsic_orbitals_keys(), error)
       call check_bond_orders(core, root, error)
+      call check_grandchild_object(core, root, "properties", "raman", raman_keys(), error)
       call check_grandchild_object(core, root, "properties", "nmr", nmr_keys(), error)
       call check_grandchild_object(core, root, "properties", "spin_spin_coupling", &
                                    spin_spin_coupling_keys(), error)
@@ -268,6 +269,7 @@ contains
       call allow(keys, "natural_orbitals")
       call allow(keys, "intrinsic_orbitals")
       call allow(keys, "density")
+      call allow(keys, "raman")
       call allow(keys, "spin_spin_coupling")
    end function properties_keys
 
@@ -283,6 +285,16 @@ contains
       type(key_set_t) :: keys
       keys%n_allowed = 0
    end function spin_spin_coupling_keys
+
+   function raman_keys() result(keys)
+      !! Settings for the Raman activities
+      !!
+      !! The object is the request, as `charges` is, and belongs to a Hessian
+      !! run, which the reader checks. `method` chooses the route to the
+      !! polarizability derivatives.
+      type(key_set_t) :: keys
+      call allow(keys, "method")
+   end function raman_keys
 
    function fukui_keys() result(keys)
       !! Settings for the Fukui index analysis

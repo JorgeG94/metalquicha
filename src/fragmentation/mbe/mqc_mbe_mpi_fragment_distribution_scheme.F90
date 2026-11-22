@@ -493,8 +493,19 @@ contains
       ! `hessian.method = "numerical"` is the exception: its 1 + 18 N**2 energy
       ! evaluations are not gradient tasks, so each fragment stays whole and
       ! is differenced by the one rank that takes it (`calc_hessian`).
+      !
+      ! So is a Raman request. The polarizability derivatives come out of a
+      ! fragment's own Hessian calculation, beside its analytic Hessian, and a
+      ! queue of displaced gradients never runs one: the activities would be
+      ! missing without a word. Each fragment stays whole and goes to one
+      ! rank, which is the unit of parallelism the fragments already give.
       expand_displacements = (calc_type_local == CALC_TYPE_HESSIAN .and. &
-                              ctx%method_config%hessian_method /= HESSIAN_METHOD_NUMERICAL)
+                              ctx%method_config%hessian_method /= HESSIAN_METHOD_NUMERICAL &
+                              .and. .not. ctx%method_config%properties%raman)
+      if (calc_type_local == CALC_TYPE_HESSIAN .and. ctx%method_config%properties%raman) then
+         call logger%info("Raman activities asked for: each fragment's Hessian is "// &
+                          "computed whole on one rank, not as displaced gradients")
+      end if
       hessian_step = ctx%method_config%hessian_displacement
       call build_hessian_task_table(ctx%polymers, ctx%total_fragments, ctx%sys_geom, expand_displacements, &
                                     task_rows, task_offset, frag_natoms, total_tasks, &

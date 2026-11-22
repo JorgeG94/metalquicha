@@ -1723,6 +1723,115 @@
             "type": "unfragmented"
         },
         {
+            "name": "RHF Hessian with Raman activities H2O sto-3g (CPU)",
+            "input": "inputs/cpu/mqc/raman/cpu_water_sto-3g_raman.json",
+            "expected_energy": -74.962005712275,
+            "expected_hessian": [
+                [
+                    -0.062932147505,
+                    0.0,
+                    0.0,
+                    0.031466073867,
+                    -0.0,
+                    -0.0,
+                    0.031466073639,
+                    0.0,
+                    -0.0
+                ],
+                [
+                    0.0,
+                    1.014017058483,
+                    -6.55e-10,
+                    -0.0,
+                    -0.507008529545,
+                    0.396322468483,
+                    0.0,
+                    -0.507008528938,
+                    -0.396322467827
+                ],
+                [
+                    0.0,
+                    -6.55e-10,
+                    0.628734030621,
+                    0.0,
+                    0.267877089339,
+                    -0.314367015487,
+                    -0.0,
+                    -0.267877088683,
+                    -0.314367015135
+                ],
+                [
+                    0.031466073867,
+                    -0.0,
+                    0.0,
+                    -0.021484139591,
+                    0.0,
+                    0.0,
+                    -0.009981934277,
+                    -0.0,
+                    -0.0
+                ],
+                [
+                    -0.0,
+                    -0.507008529545,
+                    0.267877089339,
+                    0.0,
+                    0.530149203985,
+                    -0.332099778911,
+                    0.0,
+                    -0.023140674441,
+                    0.064222689573
+                ],
+                [
+                    -0.0,
+                    0.396322468483,
+                    -0.314367015487,
+                    0.0,
+                    -0.332099778911,
+                    0.297280972523,
+                    0.0,
+                    -0.064222689571,
+                    0.017086042964
+                ],
+                [
+                    0.031466073639,
+                    0.0,
+                    -0.0,
+                    -0.009981934277,
+                    0.0,
+                    0.0,
+                    -0.021484139362,
+                    -0.0,
+                    0.0
+                ],
+                [
+                    0.0,
+                    -0.507008528938,
+                    -0.267877088683,
+                    -0.0,
+                    -0.023140674441,
+                    -0.064222689571,
+                    -0.0,
+                    0.530149203378,
+                    0.332099778255
+                ],
+                [
+                    -0.0,
+                    -0.396322467827,
+                    -0.314367015135,
+                    -0.0,
+                    0.064222689573,
+                    0.017086042964,
+                    0.0,
+                    0.332099778255,
+                    0.297280972171
+                ]
+            ],
+            "hessian_tolerance": 1e-07,
+            "type": "unfragmented",
+            "reference_note": "The energy and Hessian of the plain Hessian case, which asking for Raman activities must not move; the manifest has nowhere to put an activity. What the run exercises is the property end to end: the polarizability's Cartesian derivatives beside the analytic Hessian, their projection on the modes, and the activities and depolarization ratios written to the JSON. The derivatives themselves are pinned against PySCF in test/test_mqc_czt_raman.f90."
+        },
+        {
             "name": "RHF Hessian H2O cc-pvdz (CPU)",
             "input": "inputs/cpu/mqc/hessian/cpu_water_cc-pvdz_hess.json",
             "expected_energy": -76.026435906898,

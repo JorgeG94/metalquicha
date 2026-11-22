@@ -421,7 +421,11 @@ contains
       type(json_output_data_t), intent(out), optional :: json_data  !! JSON output data
 
       ! For Hessian calculations with multiple ranks, use distributed approach
-      if (config%calc_type == CALC_TYPE_HESSIAN .and. world_comm%size() > 1) then
+      ! Not with `properties.raman`: the distributed form is a queue of displaced
+      ! gradients, and the polarizability derivatives come only with a Hessian
+      ! the backend builds whole, so that run stays on one rank.
+      if (config%calc_type == CALC_TYPE_HESSIAN .and. world_comm%size() > 1 &
+          .and. .not. config%method_config%properties%raman) then
          if (world_comm%rank() == 0) then
             call logger%large_info(" ")
             call logger%large_info("Running distributed unfragmented Hessian calculation")

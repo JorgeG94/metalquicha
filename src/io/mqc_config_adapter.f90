@@ -41,6 +41,7 @@ module mqc_config_adapter
    public :: check_pieda_support  !! Refuse a PIEDA request this expansion or driver cannot honour
    public :: check_interaction_energy_support
    public :: check_property_support
+   public :: check_raman_support
       !! Refuse an interaction-energy run the reduced expansion cannot honour
 
    type :: driver_config_t
@@ -430,6 +431,10 @@ contains
          driver_config%method_config%properties%charges_scheme = &
             mqc_config%charges_scheme
       end if
+      driver_config%method_config%properties%raman = mqc_config%raman
+      if (allocated(mqc_config%raman_method)) then
+         driver_config%method_config%properties%raman_method = mqc_config%raman_method
+      end if
       driver_config%method_config%properties%nmr_shielding = mqc_config%nmr_shielding
       driver_config%method_config%properties%spin_spin_coupling = &
          mqc_config%spin_spin_coupling
@@ -570,6 +575,7 @@ contains
       end if
       if (present(error)) then
          if (.not. error%has_error()) call check_property_support(driver_config, error)
+         if (.not. error%has_error()) call check_raman_support(driver_config, error)
       end if
 
       ! Output control
@@ -1138,6 +1144,27 @@ contains
          return
       end if
    end subroutine check_property_support
+
+   subroutine check_raman_support(driver_config, error)
+      !! Refuse `properties.raman` where the fragmentation does not assemble it
+      !!
+      !! Silent for an unfragmented run and for a many-body expansion over
+      !! disjoint fragments, which assembles the polarizability derivatives
+      !! beside the dipole's. Overlapping fragments and the embedded schemes
+      !! assemble neither, and would finish with the column missing.
+      type(driver_config_t), intent(in) :: driver_config
+      type(error_t), intent(inout) :: error
+
+      if (.not. driver_config%method_config%properties%raman) return
+      if (driver_config%nlevel <= 0) return
+      if (trim(driver_config%expansion_kind) == "mbe" &
+          .and. .not. driver_config%allow_overlapping_fragments) return
+      call error%set(ERROR_VALIDATION, "properties.raman is assembled only by a "// &
+                     "many-body expansion over disjoint fragments "// &
+                     "(keywords.fragmentation.method 'mbe'). Overlapping fragments "// &
+                     "and the embedded schemes do not carry the polarizability "// &
+                     "derivatives into the whole system's.")
+   end subroutine check_raman_support
 
    subroutine check_interaction_energy_support(driver_config, n_fragments, error)
       !! Refuse an interaction-energy run the reduced expansion cannot honour

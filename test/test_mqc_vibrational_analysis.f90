@@ -3,9 +3,11 @@ module test_mqc_vibrational_analysis
    use mqc_vibrational_analysis, only: compute_vibrational_frequencies, mass_weight_hessian, &
                                        project_translation_rotation, compute_vibrational_analysis, &
                                        compute_reduced_masses, compute_force_constants, &
-                                       compute_cartesian_displacements, print_vibrational_analysis
+                                       compute_cartesian_displacements, print_vibrational_analysis, &
+                                       compute_raman_activities
    use pic_types, only: dp
-   use mqc_physical_constants, only: AU_TO_MDYNE_ANG
+   use mqc_physical_constants, only: AU_TO_MDYNE_ANG, BOHR_TO_ANGSTROM
+   use mqc_elements, only: element_mass
    implicit none
    private
    public :: collect_mqc_vibrational_analysis_tests
@@ -54,7 +56,8 @@ contains
                   new_unittest("force_constants", test_force_constants), &
                   new_unittest("cartesian_displacements", test_cartesian_displacements), &
                   new_unittest("full_vibrational_analysis", test_full_vibrational_analysis), &
-                  new_unittest("print_vibrational_output", test_print_vibrational_output) &
+                  new_unittest("print_vibrational_output", test_print_vibrational_output), &
+                  new_unittest("raman_activities", test_raman_activities) &
                   ]
    end subroutine collect_mqc_vibrational_analysis_tests
 
@@ -591,6 +594,71 @@ contains
       deallocate (frequencies, reduced_masses, force_constants, cart_disp, force_constants_mdyne)
 
    end subroutine test_print_vibrational_output
+
+   subroutine test_raman_activities(error)
+      !! Raman activities from polarizability derivatives chosen so the answer
+      !! is known by hand.
+      !!
+      !! One hydrogen atom and three "modes", the unit vectors along x, y and
+      !! z, so a mode's derivative is one column of the input over the square
+      !! root of the hydrogen mass. Three columns, three limiting cases:
+      !!
+      !!   * isotropic, `alpha' = c 1`: no anisotropy, activity `45 c^2`,
+      !!     fully polarized, ratio 0;
+      !!   * traceless, `diag(c, -c, 0)`: no mean, anisotropy `3 c^2`,
+      !!     activity `21 c^2`, depolarized, ratio 3/4 -- the largest value
+      !!     the ratio can take;
+      !!   * one off-diagonal element `xy = c`: no mean, anisotropy `3 c^2`
+      !!     again, which is what fixes the factor of three on the
+      !!     off-diagonal terms against the half on the diagonal ones.
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp) :: dalpha(6, 3), modes(3, 3), c, unit
+      real(dp), allocatable :: activity(:), ratio(:)
+      integer :: i
+
+      c = 2.0_dp
+      dalpha = 0.0_dp
+      dalpha(1:3, 1) = c
+      dalpha(1, 2) = c
+      dalpha(2, 2) = -c
+      dalpha(4, 3) = c
+      modes = 0.0_dp
+      do i = 1, 3
+         modes(i, i) = 1.0_dp
+      end do
+
+      call compute_raman_activities(dalpha, modes, [1], activity, ratio)
+      ! Bohr^2 to Angstrom^2, and one over the mass from the two factors of
+      ! its inverse square root.
+      unit = c**2*BOHR_TO_ANGSTROM**4/element_mass(1)
+
+      call check(error, abs(activity(1) - 45.0_dp*unit) < 1.0e-10_dp*unit, &
+                 "an isotropic derivative must give 45 a^2")
+      if (allocated(error)) return
+      call check(error, abs(ratio(1)) < 1.0e-12_dp, &
+                 "an isotropic derivative must be fully polarized")
+      if (allocated(error)) return
+      call check(error, abs(activity(2) - 21.0_dp*unit) < 1.0e-10_dp*unit, &
+                 "a traceless diagonal derivative must give 7 * 3 c^2")
+      if (allocated(error)) return
+      call check(error, abs(ratio(2) - 0.75_dp) < 1.0e-12_dp, &
+                 "a traceless derivative must be depolarized, ratio 3/4")
+      if (allocated(error)) return
+      call check(error, abs(activity(3) - 21.0_dp*unit) < 1.0e-10_dp*unit, &
+                 "an off-diagonal derivative must count three times its square")
+      if (allocated(error)) return
+      call check(error, abs(ratio(3) - 0.75_dp) < 1.0e-12_dp, &
+                 "an off-diagonal derivative must be depolarized")
+      if (allocated(error)) return
+
+      ! No derivative at all: a silent mode, and a ratio that is zero rather
+      ! than zero over zero.
+      dalpha = 0.0_dp
+      call compute_raman_activities(dalpha, modes, [1], activity, ratio)
+      call check(error, maxval(abs(activity)) < 1.0e-30_dp .and. maxval(abs(ratio)) < 1.0e-30_dp, &
+                 "a mode with no polarizability derivative must be silent")
+   end subroutine test_raman_activities
 
 end module test_mqc_vibrational_analysis
 

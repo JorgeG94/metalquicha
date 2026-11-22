@@ -119,6 +119,13 @@ module mqc_result_types
       real(dp), allocatable :: hessian(:, :)    !! Energy hessian (future implementation)
       real(dp), allocatable :: dipole(:)        !! Dipole moment vector (3) (Debye)
       real(dp), allocatable :: dipole_derivatives(:, :)  !! Dipole derivatives (3, 3N) in a.u. for IR intensities
+      real(dp), allocatable :: polarizability_derivatives(:, :)
+         !! (6, 3N) in Bohr^2, components xx, yy, zz, xy, xz, yz, for Raman
+         !! activities; allocated when `properties.raman` asked
+      real(dp) :: polarizability(3, 3) = 0.0_dp   !! Static, Bohr^3
+      logical :: has_polarizability = .false.
+         !! `polarizability` was filled in. Set only on the rank that
+         !! computed it: the tensor is not sent between ranks.
       real(dp), allocatable :: bond_orders(:, :)
          !! Bond orders, (natoms, natoms), symmetric with a zero diagonal.
          !!
@@ -383,6 +390,10 @@ module mqc_result_types
          !! (3, 3, total_atoms) shielding tensors in ppm, assembled from the
          !! fragments' when every one of them carries its own. Allocated by
          !! `compute_mbe`, not by the caller.
+      real(dp), allocatable :: polarizability_derivatives(:, :)
+         !! (6, 3*natoms) polarizability derivatives for Raman activities,
+         !! components xx, yy, zz, xy, xz, yz. Allocated by `compute_mbe`
+         !! when every term carries its own.
 
       ! Computation status flags
       logical :: has_energy = .false.                !! Energy has been computed
@@ -563,6 +574,7 @@ contains
       if (allocated(this%nmr_diamagnetic)) deallocate (this%nmr_diamagnetic)
       if (allocated(this%nmr_paramagnetic)) deallocate (this%nmr_paramagnetic)
       if (allocated(this%spin_spin_coupling)) deallocate (this%spin_spin_coupling)
+      if (allocated(this%polarizability_derivatives)) deallocate (this%polarizability_derivatives)
       if (allocated(this%atomic_charges)) deallocate (this%atomic_charges)
       if (allocated(this%spin_populations)) deallocate (this%spin_populations)
       if (allocated(this%ieda_atom)) deallocate (this%ieda_atom)
@@ -623,6 +635,8 @@ contains
       this%has_hessian = .false.
       this%has_dipole = .false.
       this%has_dipole_derivatives = .false.
+      this%has_polarizability = .false.
+      this%polarizability = 0.0_dp
       this%has_error = .false.
       this%scf_status = SCF_UNKNOWN
       this%scf_iterations = 0
@@ -654,6 +668,7 @@ contains
       if (allocated(this%dipole)) deallocate (this%dipole)
       if (allocated(this%dipole_derivatives)) deallocate (this%dipole_derivatives)
       if (allocated(this%nmr_shielding)) deallocate (this%nmr_shielding)
+      if (allocated(this%polarizability_derivatives)) deallocate (this%polarizability_derivatives)
       if (allocated(this%correlation_by_level)) deallocate (this%correlation_by_level)
       if (allocated(this%correlation_parts_by_level)) deallocate (this%correlation_parts_by_level)
       if (allocated(this%interaction_by_level)) deallocate (this%interaction_by_level)
@@ -792,6 +807,34 @@ contains
       end if
    end subroutine send_quao_rows
 
+   subroutine send_polarizability_derivatives(result, comm, dest, tag)
+      !! The polarizability derivatives, for Raman activities, when there are any
+      !!
+      !! The same shape as the dipole derivatives with six rows in place of
+      !! three.
+      type(calculation_result_t), intent(in) :: result
+      type(comm_t), intent(in) :: comm
+      integer, intent(in) :: dest, tag
+
+      call send(comm, allocated(result%polarizability_derivatives), dest, tag)
+      if (allocated(result%polarizability_derivatives)) then
+         call send(comm, result%polarizability_derivatives, dest, tag)
+      end if
+   end subroutine send_polarizability_derivatives
+
+   subroutine recv_polarizability_derivatives(result, comm, source, tag, status)
+      !! The polarizability derivatives, when the sender had them
+      type(calculation_result_t), intent(inout) :: result
+      type(comm_t), intent(in) :: comm
+      integer, intent(in) :: source, tag
+      type(MPI_Status), intent(inout) :: status
+
+      logical :: present_here
+
+      call recv(comm, present_here, source, tag, status)
+      if (present_here) call recv(comm, result%polarizability_derivatives, source, tag, status)
+   end subroutine recv_polarizability_derivatives
+
    subroutine send_shielding(result, comm, dest, tag)
       !! The shielding tensors, flattened to one column of nine per atom
       !!
@@ -908,6 +951,7 @@ contains
       end if
 
       call send_shielding(result, comm, dest, tag)
+      call send_polarizability_derivatives(result, comm, dest, tag)
 
       ! Excited states, every array under one flag: the solver and the
       ! properties fill them together, so a receiver that got the energies
@@ -1016,6 +1060,7 @@ contains
       end if
 
       call send_shielding(result, comm, dest, tag)
+      call send_polarizability_derivatives(result, comm, dest, tag)
 
       ! Excited states, every array under one flag: the solver and the
       ! properties fill them together, so a receiver that got the energies
@@ -1136,6 +1181,7 @@ contains
       end if
 
       call recv_shielding(result, comm, source, tag, status)
+      call recv_polarizability_derivatives(result, comm, source, tag, status)
 
       ! Receive excited states, every array under one flag
       call recv(comm, result%has_excited_states, source, tag, status)
@@ -1260,6 +1306,7 @@ contains
       end if
 
       call recv_shielding(result, comm, source, tag, status)
+      call recv_polarizability_derivatives(result, comm, source, tag, status)
 
       ! Receive excited states, every array under one flag
       call recv(comm, result%has_excited_states, source, tag, status)
