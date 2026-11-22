@@ -10,4 +10,5 @@ target_sources(
           mqc_czt_multipole.f90
           mqc_czt_esp.f90
           mqc_czt_esp_batch.f90
-          mqc_czt_gemm_threads.f90)
+          mqc_czt_gemm_threads.f90
+          mqc_czt_giao.f90)

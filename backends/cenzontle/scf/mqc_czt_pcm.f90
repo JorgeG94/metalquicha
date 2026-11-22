@@ -123,6 +123,7 @@ module mqc_czt_pcm
       procedure :: build_operators => pcm_build_operators
       procedure :: solve => pcm_solve
       procedure :: operator_matrix => pcm_operator_matrix
+      procedure :: surface_charges => pcm_surface_charges
       procedure :: destroy => pcm_destroy
    end type pcm_context_t
 
@@ -774,14 +775,7 @@ contains
       energy = 0.0_dp
       if (error%has_error()) return
 
-      allocate (v_grids(this%surface%n_points))
-      call surface_potential(this%groups, this%n_groups, mol, this%surface%n_points, &
-                             density, v_grids, error)
-      if (error%has_error()) return
-      ! Nuclei push the potential up, electrons pull it down.
-      v_grids = this%v_nuc - v_grids
-
-      call this%solve(v_grids, q_sym, error)
+      call pcm_surface_charges(this, mol, density, q_sym, error, potential=v_grids)
       if (error%has_error()) return
 
       this%e_diel = 0.5_dp*dot_product(q_sym, v_grids)
@@ -790,6 +784,33 @@ contains
 
       call surface_fock(this%groups, this%n_groups, mol, q_sym, vmat, error)
    end subroutine pcm_operator_matrix
+
+   subroutine pcm_surface_charges(this, mol, density, charges, error, potential)
+      !! The apparent surface charges a density induces
+      !!
+      !! One per surface point, in the order of `surface%coords`; each is a
+      !! Gaussian of width `surface%zeta`.
+      class(pcm_context_t), intent(inout) :: this
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: density(:, :)   !! Total density (alpha plus beta)
+      real(dp), allocatable, intent(out) :: charges(:)
+      type(error_t), intent(inout) :: error
+      real(dp), allocatable, intent(out), optional :: potential(:)
+         !! The solute's electrostatic potential at the surface points, which
+         !! the charges answer
+
+      real(dp), allocatable :: v_grids(:)
+
+      if (error%has_error()) return
+      allocate (v_grids(this%surface%n_points))
+      call surface_potential(this%groups, this%n_groups, mol, this%surface%n_points, &
+                             density, v_grids, error)
+      if (error%has_error()) return
+      ! Nuclei push the potential up, electrons pull it down.
+      v_grids = this%v_nuc - v_grids
+      call this%solve(v_grids, charges, error)
+      if (present(potential)) call move_alloc(v_grids, potential)
+   end subroutine pcm_surface_charges
 
    subroutine pcm_destroy(this)
       !! Release everything; the context is reusable after another `build`

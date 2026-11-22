@@ -379,6 +379,10 @@ module mqc_method_config
          !! "mulliken", "chelpg", "hirshfeld" or "mbis". Unallocated means no charges, which is why
          !! this is allocatable rather than a "none" sentinel like
          !! `bonding_analysis` -- there is no scheme that means "do not".
+      logical :: nmr_shielding = .false.
+         !! `properties.nmr` asked for nuclear magnetic shielding tensors.
+      logical :: spin_spin_coupling = .false.
+         !! `properties.spin_spin_coupling` asked for the J couplings.
       logical :: natural_orbitals = .false.
          !! `properties.natural_orbitals` asked for natural occupations
       logical :: intrinsic_orbitals = .false.
