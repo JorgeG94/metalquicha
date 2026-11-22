@@ -20,6 +20,8 @@ module test_mqc_json_reader
    use mqc_calc_types, only: CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN, &
                              CALC_TYPE_INTERACTION_ENERGY
    use mqc_calculation_defaults, only: DEFAULT_DISPLACEMENT, DEFAULT_TEMPERATURE, &
+                                       RAMAN_METHOD_ANALYTIC, RAMAN_METHOD_DISPLACEMENTS, &
+                                       RAMAN_METHOD_FIELD, &
                                        DEFAULT_COSX_GRID, DEFAULT_GDM_START, &
                                        DEFAULT_GDM_MAX_ROTATION, &
                                        HESSIAN_METHOD_ANALYTIC, HESSIAN_METHOD_SEMI_NUMERICAL, &
@@ -4333,15 +4335,22 @@ contains
       call write_deck('"method": "hf", "basis": "6-31g"', "Hessian", "", "", two_atoms(), &
                       root='"properties": {"raman": {}}')
       call read_deck(config, parse_error)
-      call check(error, config%raman_method == "analytic", &
+      call check(error, config%raman_method == RAMAN_METHOD_ANALYTIC, &
                  "the Raman method must default to the analytic one")
       if (allocated(error)) return
       call write_deck('"method": "hf", "basis": "6-31g"', "Hessian", "", "", two_atoms(), &
                       root='"properties": {"raman": {"method": "displacements"}}')
       call read_deck(config, parse_error)
       call check(error,.not. parse_error%has_error() &
-                 .and. config%raman_method == "displacements", &
+                 .and. config%raman_method == RAMAN_METHOD_DISPLACEMENTS, &
                  "properties.raman.method was not read")
+      if (allocated(error)) return
+      call write_deck('"method": "hf", "basis": "6-31g"', "Hessian", "", "", two_atoms(), &
+                      root='"properties": {"raman": {"method": "field"}}')
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error() &
+                 .and. config%raman_method == RAMAN_METHOD_FIELD, &
+                 "properties.raman.method 'field' was not read")
       if (allocated(error)) return
       call write_deck('"method": "hf", "basis": "6-31g"', "Hessian", "", "", two_atoms(), &
                       root='"properties": {"raman": {"method": "numerical"}}')

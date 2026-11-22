@@ -39,7 +39,8 @@ module mqc_json_config_reader
    use mqc_calculation_defaults, only: EFP_RESPONSE_AUTO, EFP_RESPONSE_DENSE, &
                                        EFP_RESPONSE_MATRIX_FREE, MIN_EXCITED_TOL, &
                                        HESSIAN_METHOD_ANALYTIC, HESSIAN_METHOD_SEMI_NUMERICAL, &
-                                       HESSIAN_METHOD_NUMERICAL
+                                       HESSIAN_METHOD_NUMERICAL, RAMAN_METHOD_ANALYTIC, &
+                                       RAMAN_METHOD_FIELD, RAMAN_METHOD_DISPLACEMENTS
    use mqc_method_types, only: parse_method_string, method_spin_scaling, &
                                method_wants_density_fitting, method_type_to_string, &
                                method_is_casci, METHOD_TYPE_UNKNOWN, &
@@ -262,23 +263,10 @@ contains
          call optional_string(json, "properties.bond_orders.scheme", &
                               config%bond_order_scheme)
       end if
-      ! The object is the request; it has no settings to read.
+      ! The object is the request; `method` is its one setting.
       call json%info("properties.raman", found=config%raman)
-      config%raman_method = "analytic"
-      call optional_string(json, "properties.raman.method", config%raman_method)
-      select case (trim(config%raman_method))
-      case ("analytic", "field", "displacements")
-         continue
-      case default
-         call error%set(ERROR_VALIDATION, "properties.raman.method is '"// &
-                        trim(config%raman_method)//"'. Accepted: 'analytic' (the "// &
-                        "default: no finite difference, Hartree-Fock only, and a "// &
-                        "Kohn-Sham reference takes 'field' in its place), 'field' "// &
-                        "(the gradient differenced over electric fields) and "// &
-                        "'displacements' (the polarizability differenced over "// &
-                        "nuclear positions).")
-         return
-      end select
+      call read_raman_method(json, config, error)
+      if (error%has_error()) return
       call json%info("properties.nmr", found=config%nmr_shielding)
       call json%info("properties.spin_spin_coupling", found=config%spin_spin_coupling)
       call optional_string(json, "properties.bonding_analysis.type", &
@@ -1562,6 +1550,36 @@ contains
                         "'. Accepted: rys, rotaxis, hgp, hybrid, auto")
       end select
    end subroutine read_scf_eri_path
+
+   subroutine read_raman_method(json, config, error)
+      !! `properties.raman.method`, as a `RAMAN_METHOD_*` code, or a refusal
+      !!
+      !! Absent, the default on the type stands.
+      type(json_file), intent(inout) :: json
+      type(mqc_config_t), intent(inout) :: config
+      type(error_t), intent(inout) :: error
+
+      character(len=:), allocatable :: name
+
+      call optional_string(json, "properties.raman.method", name)
+      if (.not. allocated(name)) return
+      select case (trim(name))
+      case ("analytic")
+         config%raman_method = RAMAN_METHOD_ANALYTIC
+      case ("field")
+         config%raman_method = RAMAN_METHOD_FIELD
+      case ("displacements")
+         config%raman_method = RAMAN_METHOD_DISPLACEMENTS
+      case default
+         call error%set(ERROR_VALIDATION, "properties.raman.method is '"// &
+                        trim(name)//"'. Accepted: 'analytic' (the "// &
+                        "default: no finite difference, Hartree-Fock only, and a "// &
+                        "Kohn-Sham reference takes 'field' in its place), 'field' "// &
+                        "(the gradient differenced over electric fields) and "// &
+                        "'displacements' (the polarizability differenced over "// &
+                        "nuclear positions).")
+      end select
+   end subroutine read_raman_method
 
    subroutine read_hessian_method(json, config, error)
       !! `keywords.hessian.method`, as a `HESSIAN_METHOD_*` code, or a refusal

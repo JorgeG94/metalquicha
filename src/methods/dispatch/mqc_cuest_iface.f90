@@ -8,7 +8,8 @@ module mqc_cuest_iface
    ! from behind an `#ifdef`.
    use pic_types, only: dp
    use mqc_scf_types, only: guess_step_t, deltascf_options_t
-   use mqc_calculation_defaults, only: HESSIAN_METHOD_ANALYTIC, DEFAULT_COSX_GRID
+   use mqc_calculation_defaults, only: HESSIAN_METHOD_ANALYTIC, DEFAULT_COSX_GRID, &
+                                       RAMAN_METHOD_ANALYTIC
    use mqc_cube_config, only: cube_config_t
    use mqc_method_config, only: pcm_config_t, mcscf_config_t, scf_options_t, &
                                 properties_config_t, excited_config_t
@@ -104,8 +105,8 @@ module mqc_cuest_iface
          !! none were asked for.
       logical :: raman = .false.
          !! Raman activities from `properties.raman`; the CPU backend only.
-      character(len=16) :: raman_method = "analytic"
-         !! "analytic", or which finite difference: "field" or "displacements"
+      integer :: raman_method = RAMAN_METHOD_ANALYTIC
+         !! `RAMAN_METHOD_*`: how the polarizability derivatives are obtained
       logical :: nmr_shielding = .false.
          !! Nuclear magnetic shielding tensors from `properties.nmr`; the CPU
          !! backend only.

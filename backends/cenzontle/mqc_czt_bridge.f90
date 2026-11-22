@@ -25,7 +25,8 @@ module mqc_czt_bridge
                                  ERI_CORE_BUDGET_CAP, ERI_CORE_BUDGET_SHARE, &
                                  ERI_CORE_BUDGET_BLIND, SAPT_CORE_BUDGET_SHARE
    use mqc_cuest_iface, only: cuest_scf_settings_t
-   use mqc_calculation_defaults, only: HESSIAN_METHOD_ANALYTIC
+   use mqc_calculation_defaults, only: HESSIAN_METHOD_ANALYTIC, RAMAN_METHOD_ANALYTIC, &
+                                       RAMAN_METHOD_DISPLACEMENTS
    use mqc_czt_ecp, only: ecp_refuses_auto_frozen_core
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule, &
                                 angular_form_name
@@ -1377,7 +1378,7 @@ contains
             else if (any(fragment%ghost_mask())) then
                why = "ghosted fragments are not handled"
             else if (fragment%n_caps > 0 .and. &
-                     trim(settings%raman_method) == "displacements") then
+                     settings%raman_method == RAMAN_METHOD_DISPLACEMENTS) then
                ! The other two routes work at the one geometry the fragment
                ! was built at, caps and all.
                why = "a capped fragment is not rebuilt at displaced geometries; "// &
@@ -1385,7 +1386,7 @@ contains
             else if (settings%hessian_method /= HESSIAN_METHOD_ANALYTIC) then
                why = "it accompanies the analytic Hessian"
             else if ((settings%second_order .or. settings%gdm) &
-                     .and. (trim(settings%raman_method) /= "analytic" &
+                     .and. (settings%raman_method /= RAMAN_METHOD_ANALYTIC &
                             .or. len_trim(settings%functional) > 0)) then
                ! The analytic route reads the reference's own orbitals and
                ! runs no further SCF; the two differenced routes do.
@@ -3961,7 +3962,7 @@ contains
             ! caller carries them across. The displacement route would repeat
             ! the caller's own displacements and is left out.
             if (settings%raman) then
-               if (trim(settings%raman_method) == "displacements") then
+               if (settings%raman_method == RAMAN_METHOD_DISPLACEMENTS) then
                   call logger%warning("  Raman activities by displacements accompany "// &
                                       "the analytic Hessian and are not computed on "// &
                                       "this path; the analytic and finite-field "// &
@@ -3987,13 +3988,13 @@ contains
          real(dp), allocatable :: dalpha(:, :)
          real(dp) :: alpha0(3, 3)
 
-         if (trim(settings%raman_method) == "displacements") then
+         if (settings%raman_method == RAMAN_METHOD_DISPLACEMENTS) then
             call polarizability_derivatives(settings, fragment%element_numbers, &
                                             symbols, fragment%coordinates, &
                                             nelec, scf%density, accel_kind, &
                                             diis_size, scf_conv, alpha0, &
                                             dalpha, raman_error)
-         else if (trim(settings%raman_method) == "analytic" &
+         else if (settings%raman_method == RAMAN_METHOD_ANALYTIC &
                   .and. .not. xc%active .and. full_rank) then
             call polarizability_derivatives_analytic(mol, scf%orbitals, &
                                                      scf%orbital_energies, &
@@ -4003,7 +4004,7 @@ contains
             ! The analytic route needs a functional's third derivative,
             ! which is not built, and assumes no orbital was removed from
             ! the basis, as the analytic Hessian does.
-            if (trim(settings%raman_method) == "analytic") then
+            if (settings%raman_method == RAMAN_METHOD_ANALYTIC) then
                call logger%info("  Raman: no analytic route under a functional or "// &
                                 "with orbitals removed for linear dependence; "// &
                                 "taking the finite-field one")

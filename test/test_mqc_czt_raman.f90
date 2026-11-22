@@ -266,6 +266,29 @@ contains
       ! are zero rather than a truncation error.
       call check(error, abs(d(4, 3)) < SUM_RULE_TOL .and. abs(d(6, 3)) < SUM_RULE_TOL, &
                  "a component symmetry forbids is not zero")
+      if (allocated(error)) return
+
+      ! The nine response equations are solved from one factorized matrix
+      ! where it fits, which on water it always does, and by iteration with a
+      ! pass over the integrals each time where it does not. Forcing the
+      ! second is the only thing that exercises it here, and the two have to
+      ! give the same derivatives: the bound is the iteration's tolerance,
+      ! the factorized solve being exact.
+      block
+         real(dp), allocatable :: d_direct(:, :)
+         real(dp) :: alpha_direct(3, 3)
+
+         call polarizability_derivatives_analytic(mol, scf%orbitals, scf%orbital_energies, &
+                                                  scf%n_occupied, alpha_direct, d_direct, &
+                                                  err, integral_direct=.true.)
+         call check(error,.not. err%has_error(), &
+                    "analytic route, iterated: "//err%get_full_trace())
+         if (allocated(error)) return
+         write (*, "(4x,a,es10.2)") "factorized against iterated response:      ", &
+            maxval(abs(d - d_direct))
+         call check(error, maxval(abs(d - d_direct)) < ANALYTIC_TOL, &
+                    "the factorized and iterated responses give different derivatives")
+      end block
    end subroutine test_analytic
 
    subroutine test_kohn_sham(error)

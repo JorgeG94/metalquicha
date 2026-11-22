@@ -492,9 +492,22 @@ Hartree-Fock only and differences nothing: the gradient formula holds in a
 field, so its second field derivative is the same contraction at `D^kl` and
 `W^kl`, plus `Tr(D^k G^x[D^l])`. `D^kl` is six more `cphf_solve`s through
 `mo_rhs`, with its diagonal blocks fixed by idempotency; `W^kl` is the product
-rule on `(1/2) D F D`. **The two-electron term goes through
-`two_electron_gradient`, which is quadratic in one density**, so a product of
-two different densities is taken by polarisation -- eighteen calls in all. Its
+rule on `(1/2) D F D`. **The two-electron terms pair two different
+densities**, `D^kl` with `D` and `D^k` with `D^l`, and come from one
+`two_electron_deriv_many` pass over a stack of all ten: each pairing is then
+two traces over an atom's functions, *both orders*, because the sum over an
+atom is on the first index alone (`add_pairing`). It used to be eighteen
+`two_electron_gradient` calls, a product of two densities taken as the
+difference of the gradient at their sum and at each -- ten times the time,
+and a subtraction of nearly equal numbers. **The nine response solves share
+one `(A+B)`**: `cphf_solve` iterates one right-hand side at a time with an
+integral pass per iteration, about a hundred passes for nine, so where
+`mo_transform_fits` allows the matrix is built once by `build_hessian_mo`,
+factorized, and each solve is a back-substitution (`integral_direct` forces
+the iteration, and a test holds the two to 2e-11). Measured on four threads,
+the Raman step of a Hessian run went from 24.8 s to 2.2 s on propane in
+cc-pVDZ and from 55.2 s to 5.5 s on a water hexamer in 6-31G*. `cphf_solve`'s
+other callers still iterate that way. Its
 check is the translational sum rule, 1e-13, and PySCF's differences
 *extrapolated to zero step*; the plain ones are 3e-5 off, their own error. A
 Kohn-Sham reference takes the next route instead, since the analytic one
