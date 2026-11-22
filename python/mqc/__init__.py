@@ -864,6 +864,29 @@ class Result:
         return self._section("dipole")
 
     @property
+    def nmr_shielding(self):
+        """Nuclear magnetic shieldings from the run, or None.
+
+        ``units`` is ``"ppm"`` and ``atoms`` is one entry per nucleus in input
+        order: ``atom`` (1-based), ``element``, ``isotropic``, ``anisotropy``
+        and the full ``tensor``, first index the field's direction and second
+        the nuclear moment's. A chemical shift is a reference compound's
+        isotropic shielding minus this one, at the same level of theory.
+        """
+        return self._section("nmr_shielding")
+
+    @property
+    def spin_spin_coupling(self):
+        """Indirect nuclear spin-spin couplings from the run, or None.
+
+        ``terms`` lists what was included (the Fermi-contact term), ``atoms``
+        gives each nucleus's ``isotope`` and ``g_factor``, and ``j_hz`` and
+        ``reduced_1e19_T2_per_J`` are square symmetric matrices in the order
+        of ``atoms``, zero on the diagonal.
+        """
+        return self._section("spin_spin_coupling")
+
+    @property
     def atomic_charges(self):
         """Partial charges from the run, or None.
 

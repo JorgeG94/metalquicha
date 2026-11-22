@@ -27,6 +27,7 @@ module mqc_czt_efp_rotate
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION
+   use mqc_math_utils, only: cross_product
    use mqc_czt_efp_read, only: efp_fragment_t, N_QUADRUPOLE, N_OCTUPOLE
    use mqc_czt_integrals, only: czt_molecule_t, shell_dim
    use libcint_fortran, only: LIBCINT_ANG_OF
@@ -162,9 +163,7 @@ contains
       if (n2 < TINY_AXIS) return       ! c lies on the a-b line
       e2 = e2/n2
 
-      e3(1) = e1(2)*e2(3) - e1(3)*e2(2)
-      e3(2) = e1(3)*e2(1) - e1(1)*e2(3)
-      e3(3) = e1(1)*e2(2) - e1(2)*e2(1)
+      e3 = cross_product(e1, e2)
       n3 = sqrt(dot_product(e3, e3))
       if (n3 < TINY_AXIS) return
       e3 = e3/n3
