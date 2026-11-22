@@ -24,6 +24,14 @@ module mqc_calculation_defaults
    !! Krylov cycles the solve may take before it reports non-convergence.
 
    ! =========================================================================
+   ! Response properties
+   ! =========================================================================
+   real(dp), parameter, public :: PROPERTY_RESPONSE_TOL = 1.0e-10_dp
+   !! Largest residual at which a property's coupled-perturbed solve stops:
+   !! shieldings, spin-spin couplings, polarizability derivatives. Tighter
+   !! than `DEFAULT_RESPONSE_TOL` and not a deck setting.
+
+   ! =========================================================================
    ! Excited states
    ! =========================================================================
    real(dp), parameter, public :: DEFAULT_EXCITED_TOL = 1.0e-6_dp
