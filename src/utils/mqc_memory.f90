@@ -13,13 +13,24 @@ module mqc_memory
 
    public :: available_memory_bytes
    public :: set_memory_budget
+   public :: set_memory_sharers
    public :: memory_budget
 
    real(dp), save :: budget_override = -1.0_dp
       !! Bytes the deck said this run may plan on, `system.memory_gb`; negative
       !! is unset, and the machine decides.
 
+   integer, save :: sharers = 1
+      !! Processes of this run on this node. What the machine reports is free
+      !! for all of them together, so each plans on its share.
+
 contains
+
+   subroutine set_memory_sharers(n_processes)
+      !! Say how many processes of this run share this node's memory
+      integer, intent(in) :: n_processes
+      sharers = max(1, n_processes)
+   end subroutine set_memory_sharers
 
    subroutine set_memory_budget(gigabytes)
       !! Fix the budget from the deck; a non-positive value hands it back to the machine
@@ -35,10 +46,11 @@ contains
       !! Bytes one memory decision may plan on
       !!
       !! The deck's figure when it gave one, otherwise `share` of what the
-      !! machine reports available, otherwise `blind` -- the caller's own
+      !! machine reports available divided among the processes sharing the
+      !! node (`set_memory_sharers`), otherwise `blind` -- the caller's own
       !! constant for a machine that reports nothing. The deck's figure is
-      !! taken whole: it is what the user has decided this run may have, and
-      !! sharing it again would second-guess that.
+      !! per process and taken whole: it is what the user has decided each
+      !! rank may have, and sharing it again would second-guess that.
       real(dp), intent(in) :: blind
       real(dp), intent(in) :: share
       real(dp) :: budget
@@ -51,7 +63,7 @@ contains
       end if
       available = available_memory_bytes()
       if (available > 0.0_dp) then
-         budget = share*available
+         budget = share*available/real(sharers, dp)
       else
          budget = blind
       end if

@@ -9,7 +9,7 @@ module mqc_czt_giao
    !! returned is the real matrix multiplying `i`, under libcint's sign for
    !! each integral, which is what the formulas in `mqc_czt_nmr` are written
    !! against.
-   use pic_types, only: dp
+   use pic_types, only: dp, int64
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_czt_integrals, only: czt_molecule_t, shell_dim
    use libcint_fortran, only: LIBCINT_PTR_RINV_ORIG, LIBCINT_ATM_SLOTS, LIBCINT_ATOM_OF, &
@@ -307,7 +307,7 @@ contains
       !$omp end parallel
    end subroutine giao_smeared_charges
 
-   subroutine giao_coulomb_exchange(mol, density, vj, vk, error, bounds, coulomb_only)
+   subroutine giao_coulomb_exchange(mol, density, vj, vk, error, bounds, coulomb_only, n_skipped)
       !! The field derivative of the two-electron integrals against a density
       !!
       !! With `(g i j|k l)` the integral differentiated through the gauge
@@ -328,6 +328,8 @@ contains
       logical, intent(in), optional :: coulomb_only
          !! Leave `vk` zero: a reference with no exact exchange has no use for
          !! it, and more quartets can then be skipped. Off when absent.
+      integer(int64), intent(out), optional :: n_skipped
+         !! Shell quartets the screen passed over, of those the folding left
 
       ! The gauge factor of a pair is `(1/2) (R_i - R_j) x r`, so the
       ! differentiated integral
@@ -346,8 +348,10 @@ contains
       integer :: i, j, k, l, comp, mx, idx, n, n_pairs, ipair, nsh
       real(dp) :: val, weight, estimate, d_here
       logical :: screen, with_exchange
+      integer(int64) :: skipped
 
       if (error%has_error()) return
+      skipped = 0_int64
       n = mol%nao
       nsh = mol%nbas
       with_exchange = .true.
@@ -393,13 +397,13 @@ contains
 
       !$omp parallel default(none) &
       !$omp    shared(mol, density, vj, vk, mx, n, nsh, n_pairs, pair_i, pair_j, reach, dmax, &
-      !$omp           bounds, screen, with_exchange) &
+      !$omp           bounds, screen, with_exchange, skipped) &
       !$omp    private(ipair, ish, jsh, ksh, lsh, di, dj, dk, dl, io, jo, ko, lo, i, j, k, l, &
       !$omp            comp, idx, val, weight, estimate, d_here, shls, buf, ret, vj_t, vk_t)
       allocate (buf(N_VECTOR*mx**4), vj_t(n, n, N_VECTOR), vk_t(n, n, N_VECTOR))
       vj_t = 0.0_dp
       vk_t = 0.0_dp
-      !$omp do schedule(dynamic)
+      !$omp do schedule(dynamic) reduction(+:skipped)
       do ipair = 1, n_pairs
          ish = pair_i(ipair)
          jsh = pair_j(ipair)
@@ -421,7 +425,10 @@ contains
                                   dmax(ish, ksh), dmax(ish, lsh))
                   end if
                   estimate = reach(ish, jsh)*bounds(ish, jsh)*bounds(ksh, lsh)*d_here
-                  if (estimate < GIAO_SCREEN_TOL) cycle
+                  if (estimate < GIAO_SCREEN_TOL) then
+                     skipped = skipped + 1_int64
+                     cycle
+                  end if
                end if
                dl = shell_dim(mol%cartesian, lsh - 1, mol%bas)
                lo = mol%shell_offset(lsh)
@@ -490,6 +497,7 @@ contains
       do comp = 1, N_VECTOR
          vj(:, :, comp) = vj(:, :, comp) - transpose(vj(:, :, comp))
       end do
+      if (present(n_skipped)) n_skipped = skipped
    end subroutine giao_coulomb_exchange
 
 end module mqc_czt_giao

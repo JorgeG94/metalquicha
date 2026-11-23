@@ -398,8 +398,10 @@ Limits
   transforming the integrals. That matrix is as large as the square of the
   number of occupied-virtual pairs; where it does not fit in memory the
   response recomputes the integrals on each of its dozen or so passes
-  instead, and is then the slowest step. ``system.memory_gb`` sets what the
-  run may plan on. The log gives the time of each phase.
+  instead, and is then the slowest step. The decision is made by each MPI
+  rank against its share of the node's free memory, or against
+  ``system.memory_gb``, which is per rank. At the ``verbose`` logger level
+  the log gives the time of each phase.
 - **Hartree-Fock shieldings are a starting point, not a prediction.** Electron
   correlation changes them by tens of ppm for nuclei with lone pairs or multiple
   bonds, which is what a functional is for, and a basis built for energies
