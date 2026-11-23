@@ -432,9 +432,7 @@ contains
             mqc_config%charges_scheme
       end if
       driver_config%method_config%properties%raman = mqc_config%raman
-      if (allocated(mqc_config%raman_method)) then
-         driver_config%method_config%properties%raman_method = mqc_config%raman_method
-      end if
+      driver_config%method_config%properties%raman_method = mqc_config%raman_method
       driver_config%method_config%properties%nmr_shielding = mqc_config%nmr_shielding
       driver_config%method_config%properties%spin_spin_coupling = &
          mqc_config%spin_spin_coupling

@@ -52,6 +52,13 @@ module test_mqc_czt_raman
                                        0.0_dp, -2.0744928878_dp, 0.0_dp]
    real(dp), parameter :: ANALYTIC_TOL = 1.0e-6_dp
       !! The extrapolated reference's own remaining error; 3.5e-7 measured
+   real(dp), parameter :: ROUTES_TOL = 1.0e-9_dp
+      !! Bound on the factorized response against the iterated one, Bohr^2.
+      !! Both solve the same nine equations; the iteration stops at a
+      !! residual of 1e-10 and the factorization is exact, and on water the
+      !! derivatives land 2e-11 apart. `ANALYTIC_TOL` is sized for a
+      !! comparison with another program and would let a real difference
+      !! between the routes through.
    real(dp), parameter :: SUM_RULE_TOL = 1.0e-7_dp
       !! What the analytic route leaves of an exact zero
 
@@ -213,6 +220,7 @@ contains
       !! over the atoms, and for a finite difference that sum is its
       !! truncation error while here it is the response solves' residual.
       type(error_type), allocatable, intent(out) :: error
+      logical :: took_stored
 
       type(czt_molecule_t) :: mol
       type(rhf_result_t) :: scf
@@ -232,7 +240,8 @@ contains
       if (allocated(error)) return
 
       call polarizability_derivatives_analytic(mol, scf%orbitals, scf%orbital_energies, &
-                                               scf%n_occupied, alpha, d, err)
+                                               scf%n_occupied, alpha, d, err, &
+                                               stored_response=took_stored)
       call check(error,.not. err%has_error(), "analytic route: "//err%get_full_trace())
       if (allocated(error)) return
 
@@ -266,6 +275,36 @@ contains
       ! are zero rather than a truncation error.
       call check(error, abs(d(4, 3)) < SUM_RULE_TOL .and. abs(d(6, 3)) < SUM_RULE_TOL, &
                  "a component symmetry forbids is not zero")
+      if (allocated(error)) return
+
+      ! The nine response equations are solved from one factorized matrix
+      ! where it fits, which on water it always does, and by iteration with a
+      ! pass over the integrals each time where it does not. Forcing the
+      ! second is the only thing that exercises it here, and the two have to
+      ! give the same derivatives: the bound is sized from the iteration's
+      ! tolerance, the factorized solve being exact, and they land 2e-11
+      ! apart.
+      block
+         real(dp), allocatable :: d_direct(:, :)
+         real(dp) :: alpha_direct(3, 3)
+         logical :: took_stored_when_direct
+
+         call polarizability_derivatives_analytic(mol, scf%orbitals, scf%orbital_energies, &
+                                                  scf%n_occupied, alpha_direct, d_direct, &
+                                                  err, integral_direct=.true., &
+                                                  stored_response=took_stored_when_direct)
+         call check(error,.not. err%has_error(), &
+                    "analytic route, iterated: "//err%get_full_trace())
+         if (allocated(error)) return
+         write (*, "(4x,a,es10.2)") "factorized against iterated response:      ", &
+            maxval(abs(d - d_direct))
+         ! Two runs of one route agree to the last digit and prove nothing.
+         call check(error, took_stored .and. .not. took_stored_when_direct, &
+                    "the two calls did not take the two routes they are meant to compare")
+         if (allocated(error)) return
+         call check(error, maxval(abs(d - d_direct)) < ROUTES_TOL, &
+                    "the factorized and iterated responses give different derivatives")
+      end block
    end subroutine test_analytic
 
    subroutine test_kohn_sham(error)

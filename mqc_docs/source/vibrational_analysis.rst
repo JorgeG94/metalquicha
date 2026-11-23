@@ -284,8 +284,11 @@ matrices themselves:
 itself needs. :math:`D^{kl}` has its occupied-occupied and virtual-virtual
 blocks fixed by idempotency and the block between them from six more solves
 against the same operator. **No response to a nuclear displacement is solved**,
-so beyond the nine solves the cost is that of eighteen two-electron gradient
-contractions, whatever the size of the molecule. The translational sum rule,
+so beyond the nine solves the cost is one pass over the differentiated
+two-electron integrals, whatever the size of the molecule. The nine solves
+share one response matrix, which is built once and factorized where it fits in
+memory -- ``system.memory_gb`` sets what the run may plan on -- and iterated
+otherwise. The translational sum rule,
 which a finite difference satisfies to its truncation error, holds to
 :math:`10^{-13}` on water.
 

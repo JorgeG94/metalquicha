@@ -19,6 +19,7 @@ module mqc_czt_raman
    !! an electronic absorption the two differ a great deal.
    use pic_types, only: dp
    use pic_io, only: to_char
+   use pic_timer, only: timer_type
    use pic_logger, only: logger => global_logger
    use mqc_calculation_defaults, only: DEFAULT_DISPLACEMENT, PROPERTY_RESPONSE_TOL, &
                                        DIFFERENCED_SCF_ENERGY_TOL, &
@@ -30,11 +31,15 @@ module mqc_czt_raman
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf, SCF_GUESS_SAD
    use pic_blas_interfaces, only: pic_gemm
    use mqc_czt_integrals, only: atom_ao_blocks
-   use mqc_czt_cphf, only: static_polarizability, cphf_solve
+   use mqc_czt_cphf, only: static_polarizability, cphf_solve, build_hessian_mo, &
+                           mo_transform_fits, factorize_response
+   use mqc_memory, only: memory_budget
+   use omp_lib, only: omp_get_max_threads
+   use pic_lapack_interfaces, only: pic_getrs
    use mqc_czt_direct, only: schwarz_bounds
    use mqc_czt_response_product, only: response_mean_field
    use mqc_czt_gradient, only: czt_scf_gradient, one_electron_deriv, &
-                               two_electron_gradient, hellmann_feynman_gradient, &
+                               two_electron_deriv_many, hellmann_feynman_gradient, &
                                DERIV_OVLP, DERIV_KIN, DERIV_NUC
    use mqc_czt_multipole, only: multipole_matrices, dipole_integral_derivatives
    use mqc_czt_xc, only: xc_context_t, xc_context_create
@@ -61,6 +66,14 @@ module mqc_czt_raman
    integer, parameter :: N_FIELDS = 12
       !! Fields the second differences need: plus and minus each axis, and
       !! plus and minus each pair of axes together
+   integer, parameter :: N_STACK = 1 + 3 + N_SYMMETRIC
+      !! Densities whose derivative potentials the analytic route needs: the
+      !! reference's, the three first-order ones and the six second-order ones
+   real(dp), parameter :: STACK_BUDGET_SHARE = 0.5_dp
+      !! Share of the memory budget the derivative pass over the stack may
+      !! take; what it does not fit in goes through in pieces.
+   real(dp), parameter :: STACK_BLIND_BUDGET = 4.0e9_dp
+      !! Bytes that pass plans on where the machine reports nothing
 
 contains
 
@@ -314,7 +327,8 @@ contains
    end subroutine polarizability_derivatives_field
 
    subroutine polarizability_derivatives_analytic(mol, orbitals, orbital_energies, n_occ, &
-                                                  alpha, dalpha, error)
+                                                  alpha, dalpha, error, integral_direct, &
+                                                  stored_response)
       !! `d alpha / d x` with no finite difference, for closed-shell Hartree-Fock
       !!
       !! The nuclear gradient holds in a uniform field `F` as it does without
@@ -336,7 +350,7 @@ contains
       !! same operator with a right-hand side built from the first-order
       !! ones. No nuclear response is solved, so the cost does not grow with
       !! the number of atoms beyond that of a gradient: nine response solves
-      !! and eighteen two-electron gradient contractions.
+      !! and one pass over the differentiated two-electron integrals.
       type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: orbitals(:, :)          !! Canonical, (n_ao, n_mo)
       real(dp), intent(in) :: orbital_energies(:)
@@ -346,21 +360,35 @@ contains
          !! (6, 3*n_atoms) in Bohr^2, laid out as `polarizability_derivatives`
          !! lays it out
       type(error_t), intent(inout) :: error
+      logical, intent(in), optional :: integral_direct
+         !! Solve the nine response equations by iteration, recomputing the
+         !! integrals on every pass, even where the response matrix would fit
+         !! in memory. Off when absent; the two give the same derivatives.
+      logical, intent(out), optional :: stored_response
+         !! Whether the solves came from the factorized response matrix
 
       real(dp), allocatable :: dip(:, :, :), ddip(:, :, :, :, :)
+      real(dp), allocatable :: aplus(:, :), aminus(:, :), no_eri(:, :, :, :), gaps(:, :)
+      integer, allocatable :: ipiv(:)
+      integer :: info
+      logical :: stored
       real(dp), allocatable :: u1(:, :, :), u2(:, :, :), rhs(:, :, :)
       real(dp), allocatable :: d0(:, :), d1(:, :, :), d2(:, :, :), w2(:, :, :)
       real(dp), allocatable :: dm1(:, :, :), dm2(:, :, :), f1(:, :, :), f2(:, :, :)
       real(dp), allocatable :: dm0(:, :), f0(:, :), wm(:, :)
       real(dp), allocatable :: g(:, :, :), scratch(:, :, :), bounds(:, :), zero_h(:, :)
       real(dp), allocatable :: s1(:, :, :), h1(:, :, :), kin(:, :, :)
-      real(dp), allocatable :: q1(:, :, :), qpair(:, :), plus(:, :), minus(:, :)
+      real(dp), allocatable :: stack(:, :, :), vhf(:, :, :, :), vhf_part(:, :, :, :)
+      real(dp) :: per_set
+      integer :: n_chunk, first_set, last_set
       real(dp), allocatable :: second(:, :), trial(:, :)
       integer, allocatable :: offsets(:), counts(:)
       real(dp) :: origin(3)
       integer :: n_ao, n_mo, n_vir, natm, k, l, c, i, iatom, comp, p0, p1
+      type(timer_type) :: clock
 
       alpha = 0.0_dp
+      if (present(stored_response)) stored_response = .false.
       if (error%has_error()) return
       n_ao = size(orbitals, 1)
       n_mo = size(orbitals, 2)
@@ -379,11 +407,53 @@ contains
 
       call logger%info("  Raman: analytic polarizability derivatives, nine response "// &
                        "solves and no finite difference")
+      call clock%start()
+
+      ! Nine right-hand sides of one operator, `(A+B)`. Where that matrix
+      ! fits it is built once by transforming the integrals and factorized,
+      ! and each solve is a back-substitution; otherwise each is iterated,
+      ! with a pass over the integrals per iteration.
+      stored = mo_transform_fits(n_ao, n_occ, n_vir, .true.)
+      if (present(integral_direct)) stored = stored .and. .not. integral_direct
+      if (present(stored_response)) stored_response = stored
+      if (stored) then
+         allocate (gaps(n_vir, n_occ), no_eri(0, 0, 0, 0))
+         do i = 1, n_occ
+            gaps(:, i) = orbital_energies(n_occ + 1:) - orbital_energies(i)
+         end do
+         ! What the iterated solve refuses, this one has to refuse too: a
+         ! factorization goes through on an indefinite matrix without a word.
+         if (minval(gaps) <= 0.0_dp) then
+            call error%set(ERROR_VALIDATION, "Raman: the reference has no gap between "// &
+                           "its occupied and virtual orbitals")
+            return
+         end if
+         call build_hessian_mo(mol, no_eri, orbitals(:, :n_occ), orbitals(:, n_occ + 1:), &
+                               gaps, aplus, aminus, error)
+         if (error%has_error()) return
+         deallocate (aminus, gaps, no_eri)
+         allocate (ipiv(n_vir*n_occ))
+         call factorize_response(n_vir*n_occ, aplus, ipiv, info)
+         if (info /= 0) then
+            call error%set(ERROR_VALIDATION, "Raman: the response matrix is singular")
+            return
+         end if
+      end if
 
       ! First order. `U^k` is the virtual-occupied block of the density's
       ! derivative per spin, so the total is twice it, symmetrised.
-      call cphf_solve(mol, orbitals, orbital_energies, n_occ, perturbations=dip, &
-                      response=u1, error=error, tol=PROPERTY_RESPONSE_TOL)
+      if (stored) then
+         allocate (rhs(n_vir, n_occ, 3), trial(n_mo, n_mo))
+         do k = 1, 3
+            call to_mo(dip(:, :, k), trial)
+            rhs(:, :, k) = trial(n_occ + 1:, :n_occ)
+         end do
+         call solve_stored(rhs, u1)
+         deallocate (rhs, trial)
+      else
+         call cphf_solve(mol, orbitals, orbital_energies, n_occ, perturbations=dip, &
+                         response=u1, error=error, tol=PROPERTY_RESPONSE_TOL)
+      end if
       if (error%has_error()) return
 
       ! Everything below is assembled in the orbital basis and carried back.
@@ -456,8 +526,15 @@ contains
                         - matmul(u1(:, :, k), f1(:n_occ, :n_occ, l))
       end do
       deallocate (g, scratch)
-      call cphf_solve(mol, orbitals, orbital_energies, n_occ, response=u2, error=error, &
-                      tol=PROPERTY_RESPONSE_TOL, mo_rhs=rhs)
+      if (stored) then
+         call solve_stored(rhs, u2)
+         ! The last use of the factors, and the largest thing held.
+         if (allocated(aplus)) deallocate (aplus)
+         if (allocated(ipiv)) deallocate (ipiv)
+      else
+         call cphf_solve(mol, orbitals, orbital_energies, n_occ, response=u2, error=error, &
+                         tol=PROPERTY_RESPONSE_TOL, mo_rhs=rhs)
+      end if
       if (error%has_error()) then
          call error%add_context("Raman: the second-order field response")
          return
@@ -498,6 +575,10 @@ contains
       end do
       deallocate (dm0, dm1, dm2, f0, f1, f2, wm, trial, u1, u2, rhs)
 
+      call logger%info("  Raman: response solves and densities in "// &
+                       to_char(clock%get_elapsed_time())//" s")
+      call clock%start()
+
       ! The integral derivatives, in libcint's convention: the nabla is on
       ! the bra, and the derivative with respect to the bra's atom is minus
       ! that.
@@ -510,18 +591,29 @@ contains
       allocate (offsets(natm), counts(natm))
       call atom_ao_blocks(mol, offsets, counts)
 
-      ! The two-electron term is quadratic in the density it is contracted
-      ! with, and the contraction available is the gradient's own, at one
-      ! density. A product of two different densities is the difference of
-      ! that at their sum and at each.
-      allocate (q1(3, natm, 3), qpair(3, natm), plus(3, natm), minus(3, natm))
-      q1 = 0.0_dp
-      do k = 1, 3
-         call two_electron_gradient(mol, d1(:, :, k), q1(:, :, k), error)
+      ! The two-electron terms pair two different densities, `D^kl` with `D`
+      ! and `D^k` with `D^l`. One pass over the differentiated integrals gives
+      ! every density's derivative potential, `G^x[D]` with the nabla on the
+      ! bra, and each pairing is then two traces over an atom's functions.
+      allocate (stack(n_ao, n_ao, N_STACK))
+      stack(:, :, 1) = d0
+      stack(:, :, 2:4) = d1
+      stack(:, :, 5:N_STACK) = d2
+      ! The pass holds two potentials per density on every thread, so the
+      ! stack goes through in as many pieces as that takes to fit.
+      per_set = real(2*omp_get_max_threads() + 3, dp)*24.0_dp*real(n_ao, dp)**2
+      n_chunk = int(min(real(N_STACK, dp), &
+                        max(1.0_dp, memory_budget(STACK_BLIND_BUDGET, STACK_BUDGET_SHARE)/per_set)))
+      allocate (vhf(n_ao, n_ao, 3, N_STACK))
+      do first_set = 1, N_STACK, n_chunk
+         last_set = min(first_set + n_chunk - 1, N_STACK)
+         call two_electron_deriv_many(mol, stack(:, :, first_set:last_set), vhf_part, error)
          if (error%has_error()) return
+         vhf(:, :, :, first_set:last_set) = vhf_part
+         deallocate (vhf_part)
       end do
 
-      allocate (dalpha(N_SYMMETRIC, 3*natm), second(3, natm), trial(n_ao, n_ao))
+      allocate (dalpha(N_SYMMETRIC, 3*natm), second(3, natm))
       do c = 1, N_SYMMETRIC
          k = SYMMETRIC_ROW(c)
          l = SYMMETRIC_COL(c)
@@ -539,27 +631,9 @@ contains
             end do
          end do
 
-         ! `Tr(D^kl G^x[D])`
-         plus = 0.0_dp
-         minus = 0.0_dp
-         trial = d0 + d2(:, :, c)
-         call two_electron_gradient(mol, trial, plus, error)
-         if (error%has_error()) return
-         trial = d0 - d2(:, :, c)
-         call two_electron_gradient(mol, trial, minus, error)
-         if (error%has_error()) return
-         second = second + 0.5_dp*(plus - minus)
-
-         ! `Tr(D^k G^x[D^l])`
-         if (k == l) then
-            second = second + 2.0_dp*q1(:, :, k)
-         else
-            qpair = 0.0_dp
-            trial = d1(:, :, k) + d1(:, :, l)
-            call two_electron_gradient(mol, trial, qpair, error)
-            if (error%has_error()) return
-            second = second + qpair - q1(:, :, k) - q1(:, :, l)
-         end if
+         ! `Tr(D^kl G^x[D])` and `Tr(D^k G^x[D^l])`
+         call add_pairing(1, 4 + c)
+         call add_pairing(1 + k, 1 + l)
 
          ! The field term's own derivative, at the first-order densities.
          do iatom = 1, natm
@@ -571,8 +645,66 @@ contains
             end do
          end do
       end do
+      call logger%info("  Raman: integral derivatives contracted in "// &
+                       to_char(clock%get_elapsed_time())//" s")
 
    contains
+
+      subroutine solve_stored(h, u)
+         !! `(A+B) U = -h` for a stack of right-hand sides, from the factors
+         real(dp), intent(in) :: h(:, :, :)   !! (n_vir, n_occ, n)
+         real(dp), allocatable, intent(out) :: u(:, :, :)
+
+         real(dp), allocatable :: b(:, :), minus_h(:, :)
+         integer :: status, set
+
+         allocate (b(n_vir*n_occ, size(h, 3)), minus_h(n_vir*n_occ, size(h, 3)))
+         minus_h = -reshape(h, shape(minus_h))
+         b = minus_h
+         call pic_getrs(aplus, ipiv, b, info=status)
+         if (status /= 0) then
+            call error%set(ERROR_VALIDATION, "Raman: the response equations would "// &
+                           "not solve")
+            return
+         end if
+         ! `b . (A+B)^-1 b` is positive for every `b` when the reference is a
+         ! minimum. One that is not proves a saddle; all of them positive
+         ! proves nothing, which is as far as the iterated solve sees too.
+         do set = 1, size(h, 3)
+            if (.not. any(minus_h(:, set) /= 0.0_dp)) cycle
+            if (.not. sum(b(:, set)*minus_h(:, set)) > 0.0_dp) then
+               call error%set(ERROR_VALIDATION, "Raman: the response matrix is not "// &
+                              "positive definite; the reference SCF is a saddle "// &
+                              "point, not a minimum")
+               return
+            end if
+         end do
+         allocate (u(n_vir, n_occ, size(h, 3)))
+         u = reshape(b, shape(u))
+      end subroutine solve_stored
+
+      subroutine add_pairing(first, other)
+         !! Add the two-electron term that pairs two densities of the stack
+         !!
+         !! The gradient's two-electron term at a density `D` is
+         !! `2 sum_{i on A} sum_j G^x[D]_ij D_ij`. This is the part of that at
+         !! `D + D'` which is linear in each: both orders, since the sum over
+         !! an atom's functions is on the first index alone.
+         integer, intent(in) :: first, other   !! Positions in `stack`
+
+         integer :: atom, lo, hi, x
+
+         do atom = 1, natm
+            if (counts(atom) == 0) cycle
+            lo = offsets(atom) + 1
+            hi = offsets(atom) + counts(atom)
+            do x = 1, 3
+               second(x, atom) = second(x, atom) &
+                                 + 2.0_dp*sum(vhf(lo:hi, :, x, first)*stack(lo:hi, :, other)) &
+                                 + 2.0_dp*sum(vhf(lo:hi, :, x, other)*stack(lo:hi, :, first))
+            end do
+         end do
+      end subroutine add_pairing
 
       subroutine to_ao(mo, ao)
          !! `C mo C^T`

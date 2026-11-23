@@ -28,6 +28,7 @@ module mqc_config_types
                                        DEFAULT_EXCITED_MAX_ITER, &
                                        DEFAULT_EXCITED_BATCH, &
                                        EFP_RESPONSE_AUTO, HESSIAN_METHOD_ANALYTIC, &
+                                       RAMAN_METHOD_ANALYTIC, &
                                        DEFAULT_OPT_MAX_STEPS, DEFAULT_OPT_GRADIENT_TOLERANCE, &
                                        DEFAULT_OPT_ENERGY_TOLERANCE, DEFAULT_OPT_MAX_STEP, &
                                        DEFAULT_OPT_LBFGS_MEMORY, DEFAULT_OPT_PRINT_LEVEL, &
@@ -136,9 +137,8 @@ module mqc_config_types
       logical :: raman = .false.
          !! `properties.raman` was given: Raman activities beside the
          !! frequencies of a Hessian run.
-      character(len=:), allocatable :: raman_method
-         !! `properties.raman.method`: "analytic", "field" or
-         !! "displacements". Set to "analytic" before the deck is read.
+      integer :: raman_method = RAMAN_METHOD_ANALYTIC
+         !! `properties.raman.method`, one of the `RAMAN_METHOD_*` constants
       logical :: nmr_shielding = .false.
          !! `properties.nmr` was given: nuclear magnetic shielding tensors of
          !! every nucleus, over gauge-including orbitals.

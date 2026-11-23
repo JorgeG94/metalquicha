@@ -74,10 +74,10 @@ module mqc_czt_gradient
    public :: gamma_fill_i   !! The Gamma callback `two_electron_deriv_many` takes
    public :: two_electron_gradient
    public :: hellmann_feynman_gradient
-      !! Steps of `czt_scf_gradient`, exposed for a derivative of the gradient
-      !! itself, which contracts the same integrals with a response density,
-      !! and for the unrestricted correlated gradients, which put a relaxed
-      !! density through the two-electron term.
+      !! Steps of `czt_scf_gradient`, exposed for the unrestricted correlated
+      !! gradients, which put a relaxed density through the two-electron
+      !! term, and for a derivative of the gradient itself, which contracts
+      !! the Hellmann-Feynman term with a response density.
    public :: iprinv_deriv_at
    public :: nuclear_attraction_deriv_at
    public :: xc_potential_gradient

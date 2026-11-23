@@ -236,6 +236,17 @@ module mqc_calculation_defaults
    integer, parameter, public :: HESSIAN_METHOD_SEMI_NUMERICAL = 1
    integer, parameter, public :: HESSIAN_METHOD_NUMERICAL = 2
 
+   integer, parameter, public :: RAMAN_METHOD_ANALYTIC = 0
+   !! How the polarizability's Cartesian derivatives are obtained:
+   !! `properties.raman.method`.
+   !!
+   !! `analytic` differences nothing and is Hartree-Fock only; a Kohn-Sham
+   !! reference takes `field` in its place. `field` differences the analytic
+   !! gradient over electric fields. `displacements` differences the
+   !! polarizability over nuclear positions.
+   integer, parameter, public :: RAMAN_METHOD_FIELD = 1
+   integer, parameter, public :: RAMAN_METHOD_DISPLACEMENTS = 2
+
    ! =========================================================================
    ! XTB
    ! =========================================================================
