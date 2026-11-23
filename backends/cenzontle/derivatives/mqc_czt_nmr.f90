@@ -65,7 +65,8 @@ module mqc_czt_nmr
 contains
 
    subroutine czt_nmr_shielding(mol, coeff, orbital_energies, n_occ, shielding, error, &
-                                diamagnetic, paramagnetic, xc, pcm, integral_direct)
+                                diamagnetic, paramagnetic, xc, pcm, integral_direct, &
+                                stored_response)
       !! Shielding tensors of every nucleus, in parts per million
       type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: coeff(:, :)             !! (n_ao, n_mo), canonical
@@ -90,6 +91,9 @@ contains
          !! Have the field response recompute its integrals on every pass even
          !! where its coupling matrix would fit in memory. Off when absent;
          !! the two give the same tensors.
+      logical, intent(out), optional :: stored_response
+         !! Whether the field response used a coupling matrix built once;
+         !! false when it recomputed the integrals, or had nothing to couple.
 
       real(dp), allocatable :: density(:, :), h10(:, :, :), s10(:, :, :), work(:, :, :)
       real(dp), allocatable :: vj(:, :, :), vk(:, :, :), bounds(:, :)
@@ -211,7 +215,8 @@ contains
       ! ---- the orbitals' response to the field -----------------------------
       call clock%start()
       call solve_field_response(mol, coeff, orbital_energies, n_occ, bounds, h1, s1, &
-                                exchange, mo1, error, integral_direct=integral_direct)
+                                exchange, mo1, error, integral_direct=integral_direct, &
+                                stored_response=stored_response)
       if (error%has_error()) return
 
       ! The first-order density's generator, twice for the two electrons an
@@ -272,11 +277,11 @@ contains
       character(len=LINE_LEN) :: line
 
       write (line, "(a,f10.2,a)") "  shielding: "//what//" in ", clock%get_elapsed_time(), " s"
-      call logger%info(trim(line))
+      call logger%verbose(trim(line))
    end subroutine phase_done
 
    subroutine solve_field_response(mol, coeff, eps, n_occ, bounds, h1, s1, exchange, &
-                                   mo1, error, integral_direct)
+                                   mo1, error, integral_direct, stored_response)
       !! The imaginary first-order orbital coefficients, one set per direction
       !!
       !! The occupied-occupied block is fixed by the first-order overlap,
@@ -302,6 +307,8 @@ contains
       logical, intent(in), optional :: integral_direct
          !! Recompute the integrals on every pass even where the coupling
          !! matrix would fit in memory. Off when absent.
+      logical, intent(out), optional :: stored_response
+         !! Whether the coupling matrix was built and used
 
       real(dp), allocatable :: gaps(:), rhs(:, :), resid(:, :), trial(:, :, :), image(:, :, :)
       real(dp), allocatable :: coupling(:, :)
@@ -315,6 +322,7 @@ contains
       logical :: singular
       character(len=LINE_LEN) :: line
 
+      if (present(stored_response)) stored_response = .false.
       n_mo = size(coeff, 2)
       n_vir = n_mo - n_occ
       n = n_vir*n_occ
@@ -350,11 +358,12 @@ contains
       ! matrix-vector product; otherwise each pass recomputes the integrals.
       stored = abs(exchange) > 0.0_dp .and. mo_transform_fits(mol%nao, n_occ, n_vir, .true.)
       if (present(integral_direct)) stored = stored .and. .not. integral_direct
+      if (present(stored_response)) stored_response = stored
       if (stored) then
          call exchange_coupling(mol, coeff, n_occ, gaps, exchange, coupling, error)
          if (error%has_error()) return
-         call logger%info("  field response: coupling matrix built once, "// &
-                          "by integral transformation")
+         call logger%verbose("  field response: coupling matrix built once, "// &
+                             "by integral transformation")
       end if
 
       allocate (trial(n, CP_MAX_ITER, 3), image(n, CP_MAX_ITER, 3))
@@ -525,7 +534,7 @@ contains
       real(dp) :: w0
       integer :: n_ao, npts, g0, g1, nb, p, u, a, b, iblock, n_blocks
       type(error_t) :: block_error
-      logical :: failed
+      logical :: failed, stop_early
 
       if (error%has_error()) return
       n_ao = mol%nao
@@ -553,14 +562,16 @@ contains
       !$omp    shared(xc, mol, owner, axes, vrho, gcoef, vmat, n_ao, npts, n_blocks, failed, &
       !$omp           error) &
       !$omp    private(iblock, g0, g1, nb, ao, aog, aow, ig, dig, part, vmat_t, r, cross, wv, &
-      !$omp            w0, p, u, a, b, block_error)
+      !$omp            w0, p, u, a, b, block_error, stop_early)
       allocate (vmat_t(n_ao, n_ao, 3), part(n_ao, n_ao))
       vmat_t = 0.0_dp
       ! A private copy is not default-initialised.
       call block_error%clear()
       !$omp do schedule(dynamic)
       do iblock = 1, n_blocks
-         if (failed) cycle
+         !$omp atomic read
+         stop_early = failed
+         if (stop_early) cycle
          g0 = (iblock - 1)*AO_POINT_BLOCK + 1
          g1 = min(g0 + AO_POINT_BLOCK - 1, npts)
          nb = g1 - g0 + 1

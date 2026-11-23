@@ -441,10 +441,13 @@ the ordinary symmetry in `k, l` -- a quarter of the quartets at most, each put
 in the four places the full sum would. The screen's estimate of that factor
 grows with the distance from the origin, so **test it with the molecule moved
 off the origin**; `test_folding` holds the routine to the full sum written
-out, 1e-14. **The field response builds its coupling matrix once**
+out, to 1e-11, and `test_screen` does the same on three waters seven
+angstroms apart, where the screen skips quartets and says how many -- on one
+water it skips none, and a test there guards nothing. **The field response builds its coupling matrix once**
 (`exchange_coupling`, through `build_hessian_mo`): the operator's two-electron
 part is `(A-B)` less its diagonal, scaled by the exact-exchange fraction, and
-`mo_transform_fits` decides whether it fits; otherwise every pass recomputes
+`mo_transform_fits` decides whether it fits, per process, against a
+budget that `set_memory_sharers` divides among the ranks on the node; otherwise every pass recomputes
 the integrals (`integral_direct` forces that, and a test holds the two routes
 together). A profile of a pass is all libfint -- the digestion is a tenth of
 it -- so nothing in the direct route is left to tune but the pass count. Two
@@ -1087,6 +1090,10 @@ Four things worth knowing before optimising anything here, all of them measured.
   `mqc_memory` returns `system.memory_gb` when the deck set it, else a share of
   MemAvailable from /proc/meminfo, else the caller's blind constant. The
   response solver plans on `RESPONSE_BUDGET_SHARE` of the machine's figure.
+  The machine's figure is divided among the ranks sharing the node
+  (`set_memory_sharers`, called once in `main` and in a session), because
+  every fragment worker plans against the same free memory; the deck's figure
+  is per rank and taken whole.
   Fixed laptop-sized limits sent a 545-function MakeFP on a 500 GB node down a
   fourteen-hour column build when the transform it refused needed a hundred
   gigabytes and forty seconds.

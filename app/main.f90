@@ -25,7 +25,7 @@ program main
    use mqc_version, only: print_version
    use pic_timer, only: timer_type
    use mqc_error, only: error_t
-   use mqc_memory, only: set_memory_budget
+   use mqc_memory, only: set_memory_budget, set_memory_sharers
    use pic_types, only: dp
    use pic_knowledge, only: get_knowledge
    use, intrinsic :: iso_fortran_env, only: output_unit
@@ -50,6 +50,8 @@ program main
    ! Create communicators
    resources%mpi_comms%world_comm = comm_world()
    resources%mpi_comms%node_comm = resources%mpi_comms%world_comm%split()
+   ! Every rank on a node plans its memory against the same free figure.
+   call set_memory_sharers(resources%mpi_comms%node_comm%size())
 
    if (resources%mpi_comms%world_comm%rank() == 0) then
       call print_logo()
