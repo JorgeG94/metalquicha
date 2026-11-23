@@ -512,6 +512,11 @@ HAND_MAINTAINED = {
     # polarizability derivatives are pinned against PySCF in
     # test/test_mqc_czt_raman.f90.
     "cpu/mqc/raman/cpu_water_sto-3g_raman.json",
+    # The same under B3LYP, which takes the analytic Kohn-Sham route: the
+    # manifest pins the three vibrations' activities as well as the energy and
+    # the Hessian, since neither of those notices whether the activities were
+    # computed. The finite-field route agrees to 2e-4 on this deck.
+    "cpu/mqc/raman/cpu_water_sto-3g_b3lyp_raman.json",
     "cpu/mqc/charges/cpu_o2_cc-pvdz_mbis.json",
     # The ions given their own SCF group, and the neutral's energy pinned to the
     # same number as the chelpg case above. `properties.fukui.scf` configures

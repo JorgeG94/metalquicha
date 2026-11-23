@@ -162,6 +162,23 @@ def extract_nmr_isotropic(json_data: Dict) -> Optional[List[float]]:
     return [float(atom["isotropic"]) for atom in block["atoms"]]
 
 
+def extract_raman_activities(json_data: Dict) -> Optional[List[float]]:
+    """Raman activities of every mode, in A^4/amu, from `vibrational_analysis`
+
+    None when the output carries none. A case naming
+    `expected_raman_activities` fails on None, for the reason the shieldings
+    do: the energy and the Hessian are the same numbers whether the
+    activities were computed or not.
+    """
+    if not json_data:
+        return None
+    data = json_data[list(json_data.keys())[0]]
+    block = data.get("vibrational_analysis")
+    if not isinstance(block, dict) or "raman_activities_A4_amu" not in block:
+        return None
+    return [float(a) for a in block["raman_activities_A4_amu"]]
+
+
 def extract_gradient_norm(json_data: Dict) -> Optional[float]:
     """Extract gradient_norm from JSON output"""
     if not json_data:
@@ -772,6 +789,38 @@ def run_validation_tests(manifest_file: str = "validation_tests.json",
                     else:
                         print(f"    Shieldings: {len(expected_iso)} atoms within "
                               f"{worst:.2e} ppm")
+
+            # Validate the Raman activities, for a case that pins them
+            #
+            # The vibrations' only: the list is compared against the last
+            # modes of the output, which is where they sit, since the
+            # translations and rotations ahead of them carry activities that
+            # are noise divided by a frequency near zero.
+            if "expected_raman_activities" in test:
+                expected_act = test["expected_raman_activities"]
+                raman_tol = test.get("raman_tolerance", 1.0e-3)
+                calculated_act = extract_raman_activities(output_data)
+                if calculated_act is None:
+                    print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - No Raman activities in output")
+                    test_passed = False
+                    failure_reasons.append("No Raman activities in output")
+                elif len(calculated_act) < len(expected_act):
+                    print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - Fewer modes than expected activities")
+                    test_passed = False
+                    failure_reasons.append(
+                        f"Raman mode count mismatch ({len(calculated_act)} < {len(expected_act)})")
+                else:
+                    tail = calculated_act[len(calculated_act) - len(expected_act):]
+                    worst = max(abs(c - e) for c, e in zip(tail, expected_act))
+                    if worst > raman_tol:
+                        print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - Raman activity mismatch")
+                        print(f"    Largest difference: {worst:.2e} A^4/amu "
+                              f"(tolerance: {raman_tol:.2e})")
+                        test_passed = False
+                        failure_reasons.append(f"Raman activity mismatch (diff: {worst:.2e})")
+                    else:
+                        print(f"    Raman activities: {len(expected_act)} modes within "
+                              f"{worst:.2e} A^4/amu")
 
             # Validate gradient norm if present
             if "expected_gradient_norm" in test:

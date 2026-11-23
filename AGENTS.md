@@ -552,12 +552,35 @@ is visible. The derivative pass over the ten-density stack holds two
 potentials per density per thread, so it is taken in pieces against
 `memory_budget`. Measured on four threads,
 the Raman step of a Hessian run went from 24.8 s to 2.2 s on propane in
-cc-pVDZ and from 55.2 s to 5.5 s on a water hexamer in 6-31G*. `cphf_solve`'s
-other callers still iterate that way. Its
+cc-pVDZ and from 55.2 s to 5.5 s on a water hexamer in 6-31G*. Its
 check is the translational sum rule, 1e-13, and PySCF's differences
-*extrapolated to zero step*; the plain ones are 3e-5 off, their own error. A
-Kohn-Sham reference takes the next route instead, since the analytic one
-would need the functional's third derivative. `polarizability_derivatives_field`
+*extrapolated to zero step*; the plain ones are 3e-5 off, their own error. **A
+Kohn-Sham reference takes the same route**, LDA, GGA and global hybrids
+(`xc=` to `polarizability_derivatives_analytic`); a meta-GGA, a
+range-separated hybrid and VV10 take the next one. Three additions, each a
+derivative of the functional further: the kernel in every response solve,
+`xc_kernel2_apply(D; D^k, D^l)` in the second-order Fock matrix -- there
+whatever `D^kl` is, because the potential is not linear in the density -- and
+in the gradient `xc_potential_gradient(D, D^kl)` plus `xc_kernel_gradient(D;
+D^k, D^l)`, the derivative of `Tr(P_a f_xc P_b)` with all three densities
+held and the grid moving. Both are threaded over grid blocks with a private
+gradient per thread; **an internal procedure called from the parallel region
+reaches the host's variable, not the thread's private copy**, so the block's
+error is passed to `report_failure` as an argument. The exchange term is
+`two_electron_deriv_many(..., exx_fraction=)`. No other program gives a
+Kohn-Sham reference number here, so the check is the finite-field route,
+which shares no formula with it, *extrapolated over two field strengths*:
+1e-7 for an LDA and a GGA, 2e-7 for B3LYP at fields of 4e-3 and 2e-3.
+**Unextrapolated it is 1e-4 off and hides a missing term; at smaller fields
+the hybrid's reference is the noisy one** (7e-6 at 2e-3 and 1e-3), the
+exchange build's noise divided by the field squared. The KS solves are
+iterated, since the factorized matrix has no kernel, and **`cphf_solve` now
+advances its right-hand sides in lockstep**, `LOCKSTEP_GROUP` at a time, one
+`response_product` per iteration for every member still unconverged: each
+member's iterates are the ones it would have had alone, and nine solves cost
+two solves' passes. Every caller of `cphf_solve` gets that. On four
+threads at B3LYP the Raman step is 22 s against the field route's 56 on
+propane in cc-pVDZ, and 50 against 157 on a water hexamer in 6-31G*. `polarizability_derivatives_field`
 differences the analytic gradient twice over twelve electric fields --
 thirteen SCFs and gradients whatever the molecule's size, the field entering
 through `run_czt_rhf`'s `h_extra` and its own gradient term added by hand,

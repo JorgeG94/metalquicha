@@ -15,7 +15,7 @@ module test_mqc_czt_raman
    use mqc_error, only: error_t
    use mqc_czt_integrals, only: czt_molecule_t, build_czt_molecule
    use mqc_czt_cphf, only: static_polarizability
-   use mqc_czt_xc, only: xc_available
+   use mqc_czt_xc, only: xc_available, xc_context_t, xc_context_create
    use mqc_czt_rhf, only: rhf_result_t, run_czt_rhf
    use mqc_czt_raman, only: polarizability_derivatives, polarizability_derivatives_field, &
                             polarizability_derivatives_analytic
@@ -40,6 +40,17 @@ module test_mqc_czt_raman
                                        0.0_dp, -2.0744888267_dp, 0.0_dp]
    real(dp), parameter :: FIELD_TOL = 1.0e-4_dp
       !! The two routes' truncation errors, 3e-5 each, with room
+   real(dp), parameter :: KS_ANALYTIC_TOL = 5.0e-6_dp
+      !! Bound on the analytic Kohn-Sham derivatives against the extrapolated
+      !! finite-field ones, Bohr^2: the reference's own accuracy, not the
+      !! analytic route's. Fields of 4e-3 and 2e-3 leave it 3e-8 from an LDA
+      !! or a GGA and up to 9e-7 from a hybrid, whose exchange build puts
+      !! noise in the gradient that a second difference divides by the
+      !! field squared: at 2e-3 and 1e-3 B3LYP is 7e-6 off, at 8e-3 and 4e-3
+      !! everything is 1e-6 off from the next order of truncation.
+   real(dp), parameter :: KS_SUM_RULE_TOL = 1.0e-10_dp
+      !! The derivatives summed over atoms, which vanish because the grid
+      !! moves with them; 6e-13 measured
    real(dp), parameter :: TOL = 2.0e-6_dp
       !! Two independent response solves at 1e-9, divided by a step of 5e-3.
    ! The same three columns with the step's error removed: PySCF's
@@ -71,7 +82,8 @@ contains
                   new_unittest("water_derivatives_match_pyscf", test_water), &
                   new_unittest("finite_field_route_agrees", test_field), &
                   new_unittest("analytic_route_agrees", test_analytic), &
-                  new_unittest("kohn_sham_derivatives_obey_the_sum_rule", test_kohn_sham) &
+                  new_unittest("kohn_sham_derivatives_obey_the_sum_rule", test_kohn_sham), &
+                  new_unittest("kohn_sham_analytic_route_agrees", test_kohn_sham_analytic) &
                   ]
    end subroutine collect_mqc_czt_raman_tests
 
@@ -369,6 +381,97 @@ contains
                  "the Kohn-Sham polarizability changed when the molecule was moved")
       call mol%destroy()
    end subroutine test_kohn_sham
+
+   subroutine test_kohn_sham_analytic(error)
+      !! The analytic route under a functional, against the finite-field one
+      !!
+      !! Under Kohn-Sham the derivative gains what Hartree-Fock's has no
+      !! analogue of: the kernel in every response solve, the potential's
+      !! second variation in the second-order Fock matrix, and in the
+      !! gradient the potential traced with `D^kl` and the kernel between
+      !! `D^k` and `D^l`, each differentiated with the grid moving. The
+      !! finite-field route knows none of that. It differences the ordinary
+      !! Kohn-Sham gradient over thirteen SCFs, so it is a reference that
+      !! shares no formula with what is tested, only the gradient both are
+      !! derivatives of.
+      !!
+      !! Its error falls as the square of the field, so it is taken at two
+      !! strengths and extrapolated; unextrapolated it is 1e-4 off, which
+      !! would hide a missing term of that size. An LDA, a GGA and a hybrid, since each
+      !! switches a group of terms on: the density channels alone, then the
+      !! gradient channels, then exchange at a fraction.
+      type(error_type), allocatable, intent(out) :: error
+
+      character(len=*), parameter :: FUNCTIONALS(3) = [character(len=5) :: "lda", "pbe", "b3lyp"]
+      real(dp), parameter :: FIELD = 4.0e-3_dp
+      type(czt_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      type(xc_context_t) :: xc
+      type(cuest_scf_settings_t) :: settings
+      type(scf_convergence_t) :: conv
+      type(error_t) :: err
+      real(dp), allocatable :: d(:, :), coarse(:, :), fine(:, :), reference(:, :)
+      real(dp) :: c(3, 3), alpha(3, 3), alpha_field(3, 3), drift
+      integer :: ifunc, comp, k
+
+      if (.not. xc_available()) return
+      c = reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                   0.0_dp, 0.0_dp, 0.9584_dp*ANG, &
+                   0.9268_dp*ANG, 0.0_dp, -0.2400_dp*ANG], [3, 3])
+      settings%basis_set = "6-31g"
+      settings%max_iter = 200
+      do ifunc = 1, size(FUNCTIONALS)
+         call build_czt_molecule([8, 1, 1], ["O ", "H ", "H "], c, "6-31g", mol, err)
+         call xc_context_create(mol, trim(FUNCTIONALS(ifunc)), xc, err)
+         call run_czt_rhf(mol, 10, 200, 1.0e-13_dp, 1.0e-11_dp, .false., scf, err, &
+                          grad_tol=1.0e-10_dp, xc=xc)
+         call check(error,.not. err%has_error() .and. scf%converged, &
+                    trim(FUNCTIONALS(ifunc))//" water must converge: "//err%get_full_trace())
+         if (allocated(error)) return
+
+         call polarizability_derivatives_analytic(mol, scf%orbitals, scf%orbital_energies, &
+                                                  scf%n_occupied, alpha, d, err, xc=xc)
+         call check(error,.not. err%has_error(), "analytic route: "//err%get_full_trace())
+         if (allocated(error)) return
+
+         settings%functional = trim(FUNCTIONALS(ifunc))
+         call polarizability_derivatives_field(settings, mol, 10, scf%density, ACCEL_DIIS, 8, &
+                                               conv, alpha_field, coarse, err, xc=xc, &
+                                               field_strength=FIELD)
+         call polarizability_derivatives_field(settings, mol, 10, scf%density, ACCEL_DIIS, 8, &
+                                               conv, alpha_field, fine, err, xc=xc, &
+                                               field_strength=0.5_dp*FIELD)
+         call check(error,.not. err%has_error(), "field route: "//err%get_full_trace())
+         if (allocated(error)) return
+         reference = (4.0_dp*fine - coarse)/3.0_dp
+
+         drift = 0.0_dp
+         do comp = 1, 3
+            do k = 1, 6
+               drift = max(drift, abs(d(k, comp) + d(k, 3 + comp) + d(k, 6 + comp)))
+            end do
+         end do
+         write (*, "(4x,a,3es10.2)") trim(FUNCTIONALS(ifunc))// &
+            ": against the field route, plain and extrapolated; sum rule ", &
+            maxval(abs(d - fine)), maxval(abs(d - reference)), drift
+         write (*, "(4x,a,6f12.7)") "d/dz(O)  analytic ", d(:, 3)
+         write (*, "(4x,a,6f12.7)") "d/dz(O)  field    ", reference(:, 3)
+
+         call check(error, maxval(abs(alpha - alpha_field)) < 1.0e-7_dp, &
+                    "the two routes report different polarizabilities")
+         if (allocated(error)) return
+         call check(error, maxval(abs(d - reference)) < KS_ANALYTIC_TOL, &
+                    trim(FUNCTIONALS(ifunc))//": the analytic derivatives do not match "// &
+                    "the extrapolated finite-field ones")
+         if (allocated(error)) return
+         call check(error, drift < KS_SUM_RULE_TOL, &
+                    trim(FUNCTIONALS(ifunc))//": the analytic derivatives change when "// &
+                    "the molecule is moved")
+         if (allocated(error)) return
+         call xc%destroy()
+         call mol%destroy()
+      end do
+   end subroutine test_kohn_sham_analytic
 
 end module test_mqc_czt_raman
 

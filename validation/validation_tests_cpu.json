@@ -1832,6 +1832,122 @@
             "reference_note": "The energy and Hessian of the plain Hessian case, which asking for Raman activities must not move; the manifest has nowhere to put an activity. What the run exercises is the property end to end: the polarizability's Cartesian derivatives beside the analytic Hessian, their projection on the modes, and the activities and depolarization ratios written to the JSON. The derivatives themselves are pinned against PySCF in test/test_mqc_czt_raman.f90."
         },
         {
+            "name": "B3LYP Hessian with Raman activities H2O sto-3g (CPU)",
+            "input": "inputs/cpu/mqc/raman/cpu_water_sto-3g_b3lyp_raman.json",
+            "expected_energy": -75.311397472377,
+            "expected_hessian": [
+                [
+                    -0.103252451526,
+                    -0.0,
+                    0.0,
+                    0.051839939744,
+                    -0.0,
+                    0.0,
+                    0.051839939521,
+                    0.0,
+                    0.0
+                ],
+                [
+                    -0.0,
+                    0.948518337446,
+                    -6.52e-10,
+                    0.0,
+                    -0.474267920076,
+                    0.387220353209,
+                    -0.0,
+                    -0.474267919478,
+                    -0.387220352559
+                ],
+                [
+                    0.0,
+                    -6.5e-10,
+                    0.549192945549,
+                    0.0,
+                    0.261287248791,
+                    -0.274743399518,
+                    0.0,
+                    -0.261287248139,
+                    -0.274743399166
+                ],
+                [
+                    0.051839939744,
+                    0.0,
+                    0.0,
+                    -0.040207321473,
+                    0.0,
+                    -0.0,
+                    -0.011634893672,
+                    0.0,
+                    -0.0
+                ],
+                [
+                    -0.0,
+                    -0.474267920076,
+                    0.261287248791,
+                    0.0,
+                    0.494100867976,
+                    -0.324254261311,
+                    -0.0,
+                    -0.019834166113,
+                    0.062966608562
+                ],
+                [
+                    0.0,
+                    0.387220353209,
+                    -0.274743399518,
+                    -0.0,
+                    -0.32425426131,
+                    0.265584978047,
+                    -0.0,
+                    -0.062966608569,
+                    0.009157553486
+                ],
+                [
+                    0.051839939521,
+                    -0.0,
+                    0.0,
+                    -0.011634893672,
+                    -0.0,
+                    -0.0,
+                    -0.04020732125,
+                    -0.0,
+                    -0.0
+                ],
+                [
+                    0.0,
+                    -0.474267919478,
+                    -0.261287248139,
+                    0.0,
+                    -0.019834166113,
+                    -0.062966608569,
+                    -0.0,
+                    0.494100867377,
+                    0.324254260663
+                ],
+                [
+                    0.0,
+                    -0.387220352559,
+                    -0.274743399166,
+                    -0.0,
+                    0.062966608562,
+                    0.009157553486,
+                    -0.0,
+                    0.324254260661,
+                    0.265584977699
+                ]
+            ],
+            "hessian_tolerance": 1e-07,
+            "expected_raman_activities": [
+                7.8879116,
+                37.64119959,
+                14.17395927
+            ],
+            "raman_tolerance": 0.001,
+            "type": "unfragmented",
+            "requires": "libxc",
+            "reference_note": "The energy and Hessian are the PySCF ones the B3LYP Hessian case pins, which asking for Raman activities must not move. expected_raman_activities is the three vibrations' activities from the analytic Kohn-Sham route, in A^4/amu: the route that differences nothing, with the functional's kernel in every response solve and its third derivative in the second-order Fock matrix and in the gradient. The finite-field route, which shares no formula with it and differences the ordinary Kohn-Sham gradient over thirteen SCFs, gives 7.88787138, 37.64139670 and 14.17390910 on the same deck, 2e-4 away at most, which is that route's own truncation at a field of 1e-3; the tolerance is 1e-3. A missing term is wrong in the first or second digit. The derivatives themselves are held to the extrapolated finite-field ones, 2e-7, in test/test_mqc_czt_raman.f90."
+        },
+        {
             "name": "RHF Hessian H2O cc-pvdz (CPU)",
             "input": "inputs/cpu/mqc/hessian/cpu_water_cc-pvdz_hess.json",
             "expected_energy": -76.026435906898,

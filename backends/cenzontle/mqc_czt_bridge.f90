@@ -3987,6 +3987,12 @@ contains
          type(error_t) :: raman_error
          real(dp), allocatable :: dalpha(:, :)
          real(dp) :: alpha0(3, 3)
+         logical :: analytic_functional
+
+         ! What the functional's third derivatives are built for.
+         analytic_functional = .true.
+         if (xc%active) analytic_functional = .not. (xc%any_mgga .or. xc%range_separated &
+                                                     .or. xc%nlc_b /= 0.0_dp)
 
          if (settings%raman_method == RAMAN_METHOD_DISPLACEMENTS) then
             call polarizability_derivatives(settings, fragment%element_numbers, &
@@ -3995,18 +4001,20 @@ contains
                                             diis_size, scf_conv, alpha0, &
                                             dalpha, raman_error)
          else if (settings%raman_method == RAMAN_METHOD_ANALYTIC &
-                  .and. .not. xc%active .and. full_rank) then
+                  .and. analytic_functional .and. full_rank) then
             call polarizability_derivatives_analytic(mol, scf%orbitals, &
                                                      scf%orbital_energies, &
                                                      scf%n_occupied, alpha0, &
-                                                     dalpha, raman_error)
+                                                     dalpha, raman_error, xc=xc)
          else
             ! The analytic route needs a functional's third derivative,
-            ! which is not built, and assumes no orbital was removed from
-            ! the basis, as the analytic Hessian does.
+            ! built for LDA, GGA and their global hybrids, and assumes no
+            ! orbital was removed from the basis, as the analytic Hessian
+            ! does.
             if (settings%raman_method == RAMAN_METHOD_ANALYTIC) then
-               call logger%info("  Raman: no analytic route under a functional or "// &
-                                "with orbitals removed for linear dependence; "// &
+               call logger%info("  Raman: no analytic route for a meta-GGA, a "// &
+                                "range-separated hybrid or non-local correlation, "// &
+                                "nor with orbitals removed for linear dependence; "// &
                                 "taking the finite-field one")
             end if
             call polarizability_derivatives_field(settings, mol, nelec, &

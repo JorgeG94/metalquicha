@@ -34,7 +34,7 @@ module mqc_czt_gradient
                                 two_electron_ip1_block
    use mqc_czt_ao, only: eval_ao_block, AO_POINT_BLOCK, AO_HESS_COMP, &
                          shell_extents, block_significant_aos, eval_rho
-   use mqc_czt_xc, only: xc_context_t, xc_grid_lda_quantities, &
+   use mqc_czt_xc, only: xc_context_t, xc_grid_lda_quantities, KERNEL_RHO_FLOOR, &
                          xc_grid_gga_quantities, xc_grid_kernel_quantities, &
                          ensure_nlc_grid
    use mqc_czt_vv10, only: vv10_nlc
@@ -81,6 +81,7 @@ module mqc_czt_gradient
    public :: iprinv_deriv_at
    public :: nuclear_attraction_deriv_at
    public :: xc_potential_gradient
+   public :: xc_kernel_gradient
    public :: vv10_gradient_fixed_grid     !! The VV10 Hessian differences this
    public :: fitted_reference_gradient
    public :: DERIV_OVLP, DERIV_KIN, DERIV_NUC
@@ -946,9 +947,11 @@ contains
       integer, allocatable :: ao_list(:), ao_offset(:)
       integer, allocatable :: c_offsets(:), c_counts(:)
       integer :: npts, nao, natm, g0, g1, nb, ig, gg, id, ia, comp, own
-      integer :: n_sig, isig, jsig
+      integer :: n_sig, isig, jsig, iblock, n_blocks
       logical :: gga
-      logical :: hold_grid
+      logical :: hold_grid, failed, stop_early
+      real(dp), allocatable :: grad_t(:, :)
+      type(error_t) :: block_error
 
       if (.not. ctx%active) return
 
@@ -964,12 +967,34 @@ contains
       hold_grid = .false.
       if (present(fixed_grid)) hold_grid = fixed_grid
 
+      call shell_extents(mol, ctx%screen_tol, extents)
+      n_blocks = (npts + ctx%point_block - 1)/ctx%point_block
+      failed = .false.
+
+      ! The blocks are independent: each thread sums into its own gradient
+      ! and the sums are added once at the end.
+      !$omp parallel default(none) &
+      !$omp    shared(ctx, mol, density, pmat, gradient, error, rho, rho_grad, vrho, &
+      !$omp           vsigma, frr, frs, fss, extents, nao, natm, npts, gga, hold_grid, &
+      !$omp           n_blocks, failed) &
+      !$omp    private(iblock, g0, g1, nb, ig, gg, id, ia, comp, own, n_sig, isig, jsig, &
+      !$omp            ao, ao_grad, ao_hess, dchi, dgchi, pchi, pgchi, rho_p, p_grad, &
+      !$omp            dpart, d_sig, p_sig, wg_ref, wg_p, gdotp, coef_rho, integrand, w, &
+      !$omp            shell_mask, ao_list, ao_offset, c_offsets, c_counts, grad_t, &
+      !$omp            block_error, stop_early)
       allocate (c_offsets(natm), c_counts(natm))
       allocate (shell_mask(mol%nbas), ao_offset(mol%nbas), ao_list(nao))
       allocate (d_sig(nao, nao), p_sig(nao, nao))
-      call shell_extents(mol, ctx%screen_tol, extents)
-
-      do g0 = 1, npts, ctx%point_block
+      allocate (grad_t(3, natm))
+      grad_t = 0.0_dp
+      ! A private copy is not default-initialised.
+      call block_error%clear()
+      !$omp do schedule(dynamic)
+      do iblock = 1, n_blocks
+         !$omp atomic read
+         stop_early = failed
+         if (stop_early) cycle
+         g0 = (iblock - 1)*ctx%point_block + 1
          g1 = min(g0 + ctx%point_block - 1, npts)
          nb = g1 - g0 + 1
 
@@ -1002,15 +1027,18 @@ contains
             ! GGA energy gradient needs them: differentiating `grad chi` with
             ! respect to a nuclear coordinate is a second derivative.
             if (gga) then
-               call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, &
+               call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, block_error, &
                                   grad=ao_grad, hess=ao_hess, shell_mask=shell_mask, &
                                   ao_offset=ao_offset, n_ao_out=n_sig)
             else
-               call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, &
+               call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, block_error, &
                                   grad=ao_grad, shell_mask=shell_mask, &
                                   ao_offset=ao_offset, n_ao_out=n_sig)
             end if
-            if (error%has_error()) return
+            if (block_error%has_error()) then
+               call report_failure(block_error)
+               cycle
+            end if
 
             if (allocated(dchi)) deallocate (dchi, pchi)
             allocate (dchi(nb, n_sig), pchi(nb, n_sig))
@@ -1051,13 +1079,13 @@ contains
                coef_rho = frr(gg)*rho_p(ig)
                if (gga) coef_rho = coef_rho + 2.0_dp*frs(gg)*gdotp
                call accumulate_channel(ao_grad, dchi, ig, n_sig, w*coef_rho, 2.0_dp, &
-                                       c_offsets, c_counts, natm, own, gradient, &
+                                       c_offsets, c_counts, natm, own, grad_t, &
                                        moving=.not. hold_grid)
 
                ! `P`'s own channel, weighted by the ordinary potential: the
                ! term that survives when the functional is a constant.
                call accumulate_channel(ao_grad, pchi, ig, n_sig, w*vrho(gg), 2.0_dp, &
-                                       c_offsets, c_counts, natm, own, gradient, &
+                                       c_offsets, c_counts, natm, own, grad_t, &
                                        moving=.not. hold_grid)
 
                if (gga) then
@@ -1069,11 +1097,11 @@ contains
                   end do
                   call accumulate_gga_channel(ao_grad, ao_hess, dchi, dgchi, ig, &
                                               n_sig, wg_ref, 2.0_dp, c_offsets, &
-                                              c_counts, natm, own, gradient, &
+                                              c_counts, natm, own, grad_t, &
                                               moving=.not. hold_grid)
                   call accumulate_gga_channel(ao_grad, ao_hess, pchi, pgchi, ig, &
                                               n_sig, wg_p, 2.0_dp, c_offsets, &
-                                              c_counts, natm, own, gradient, &
+                                              c_counts, natm, own, grad_t, &
                                               moving=.not. hold_grid)
                end if
             end do
@@ -1093,8 +1121,11 @@ contains
          allocate (dpart(3, natm, nb))
          call becke_partition_derivatives(ctx%grid%coords(:, g0:g1), mol%coords, &
                                           ctx%grid%numbers, ctx%grid%atom(g0:g1), &
-                                          ctx%grid%scheme, ctx%grid%adjust, dpart, error)
-         if (error%has_error()) return
+                                          ctx%grid%scheme, ctx%grid%adjust, dpart, block_error)
+         if (block_error%has_error()) then
+            call report_failure(block_error)
+            cycle
+         end if
 
          do ig = 1, nb
             gg = g0 + ig - 1
@@ -1106,13 +1137,328 @@ contains
             own = ctx%grid%atom(gg)
             do ia = 1, natm
                do comp = 1, 3
-                  gradient(comp, ia) = gradient(comp, ia) + integrand*dpart(comp, ia, ig)
-                  gradient(comp, own) = gradient(comp, own) - integrand*dpart(comp, ia, ig)
+                  grad_t(comp, ia) = grad_t(comp, ia) + integrand*dpart(comp, ia, ig)
+                  grad_t(comp, own) = grad_t(comp, own) - integrand*dpart(comp, ia, ig)
                end do
             end do
          end do
       end do
+      !$omp end do
+      !$omp critical (xc_potential_gradient_sum)
+      gradient = gradient + grad_t
+      !$omp end critical (xc_potential_gradient_sum)
+      !$omp end parallel
+
+   contains
+
+      subroutine report_failure(thread_error)
+         !! Keep the first block's error and tell the other threads to stop
+         type(error_t), intent(in) :: thread_error
+            !! Passed in: a thread's private copy is not what this procedure
+            !! would reach through its host.
+
+         !$omp critical (xc_potential_gradient_failure)
+         if (.not. failed) then
+            failed = .true.
+            error = thread_error
+         end if
+         !$omp end critical (xc_potential_gradient_failure)
+      end subroutine report_failure
    end subroutine xc_potential_gradient
+
+   subroutine xc_kernel_gradient(ctx, mol, density, pmat_a, pmat_b, gradient, error)
+      !! `d/dR Tr(P_a K_xc[D](P_b))`, with all three densities held fixed,
+      !! accumulated in place
+      !!
+      !! `xc_potential_gradient` one rung up. That routine differentiates the
+      !! form linear in one density, this one the form linear in each of two,
+      !!
+      !!     K(R) = int w(R) [ f_rr rho_a rho_b + f_rs (rho_a sigma_b + sigma_a rho_b)
+      !!                       + f_ss sigma_a sigma_b + v_sigma s_ab ]
+      !!
+      !! with `sigma_x = 2 grad rho . grad rho_x` and
+      !! `s_ab = 2 grad rho_a . grad rho_b`: the second variation of the
+      !! exchange-correlation energy along `P_a` and `P_b`. Its nuclear
+      !! derivative is the piece of a third derivative of the energy -- twice
+      !! with respect to a field, once to a nucleus -- that is quadratic in
+      !! the first-order densities.
+      !!
+      !! The physical derivative: the basis functions move, the grid points
+      !! move with their atom and the partition weights follow every nucleus.
+      !! Symmetric under `a <-> b`. Each density has a channel for itself and
+      !! one for its gradient, the coefficient being the integrand's partial
+      !! derivative with respect to it:
+      !!
+      !!     d rho        : g_rrr rho_a rho_b + g_rrs (rho_a sigma_b + sigma_a rho_b)
+      !!                    + g_rss sigma_a sigma_b + f_rs s_ab
+      !!     d grad rho   : 2 [g_rrs rho_a rho_b + g_rss (rho_a sigma_b + sigma_a rho_b)
+      !!                       + g_sss sigma_a sigma_b + f_ss s_ab] grad rho
+      !!                    + 2 (f_rs rho_b + f_ss sigma_b) grad rho_a
+      !!                    + 2 (f_rs rho_a + f_ss sigma_a) grad rho_b
+      !!     d rho_a      : f_rr rho_b + f_rs sigma_b
+      !!     d grad rho_a : 2 (f_rs rho_b + f_ss sigma_b) grad rho + 2 v_sigma grad rho_b
+      !!
+      !! and the same two with the labels exchanged. The reference's
+      !! coefficients are those `xc_kernel2_apply` puts on the basis
+      !! functions, and the other two are `xc_kernel_apply`'s.
+      !!
+      !! LDA and GGA; a meta-GGA is refused upstream, with the third
+      !! derivatives. `v_sigma` is floored where the kernel floors it.
+      type(xc_context_t), intent(inout) :: ctx
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: density(:, :)   !! The converged reference density
+      real(dp), intent(in) :: pmat_a(:, :)    !! A response density, symmetric
+      real(dp), intent(in) :: pmat_b(:, :)    !! The other one, symmetric
+      real(dp), intent(inout) :: gradient(:, :)   !! (3, natm)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: rho(:), rho_grad(:, :), vrho(:), vsigma(:)
+      real(dp), allocatable :: frr(:), frs(:), fss(:)
+      real(dp), allocatable :: grrr(:), grrs(:), grss(:), gsss(:)
+      real(dp), allocatable :: ao(:, :), ao_grad(:, :, :), ao_hess(:, :, :)
+      real(dp), allocatable :: dchi(:, :), dgchi(:, :, :)
+      real(dp), allocatable :: achi(:, :), agchi(:, :, :)
+      real(dp), allocatable :: bchi(:, :), bgchi(:, :, :)
+      real(dp), allocatable :: rho_a(:), a_grad(:, :), rho_b(:), b_grad(:, :)
+      real(dp), allocatable :: kappa(:)
+      real(dp), allocatable :: dpart(:, :, :)
+      real(dp), allocatable :: extents(:), d_sig(:, :), a_sig(:, :), b_sig(:, :)
+      real(dp) :: wg_ref(3), wg_a(3), wg_b(3)
+      real(dp) :: sig_a, sig_b, s_ab, w, integrand
+      real(dp) :: c_rho, c_sigma, c_siga, c_sigb
+      logical, allocatable :: shell_mask(:)
+      integer, allocatable :: ao_list(:), ao_offset(:)
+      integer, allocatable :: c_offsets(:), c_counts(:)
+      real(dp), allocatable :: grad_t(:, :)
+      real(dp) :: c_a, c_b
+      type(error_t) :: block_error
+      integer :: npts, nao, natm, g0, g1, nb, ig, gg, id, ia, comp, own
+      integer :: n_sig, isig, jsig, iblock, n_blocks
+      logical :: gga, failed, stop_early
+
+      if (error%has_error()) return
+      if (.not. ctx%active) return
+
+      nao = mol%nao
+      natm = mol%natm
+      npts = ctx%grid%n_points
+      gga = ctx%any_gga
+
+      ! The whole ladder at once, floored together so no order crosses a
+      ! cutoff the others respect. `v_sigma` comes back unfloored, since the
+      ! potential needs it finite; here it is a kernel coefficient.
+      call xc_grid_kernel_quantities(ctx, mol, density, rho, rho_grad, vrho, &
+                                     vsigma, frr, frs, fss, error, &
+                                     grrr=grrr, grrs=grrs, grss=grss, gsss=gsss)
+      if (error%has_error()) return
+      if (gga) then
+         do ig = 1, npts
+            if (rho(ig) < KERNEL_RHO_FLOOR) vsigma(ig) = 0.0_dp
+         end do
+      end if
+
+      call shell_extents(mol, ctx%screen_tol, extents)
+      n_blocks = (npts + ctx%point_block - 1)/ctx%point_block
+      failed = .false.
+
+      ! The blocks are independent: each thread sums into its own gradient
+      ! and the sums are added once at the end.
+      !$omp parallel default(none) &
+      !$omp    shared(ctx, mol, density, pmat_a, pmat_b, gradient, error, rho, rho_grad, &
+      !$omp           vsigma, frr, frs, fss, grrr, grrs, grss, gsss, extents, nao, natm, &
+      !$omp           npts, gga, n_blocks, failed) &
+      !$omp    private(iblock, g0, g1, nb, ig, gg, id, ia, comp, own, n_sig, isig, jsig, &
+      !$omp            ao, ao_grad, ao_hess, dchi, dgchi, achi, agchi, bchi, bgchi, rho_a, &
+      !$omp            a_grad, rho_b, b_grad, kappa, dpart, d_sig, a_sig, b_sig, wg_ref, &
+      !$omp            wg_a, wg_b, sig_a, sig_b, s_ab, w, integrand, c_rho, c_sigma, &
+      !$omp            c_siga, c_sigb, c_a, c_b, shell_mask, ao_list, ao_offset, c_offsets, &
+      !$omp            c_counts, grad_t, block_error, stop_early)
+      allocate (c_offsets(natm), c_counts(natm))
+      allocate (shell_mask(mol%nbas), ao_offset(mol%nbas), ao_list(nao))
+      allocate (d_sig(nao, nao), a_sig(nao, nao), b_sig(nao, nao))
+      allocate (grad_t(3, natm))
+      grad_t = 0.0_dp
+      ! A private copy is not default-initialised.
+      call block_error%clear()
+      !$omp do schedule(dynamic)
+      do iblock = 1, n_blocks
+         !$omp atomic read
+         stop_early = failed
+         if (stop_early) cycle
+         g0 = (iblock - 1)*ctx%point_block + 1
+         g1 = min(g0 + ctx%point_block - 1, npts)
+         nb = g1 - g0 + 1
+
+         call block_significant_aos(mol, ctx%grid%coords(:, g0:g1), extents, &
+                                    shell_mask, ao_list, ao_offset, n_sig, &
+                                    atom_offsets=c_offsets, atom_counts=c_counts)
+
+         ! Zeroed outside the screening guard: the partition-weight term
+         ! reads the integrand at every point of the block.
+         if (allocated(kappa)) deallocate (kappa)
+         allocate (kappa(nb))
+         kappa = 0.0_dp
+
+         if (n_sig > 0) then
+            do jsig = 1, n_sig
+               do isig = 1, n_sig
+                  d_sig(isig, jsig) = density(ao_list(isig), ao_list(jsig))
+                  a_sig(isig, jsig) = pmat_a(ao_list(isig), ao_list(jsig))
+                  b_sig(isig, jsig) = pmat_b(ao_list(isig), ao_list(jsig))
+               end do
+            end do
+
+            if (gga) then
+               call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, block_error, &
+                                  grad=ao_grad, hess=ao_hess, shell_mask=shell_mask, &
+                                  ao_offset=ao_offset, n_ao_out=n_sig)
+            else
+               call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, block_error, &
+                                  grad=ao_grad, shell_mask=shell_mask, &
+                                  ao_offset=ao_offset, n_ao_out=n_sig)
+            end if
+            if (block_error%has_error()) then
+               call report_failure(block_error)
+               cycle
+            end if
+
+            if (allocated(dchi)) deallocate (dchi, achi, bchi, rho_a, rho_b, a_grad, b_grad)
+            allocate (dchi(nb, n_sig), achi(nb, n_sig), bchi(nb, n_sig))
+            allocate (rho_a(nb), rho_b(nb), a_grad(nb, 3), b_grad(nb, 3))
+            call density_times_ao(ao, d_sig(1:n_sig, 1:n_sig), nb, n_sig, dchi)
+            call density_times_ao(ao, a_sig(1:n_sig, 1:n_sig), nb, n_sig, achi)
+            call density_times_ao(ao, b_sig(1:n_sig, 1:n_sig), nb, n_sig, bchi)
+            do ig = 1, nb
+               rho_a(ig) = sum(achi(ig, :)*ao(ig, :))
+               rho_b(ig) = sum(bchi(ig, :)*ao(ig, :))
+            end do
+            a_grad = 0.0_dp
+            b_grad = 0.0_dp
+            if (gga) then
+               if (allocated(dgchi)) deallocate (dgchi, agchi, bgchi)
+               allocate (dgchi(nb, n_sig, 3), agchi(nb, n_sig, 3), bgchi(nb, n_sig, 3))
+               call density_times_ao_grad(ao_grad, d_sig(1:n_sig, 1:n_sig), nb, n_sig, dgchi)
+               call density_times_ao_grad(ao_grad, a_sig(1:n_sig, 1:n_sig), nb, n_sig, agchi)
+               call density_times_ao_grad(ao_grad, b_sig(1:n_sig, 1:n_sig), nb, n_sig, bgchi)
+               ! The two is the symmetry of the matrix, as in `eval_rho`.
+               do id = 1, 3
+                  do ig = 1, nb
+                     a_grad(ig, id) = 2.0_dp*sum(achi(ig, :)*ao_grad(ig, :, id))
+                     b_grad(ig, id) = 2.0_dp*sum(bchi(ig, :)*ao_grad(ig, :, id))
+                  end do
+               end do
+            end if
+
+            do ig = 1, nb
+               gg = g0 + ig - 1
+               own = ctx%grid%atom(gg)
+               w = ctx%grid%weights(gg)
+
+               sig_a = 0.0_dp
+               sig_b = 0.0_dp
+               s_ab = 0.0_dp
+               if (gga) then
+                  sig_a = 2.0_dp*sum(rho_grad(gg, :)*a_grad(ig, :))
+                  sig_b = 2.0_dp*sum(rho_grad(gg, :)*b_grad(ig, :))
+                  s_ab = 2.0_dp*sum(a_grad(ig, :)*b_grad(ig, :))
+               end if
+
+               kappa(ig) = frr(gg)*rho_a(ig)*rho_b(ig)
+               c_rho = grrr(gg)*rho_a(ig)*rho_b(ig)
+               c_siga = 0.0_dp
+               c_sigb = 0.0_dp
+               if (gga) then
+                  kappa(ig) = kappa(ig) + frs(gg)*(rho_a(ig)*sig_b + sig_a*rho_b(ig)) &
+                              + fss(gg)*sig_a*sig_b + vsigma(gg)*s_ab
+                  c_rho = c_rho + grrs(gg)*(rho_a(ig)*sig_b + sig_a*rho_b(ig)) &
+                          + grss(gg)*sig_a*sig_b + frs(gg)*s_ab
+                  ! What multiplies `d sigma`, `d sigma_a` and `d sigma_b`.
+                  c_sigma = grrs(gg)*rho_a(ig)*rho_b(ig) &
+                            + grss(gg)*(rho_a(ig)*sig_b + sig_a*rho_b(ig)) &
+                            + gsss(gg)*sig_a*sig_b + fss(gg)*s_ab
+                  c_siga = frs(gg)*rho_b(ig) + fss(gg)*sig_b
+                  c_sigb = frs(gg)*rho_a(ig) + fss(gg)*sig_a
+               end if
+
+               ! The reference density's channel, and each response density's.
+               call accumulate_channel(ao_grad, dchi, ig, n_sig, w*c_rho, 2.0_dp, &
+                                       c_offsets, c_counts, natm, own, grad_t)
+               c_a = frr(gg)*rho_b(ig)
+               c_b = frr(gg)*rho_a(ig)
+               if (gga) then
+                  c_a = c_a + frs(gg)*sig_b
+                  c_b = c_b + frs(gg)*sig_a
+               end if
+               call accumulate_channel(ao_grad, achi, ig, n_sig, w*c_a, 2.0_dp, &
+                                       c_offsets, c_counts, natm, own, grad_t)
+               call accumulate_channel(ao_grad, bchi, ig, n_sig, w*c_b, 2.0_dp, &
+                                       c_offsets, c_counts, natm, own, grad_t)
+
+               if (gga) then
+                  do id = 1, 3
+                     wg_ref(id) = w*2.0_dp*(c_sigma*rho_grad(gg, id) &
+                                            + c_siga*a_grad(ig, id) + c_sigb*b_grad(ig, id))
+                     wg_a(id) = w*2.0_dp*(c_siga*rho_grad(gg, id) + vsigma(gg)*b_grad(ig, id))
+                     wg_b(id) = w*2.0_dp*(c_sigb*rho_grad(gg, id) + vsigma(gg)*a_grad(ig, id))
+                  end do
+                  call accumulate_gga_channel(ao_grad, ao_hess, dchi, dgchi, ig, n_sig, &
+                                              wg_ref, 2.0_dp, c_offsets, c_counts, natm, &
+                                              own, grad_t)
+                  call accumulate_gga_channel(ao_grad, ao_hess, achi, agchi, ig, n_sig, &
+                                              wg_a, 2.0_dp, c_offsets, c_counts, natm, &
+                                              own, grad_t)
+                  call accumulate_gga_channel(ao_grad, ao_hess, bchi, bgchi, ig, n_sig, &
+                                              wg_b, 2.0_dp, c_offsets, c_counts, natm, &
+                                              own, grad_t)
+               end if
+            end do
+         end if
+
+         ! The partition weights, on this form's integrand: every nucleus
+         ! reweights the whole grid, and a point owned by A also moves with A.
+         if (allocated(dpart)) deallocate (dpart)
+         allocate (dpart(3, natm, nb))
+         call becke_partition_derivatives(ctx%grid%coords(:, g0:g1), mol%coords, &
+                                          ctx%grid%numbers, ctx%grid%atom(g0:g1), &
+                                          ctx%grid%scheme, ctx%grid%adjust, dpart, block_error)
+         if (block_error%has_error()) then
+            call report_failure(block_error)
+            cycle
+         end if
+         do ig = 1, nb
+            gg = g0 + ig - 1
+            integrand = ctx%grid%quad_weights(gg)*kappa(ig)
+            own = ctx%grid%atom(gg)
+            do ia = 1, natm
+               do comp = 1, 3
+                  grad_t(comp, ia) = grad_t(comp, ia) + integrand*dpart(comp, ia, ig)
+                  grad_t(comp, own) = grad_t(comp, own) - integrand*dpart(comp, ia, ig)
+               end do
+            end do
+         end do
+      end do
+      !$omp end do
+      !$omp critical (xc_kernel_gradient_sum)
+      gradient = gradient + grad_t
+      !$omp end critical (xc_kernel_gradient_sum)
+      !$omp end parallel
+
+   contains
+
+      subroutine report_failure(thread_error)
+         !! Keep the first block's error and tell the other threads to stop
+         type(error_t), intent(in) :: thread_error
+            !! Passed in: a thread's private copy is not what this procedure
+            !! would reach through its host.
+
+         !$omp critical (xc_kernel_gradient_failure)
+         if (.not. failed) then
+            failed = .true.
+            error = thread_error
+         end if
+         !$omp end critical (xc_kernel_gradient_failure)
+      end subroutine report_failure
+   end subroutine xc_kernel_gradient
 
    subroutine fitted_reference_gradient(mol, aux, three, jm12, dm_a, dm_b, &
                                         gradient, error, k_scale)
@@ -2105,7 +2451,7 @@ contains
    end subroutine two_electron_deriv
 
    subroutine two_electron_deriv_many(mol, densities, vhfs, error, screen_tol, gamma_ao_map, &
-                                      gamma_width, gamma_fill, gamma_grads)
+                                      gamma_width, gamma_fill, gamma_grads, exx_fraction)
       !! `two_electron_deriv` for a stack of densities, in one pass over the
       !! differentiated ERIs, optionally contracting general four-index AO
       !! densities against the same integrals
@@ -2133,6 +2479,9 @@ contains
       integer, intent(in), optional :: gamma_width
       procedure(gamma_fill_i), optional :: gamma_fill
       real(dp), intent(inout), optional :: gamma_grads(:, :, :)   !! (3, natm, n_gamma), accumulated
+      real(dp), intent(in), optional :: exx_fraction
+         !! Fraction of exact exchange kept, so each set gets
+         !! `-(J - exx K/2)`: a global hybrid's own. One when absent.
 
       real(dp), allocatable :: buf(:), vj(:, :, :, :), vk(:, :, :, :)
       real(dp), allocatable :: vj_local(:, :, :, :), vk_local(:, :, :, :)
@@ -2142,7 +2491,7 @@ contains
       integer, allocatable :: dims(:), offs(:), shell_atom(:), map(:)
       integer, allocatable :: block_lo(:), block_hi(:), block_p_lo(:), block_p_hi(:)
       integer, allocatable :: offsets(:), counts(:)
-      real(dp) :: g, tol, bra, est, amax, gmax
+      real(dp) :: g, tol, bra, est, amax, gmax, exx
       type(c_ptr) :: opt
       type(eri_shell_table_t) :: tab
       type(eri_grad_dispatch_t) :: disp
@@ -2405,7 +2754,9 @@ contains
       call libcint_del_optimizer(opt)
 
       allocate (vhfs(nao, nao, 3, n_set))
-      vhfs = -(vj - 0.5_dp*vk)
+      exx = 1.0_dp
+      if (present(exx_fraction)) exx = exx_fraction
+      vhfs = -(vj - 0.5_dp*exx*vk)
 
       deallocate (bounds, bq, bra_bound, dsh, dims, offs, vj, vk)
    end subroutine two_electron_deriv_many
