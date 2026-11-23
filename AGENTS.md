@@ -504,7 +504,14 @@ one `(A+B)`**: `cphf_solve` iterates one right-hand side at a time with an
 integral pass per iteration, about a hundred passes for nine, so where
 `mo_transform_fits` allows the matrix is built once by `build_hessian_mo`,
 factorized, and each solve is a back-substitution (`integral_direct` forces
-the iteration, and a test holds the two to 2e-11). Measured on four threads,
+the iteration; a test holds the two to 1e-9, where they land 2e-11 apart,
+and asserts each call took the route it was meant to). The factorized route
+refuses what the iterated one does: a reference with no gap, and one where
+`b . (A+B)^-1 b` is not positive, which proves a saddle. The LU goes through
+`factorize_response` in `mqc_czt_cphf`, which is where `MQC_SEQUENTIAL_BLAS`
+is visible. The derivative pass over the ten-density stack holds two
+potentials per density per thread, so it is taken in pieces against
+`memory_budget`. Measured on four threads,
 the Raman step of a Hessian run went from 24.8 s to 2.2 s on propane in
 cc-pVDZ and from 55.2 s to 5.5 s on a water hexamer in 6-31G*. `cphf_solve`'s
 other callers still iterate that way. Its

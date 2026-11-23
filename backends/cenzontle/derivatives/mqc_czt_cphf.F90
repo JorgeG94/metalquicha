@@ -63,6 +63,7 @@ module mqc_czt_cphf
    public :: casimir_polder_weights
    public :: build_hessian, build_hessian_df, build_hessian_mo
    public :: mo_transform_fits
+   public :: factorize_response
    public :: fitted_response_t, build_fitted_response
    public :: dynamic_response_iterative
    public :: static_response_dense
@@ -1282,6 +1283,24 @@ contains
 
       budget = memory_budget(blind, RESPONSE_BUDGET_SHARE)
    end function response_budget
+
+   subroutine factorize_response(n, a, ipiv, info)
+      !! LU-factorize a dense response matrix in place, on every thread there is
+      !!
+      !! With a sequential BLAS the factorization is split over threads here;
+      !! with one that threads itself, or is not re-entrant, LAPACK's own runs,
+      !! since such a library is not to be called from a column split.
+      integer, intent(in) :: n
+      real(dp), intent(inout) :: a(:, :)   !! (n, n); the factors on return
+      integer, intent(out) :: ipiv(:)      !! (n)
+      integer, intent(out) :: info         !! Zero, or the index of a zero pivot
+
+#ifdef MQC_SEQUENTIAL_BLAS
+      call getrf_threaded(n, a, ipiv, info)
+#else
+      call pic_getrf(a, ipiv, info)
+#endif
+   end subroutine factorize_response
 
    function mo_transform_fits(n_ao, n_occ, n_vir, direct) result(fits)
       !! Can the whole Hessian be had by transformation rather than column by column

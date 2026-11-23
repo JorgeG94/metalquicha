@@ -32,8 +32,9 @@ module mqc_czt_raman
    use pic_blas_interfaces, only: pic_gemm
    use mqc_czt_integrals, only: atom_ao_blocks
    use mqc_czt_cphf, only: static_polarizability, cphf_solve, build_hessian_mo, &
-                           mo_transform_fits
-   use mqc_czt_gemm_threads, only: getrf_threaded
+                           mo_transform_fits, factorize_response
+   use mqc_memory, only: memory_budget
+   use omp_lib, only: omp_get_max_threads
    use pic_lapack_interfaces, only: pic_getrs
    use mqc_czt_direct, only: schwarz_bounds
    use mqc_czt_response_product, only: response_mean_field
@@ -68,6 +69,11 @@ module mqc_czt_raman
    integer, parameter :: N_STACK = 1 + 3 + N_SYMMETRIC
       !! Densities whose derivative potentials the analytic route needs: the
       !! reference's, the three first-order ones and the six second-order ones
+   real(dp), parameter :: STACK_BUDGET_SHARE = 0.5_dp
+      !! Share of the memory budget the derivative pass over the stack may
+      !! take; what it does not fit in goes through in pieces.
+   real(dp), parameter :: STACK_BLIND_BUDGET = 4.0e9_dp
+      !! Bytes that pass plans on where the machine reports nothing
 
 contains
 
@@ -321,7 +327,8 @@ contains
    end subroutine polarizability_derivatives_field
 
    subroutine polarizability_derivatives_analytic(mol, orbitals, orbital_energies, n_occ, &
-                                                  alpha, dalpha, error, integral_direct)
+                                                  alpha, dalpha, error, integral_direct, &
+                                                  stored_response)
       !! `d alpha / d x` with no finite difference, for closed-shell Hartree-Fock
       !!
       !! The nuclear gradient holds in a uniform field `F` as it does without
@@ -357,6 +364,8 @@ contains
          !! Solve the nine response equations by iteration, recomputing the
          !! integrals on every pass, even where the response matrix would fit
          !! in memory. Off when absent; the two give the same derivatives.
+      logical, intent(out), optional :: stored_response
+         !! Whether the solves came from the factorized response matrix
 
       real(dp), allocatable :: dip(:, :, :), ddip(:, :, :, :, :)
       real(dp), allocatable :: aplus(:, :), aminus(:, :), no_eri(:, :, :, :), gaps(:, :)
@@ -369,7 +378,9 @@ contains
       real(dp), allocatable :: dm0(:, :), f0(:, :), wm(:, :)
       real(dp), allocatable :: g(:, :, :), scratch(:, :, :), bounds(:, :), zero_h(:, :)
       real(dp), allocatable :: s1(:, :, :), h1(:, :, :), kin(:, :, :)
-      real(dp), allocatable :: stack(:, :, :), vhf(:, :, :, :)
+      real(dp), allocatable :: stack(:, :, :), vhf(:, :, :, :), vhf_part(:, :, :, :)
+      real(dp) :: per_set
+      integer :: n_chunk, first_set, last_set
       real(dp), allocatable :: second(:, :), trial(:, :)
       integer, allocatable :: offsets(:), counts(:)
       real(dp) :: origin(3)
@@ -377,6 +388,7 @@ contains
       type(timer_type) :: clock
 
       alpha = 0.0_dp
+      if (present(stored_response)) stored_response = .false.
       if (error%has_error()) return
       n_ao = size(orbitals, 1)
       n_mo = size(orbitals, 2)
@@ -403,17 +415,25 @@ contains
       ! with a pass over the integrals per iteration.
       stored = mo_transform_fits(n_ao, n_occ, n_vir, .true.)
       if (present(integral_direct)) stored = stored .and. .not. integral_direct
+      if (present(stored_response)) stored_response = stored
       if (stored) then
          allocate (gaps(n_vir, n_occ), no_eri(0, 0, 0, 0))
          do i = 1, n_occ
             gaps(:, i) = orbital_energies(n_occ + 1:) - orbital_energies(i)
          end do
+         ! What the iterated solve refuses, this one has to refuse too: a
+         ! factorization goes through on an indefinite matrix without a word.
+         if (minval(gaps) <= 0.0_dp) then
+            call error%set(ERROR_VALIDATION, "Raman: the reference has no gap between "// &
+                           "its occupied and virtual orbitals")
+            return
+         end if
          call build_hessian_mo(mol, no_eri, orbitals(:, :n_occ), orbitals(:, n_occ + 1:), &
                                gaps, aplus, aminus, error)
          if (error%has_error()) return
          deallocate (aminus, gaps, no_eri)
          allocate (ipiv(n_vir*n_occ))
-         call getrf_threaded(n_vir*n_occ, aplus, ipiv, info)
+         call factorize_response(n_vir*n_occ, aplus, ipiv, info)
          if (info /= 0) then
             call error%set(ERROR_VALIDATION, "Raman: the response matrix is singular")
             return
@@ -508,6 +528,9 @@ contains
       deallocate (g, scratch)
       if (stored) then
          call solve_stored(rhs, u2)
+         ! The last use of the factors, and the largest thing held.
+         if (allocated(aplus)) deallocate (aplus)
+         if (allocated(ipiv)) deallocate (ipiv)
       else
          call cphf_solve(mol, orbitals, orbital_energies, n_occ, response=u2, error=error, &
                          tol=PROPERTY_RESPONSE_TOL, mo_rhs=rhs)
@@ -576,8 +599,19 @@ contains
       stack(:, :, 1) = d0
       stack(:, :, 2:4) = d1
       stack(:, :, 5:N_STACK) = d2
-      call two_electron_deriv_many(mol, stack, vhf, error)
-      if (error%has_error()) return
+      ! The pass holds two potentials per density on every thread, so the
+      ! stack goes through in as many pieces as that takes to fit.
+      per_set = real(2*omp_get_max_threads() + 3, dp)*24.0_dp*real(n_ao, dp)**2
+      n_chunk = int(min(real(N_STACK, dp), &
+                        max(1.0_dp, memory_budget(STACK_BLIND_BUDGET, STACK_BUDGET_SHARE)/per_set)))
+      allocate (vhf(n_ao, n_ao, 3, N_STACK))
+      do first_set = 1, N_STACK, n_chunk
+         last_set = min(first_set + n_chunk - 1, N_STACK)
+         call two_electron_deriv_many(mol, stack(:, :, first_set:last_set), vhf_part, error)
+         if (error%has_error()) return
+         vhf(:, :, :, first_set:last_set) = vhf_part
+         deallocate (vhf_part)
+      end do
 
       allocate (dalpha(N_SYMMETRIC, 3*natm), second(3, natm))
       do c = 1, N_SYMMETRIC
@@ -621,17 +655,30 @@ contains
          real(dp), intent(in) :: h(:, :, :)   !! (n_vir, n_occ, n)
          real(dp), allocatable, intent(out) :: u(:, :, :)
 
-         real(dp), allocatable :: b(:, :)
-         integer :: status
+         real(dp), allocatable :: b(:, :), minus_h(:, :)
+         integer :: status, set
 
-         allocate (b(n_vir*n_occ, size(h, 3)))
-         b = -reshape(h, shape(b))
+         allocate (b(n_vir*n_occ, size(h, 3)), minus_h(n_vir*n_occ, size(h, 3)))
+         minus_h = -reshape(h, shape(minus_h))
+         b = minus_h
          call pic_getrs(aplus, ipiv, b, info=status)
          if (status /= 0) then
             call error%set(ERROR_VALIDATION, "Raman: the response equations would "// &
                            "not solve")
             return
          end if
+         ! `b . (A+B)^-1 b` is positive for every `b` when the reference is a
+         ! minimum. One that is not proves a saddle; all of them positive
+         ! proves nothing, which is as far as the iterated solve sees too.
+         do set = 1, size(h, 3)
+            if (.not. any(minus_h(:, set) /= 0.0_dp)) cycle
+            if (.not. sum(b(:, set)*minus_h(:, set)) > 0.0_dp) then
+               call error%set(ERROR_VALIDATION, "Raman: the response matrix is not "// &
+                              "positive definite; the reference SCF is a saddle "// &
+                              "point, not a minimum")
+               return
+            end if
+         end do
          allocate (u(n_vir, n_occ, size(h, 3)))
          u = reshape(b, shape(u))
       end subroutine solve_stored
