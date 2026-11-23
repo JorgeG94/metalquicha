@@ -28,6 +28,7 @@ module mqc_physical_fragment
    public :: redistribute_cap_gradients  !! Redistribute hydrogen cap gradients to original atoms
    public :: redistribute_cap_hessian    !! Redistribute hydrogen cap Hessian to original atoms
    public :: redistribute_cap_dipole_derivatives  !! Redistribute hydrogen cap dipole derivatives to original atoms
+   public :: accumulate_fragment_shielding  !! Fold a fragment's shielding tensors onto the system's atoms
    public :: to_angstrom, to_bohr       !! Unit conversion utilities
    public :: calculate_monomer_distance  !! Calculate minimal distance between monomers in a fragment
    public :: severed_bond_pairs  !! Which monomer pairs a cut covalent bond joins
@@ -862,6 +863,29 @@ contains
       end if
 
    end subroutine redistribute_cap_dipole_derivatives
+
+   pure subroutine accumulate_fragment_shielding(fragment, fragment_shielding, system_shielding, scale)
+      !! Accumulate a fragment's shielding tensors onto the system's atoms
+      !!
+      !! Real atoms go through `local_to_global`. A cap's tensor is dropped:
+      !! unlike a force on a cap, the shielding of a hydrogen that is not in
+      !! the system belongs to no atom of it.
+      type(physical_fragment_t), intent(in) :: fragment
+      real(dp), intent(in) :: fragment_shielding(:, :, :)   !! (3, 3, n_atoms_fragment), caps last
+      real(dp), intent(inout) :: system_shielding(:, :, :)  !! (3, 3, n_atoms_system)
+      real(dp), intent(in), optional :: scale  !! Weight applied to this fragment (default 1)
+
+      integer :: i, global_idx
+      real(dp) :: w
+
+      w = 1.0_dp
+      if (present(scale)) w = scale
+      do i = 1, fragment%n_atoms - fragment%n_caps
+         global_idx = fragment%local_to_global(i)
+         system_shielding(:, :, global_idx) = system_shielding(:, :, global_idx) &
+                                              + w*fragment_shielding(:, :, i)
+      end do
+   end subroutine accumulate_fragment_shielding
 
    subroutine check_system_geometry(sys_geom, error)
       !! Refuse a geometry with two atoms in the same place, before anything runs

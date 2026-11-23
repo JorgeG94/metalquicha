@@ -145,6 +145,23 @@ def extract_interaction_energy(json_data: Dict) -> Optional[float]:
     return float(block["total"])
 
 
+def extract_nmr_isotropic(json_data: Dict) -> Optional[List[float]]:
+    """The isotropic shielding of every atom, in ppm, from `nmr_shielding`
+
+    None when the output has no such section. A case that names
+    `expected_nmr_isotropic` fails on None: for a run that was asked for
+    shieldings, a file without them is the failure, not a skipped check --
+    the energy is the same number whether they were assembled or not.
+    """
+    if not json_data:
+        return None
+    data = json_data[list(json_data.keys())[0]]
+    block = data.get("nmr_shielding")
+    if not isinstance(block, dict) or "atoms" not in block:
+        return None
+    return [float(atom["isotropic"]) for atom in block["atoms"]]
+
+
 def extract_gradient_norm(json_data: Dict) -> Optional[float]:
     """Extract gradient_norm from JSON output"""
     if not json_data:
@@ -725,6 +742,36 @@ def run_validation_tests(manifest_file: str = "validation_tests.json",
                     print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - {structure_problem}")
                     test_passed = False
                     failure_reasons.append(structure_problem)
+
+            # Validate the shieldings, for a case that pins them
+            #
+            # In addition to the energy, which asking for shieldings does not
+            # move: without this a run that assembled none, or wrote none,
+            # passes on the energy alone.
+            if "expected_nmr_isotropic" in test:
+                expected_iso = test["expected_nmr_isotropic"]
+                nmr_tol = test.get("nmr_tolerance", 1.0e-4)
+                calculated_iso = extract_nmr_isotropic(output_data)
+                if calculated_iso is None:
+                    print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - No nmr_shielding section in output")
+                    test_passed = False
+                    failure_reasons.append("No nmr_shielding section in output")
+                elif len(calculated_iso) != len(expected_iso):
+                    print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - Shielding count mismatch")
+                    test_passed = False
+                    failure_reasons.append(
+                        f"Shielding count mismatch ({len(calculated_iso)} vs {len(expected_iso)} atoms)")
+                else:
+                    worst = max(abs(c - e) for c, e in zip(calculated_iso, expected_iso))
+                    if worst > nmr_tol:
+                        print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - Shielding mismatch")
+                        print(f"    Largest isotropic difference: {worst:.2e} ppm "
+                              f"(tolerance: {nmr_tol:.2e})")
+                        test_passed = False
+                        failure_reasons.append(f"Shielding mismatch (diff: {worst:.2e} ppm)")
+                    else:
+                        print(f"    Shieldings: {len(expected_iso)} atoms within "
+                              f"{worst:.2e} ppm")
 
             # Validate gradient norm if present
             if "expected_gradient_norm" in test:

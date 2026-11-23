@@ -22,6 +22,7 @@ module mqc_session
    use pic_types, only: int32, int64
    use pic_mpi_lib, only: comm_world, bcast, pic_mpi_init, pic_mpi_finalize
    use mqc_resources, only: resources_t
+   use mqc_memory, only: set_memory_sharers
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_bcast, only: bcast_string
    use mqc_bcast_system, only: bcast_system_geometry
@@ -98,6 +99,7 @@ contains
 
       this%resources%mpi_comms%world_comm = comm_world()
       this%resources%mpi_comms%node_comm = this%resources%mpi_comms%world_comm%split()
+      call set_memory_sharers(this%resources%mpi_comms%node_comm%size())
       this%rank = this%resources%mpi_comms%world_comm%rank()
       this%n_ranks = this%resources%mpi_comms%world_comm%size()
       this%active = .true.

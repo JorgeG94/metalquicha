@@ -433,8 +433,31 @@ symmetric**, first index the field and second the nuclear moment, and a
 transposed result passes any symmetric check. The reference is
 `pyscf.prop.nmr.RHF` from the separate `pyscf-properties` package, whose
 packaged response callback assumes three vectors a call and fails under
-current PySCF; pass it one that reshapes to any count. The two-electron
-field derivative computes every shell quartet with no screening.
+current PySCF; pass it one that reshapes to any count.
+**The two-electron field derivative is folded and screened**
+(`giao_coulomb_exchange`): the gauge factor of a pair is `(1/2)(R_i - R_j) x r`,
+so the integral vanishes on one centre, changes sign under `i <-> j` and keeps
+the ordinary symmetry in `k, l` -- a quarter of the quartets at most, each put
+in the four places the full sum would. The screen's estimate of that factor
+grows with the distance from the origin, so **test it with the molecule moved
+off the origin**; `test_folding` holds the routine to the full sum written
+out, to 1e-11, and `test_screen` does the same on three waters seven
+angstroms apart, where the screen skips quartets and says how many -- on one
+water it skips none, and a test there guards nothing. **The field response builds its coupling matrix once**
+(`exchange_coupling`, through `build_hessian_mo`): the operator's two-electron
+part is `(A-B)` less its diagonal, scaled by the exact-exchange fraction, and
+`mo_transform_fits` decides whether it fits, per process, against a
+budget that `set_memory_sharers` divides among the ranks on the node; otherwise every pass recomputes
+the integrals (`integral_direct` forces that, and a test holds the two routes
+together). A profile of a pass is all libfint -- the digestion is a tenth of
+it -- so nothing in the direct route is left to tune but the pass count. Two
+things that did not work: one Krylov subspace shared by the three directions
+took the same fourteen passes as three separate ones, and applying the
+operator to each new vector at its own shrinking length so the build could
+screen on it saved a third and then **failed to converge** on triglycine,
+its noise sitting at the 1e-10 tolerance. Measured on four threads, the
+shielding step of a water hexamer in cc-pVDZ went from 27.7 s to 8.8 s and
+triglycine's in 6-31G* from 78.8 s to 39.5 s direct, 28.9 s stored.
 **Under a functional the potential does not respond to the field**, so a
 pure functional has no coupled equations at all and `exchange_response`
 returns zero without touching an integral; a hybrid scales exchange by
@@ -465,8 +488,24 @@ over MPI flattened to `(9, n_atoms)` after the dipole derivatives, in both
 `send` routines and through `recv_shielding` in both receives; **the four have
 to stay in step**. On four ranks the result is the serial one to 1e-11 ppm. The check that
 needs no reference: at the level that reaches the whole system the result is
-the unfragmented one, 1e-11 ppm on a water trimer. Couplings, GMBE,
-counterpoise and embedding are not assembled. See
+the unfragmented one, 1e-11 ppm on a water trimer. **Overlapping fragments
+(GMBE) assemble them too, and are the way to cut through covalent bonds**:
+`assemble_pie_shieldings` in `mqc_gmbe_fragment_distribution_scheme`, called
+by the serial processor and the MPI coordinator alike, sums each atom over
+the inclusion-exclusion terms that contain it. An intersection carries its
+caps where its two fragments carry theirs, so a cap's disturbance enters
+with both signs; measured on decane, six-carbon windows advancing two leave
+carbon 0.41 ppm off, where disjoint two-carbon fragments at MBE(2) leave
+18. **Reading each atom from the one fragment where it is furthest from a
+cap was tried and is worse** -- 5.5 ppm on the same windows -- because a cap
+two bonds away is still worth ppm to a carbon and nothing cancels it. A
+window that overlaps its neighbour by one atom leaves that atom beside a cap
+in every term. Couplings, counterpoise and embedding are not assembled,
+and **a fragmented Hessian deck with `properties.nmr` is refused**: its terms
+are displaced gradients, which lost the tensors and computed them 6N+1
+times over. The validation manifest can pin shieldings
+(`expected_nmr_isotropic`), because the energy does not notice whether they
+were assembled. See
 `mqc_docs/source/nmr_shielding.rst`.
 
 Spin-spin couplings are `properties.spin_spin_coupling`, a separate request
@@ -1067,6 +1106,10 @@ Four things worth knowing before optimising anything here, all of them measured.
   `mqc_memory` returns `system.memory_gb` when the deck set it, else a share of
   MemAvailable from /proc/meminfo, else the caller's blind constant. The
   response solver plans on `RESPONSE_BUDGET_SHARE` of the machine's figure.
+  The machine's figure is divided among the ranks sharing the node
+  (`set_memory_sharers`, called once in `main` and in a session), because
+  every fragment worker plans against the same free memory; the deck's figure
+  is per rank and taken whole.
   Fixed laptop-sized limits sent a 545-function MakeFP on a 500 GB node down a
   fourteen-hour column build when the transform it refused needed a hundred
   gigabytes and forty seconds.

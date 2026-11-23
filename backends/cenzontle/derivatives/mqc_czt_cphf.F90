@@ -62,6 +62,7 @@ module mqc_czt_cphf
    public :: casimir_polder_frequencies
    public :: casimir_polder_weights
    public :: build_hessian, build_hessian_df, build_hessian_mo
+   public :: mo_transform_fits
    public :: fitted_response_t, build_fitted_response
    public :: dynamic_response_iterative
    public :: static_response_dense

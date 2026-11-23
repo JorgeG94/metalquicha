@@ -4830,6 +4830,16 @@
             "reference_note": "The ordinary RHF energy, which asking for shieldings must not move; the manifest has nowhere to put a tensor. What the run exercises is the shielding end to end: the gauge-including integrals from libfint, the coupled-perturbed solve for the field, and the tensors written to the JSON. The tensors themselves are pinned against PySCF, element by element, in test/test_mqc_czt_nmr.f90."
         },
         {
+            "name": "GMBE(2) with NMR shieldings, capped triglycine STO-3G (CPU)",
+            "input": "inputs/cpu/mqc/nmr/cpu_gly3_sto-3g_gmbe_nmr.json",
+            "expected_energy": -687.343081551244,
+            "tolerance": 1e-08,
+            "expected_nmr_isotropic": [292.02524294, 201.98209183, 109.83737758, -116.20315583, 30.56868028, 31.02712337, 31.43579451, 32.20877576, 257.09027770, 202.19898877, 110.03848586, -111.57568223, 29.61389463, 29.88961401, 28.04010207, 258.99446786, 202.09889302, 110.20751352, -138.44535439, 30.00025478, 30.06518691, 27.93645156, 259.54268637, 27.62653794],
+            "nmr_tolerance": 0.0001,
+            "type": "fragmented",
+            "reference_note": "The unfragmented RHF/STO-3G energy of the same geometry from this program, which the inclusion-exclusion terms of three overlapping fragments reproduce at the level that reaches the whole molecule; the fragmented run lands 1.4e-12 away. PySCF with its own STO-3G table gives -687.3430814295, 1.2e-7 off, the usual difference between its Pople tables and this repository's basis JSON. expected_nmr_isotropic is the isotropic shielding of every atom from the unfragmented run of the same geometry by this program, so the case fails if the fragmented run assembles no shieldings, writes no section, or assembles different ones: every term but the whole molecule carries hydrogen caps whose tensors are dropped and whose terms cancel, and the result has to be the molecule's own. The deck converges the density and the orbital gradient to 1e-10 as well as the energy: on the energy alone two converged SCFs leave shieldings 1e-4 ppm apart, which is what a coverage build on two ranks showed against a reference made on four threads. Converged so, one thread against four moves them 2e-8 ppm and two MPI ranks 3e-7; the tolerance is 1e-4. A cap carried onto an atom or a term weighted wrongly is wrong by ppm. The assembly itself is pinned in test/test_mqc_physical_fragment.f90."
+        },
+        {
             "name": "RHF with MBIS charges H2O 6-31g (CPU)",
             "input": "inputs/cpu/mqc/charges/cpu_water_6-31g_mbis.json",
             "expected_energy": -75.984779843967,

@@ -2080,11 +2080,12 @@ How much memory this run may plan on, in gigabytes, for the decisions that
 trade memory for time: which route builds the response Hessian a MakeFP needs,
 whether its operator is formed at all or solved matrix-free, and how many
 frequencies factorize at once. Absent, the machine decides -- 60 per cent of
-what it reports available -- which is right on a dedicated node and is why a
+what it reports available, divided among the MPI ranks of the run on that
+node -- which is right on a dedicated node and is why a
 545-function MakeFP takes a minute and a half there rather than the fourteen
 hours a fixed limit once sent it into. Set it when the node is shared, or
-when a run should be held to less than it could take. The figure is taken
-whole: it is what you have decided the run may have.
+when a run should be held to less than it could take. The figure is per MPI
+rank and taken whole: it is what you have decided each rank may have.
 
 Running Calculations
 ====================

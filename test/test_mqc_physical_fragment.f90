@@ -3,11 +3,14 @@ module test_mqc_physical_fragment
    use mqc_physical_fragment, only: to_angstrom, to_bohr, initialize_system_geometry, &
                                     build_fragment_from_indices, &
                                     redistribute_cap_gradients, &
+                                    accumulate_fragment_shielding, &
                                     system_geometry_t, physical_fragment_t, &
                                     check_system_geometry, severed_bond_pairs
    use mqc_config_types, only: bond_t
    use mqc_error, only: error_t
-   use pic_types, only: dp
+   use pic_types, only: dp, int64
+   use mqc_result_types, only: calculation_result_t
+   use mqc_gmbe_fragment_distribution_scheme, only: assemble_pie_shieldings
    implicit none
    private
    public :: collect_mqc_physical_fragment_tests
@@ -44,6 +47,9 @@ contains
                   new_unittest("h_cap_single_broken_bond", test_h_cap_single_broken), &
                   new_unittest("cap_gradient_default_is_old_rule", test_cap_gradient_unscaled), &
                   new_unittest("cap_gradient_splits_when_scaled", test_cap_gradient_scaled), &
+                  new_unittest("cap_shielding_is_dropped", test_cap_shielding_dropped), &
+                  new_unittest("pie_shieldings_of_agreeing_terms", test_pie_shieldings_agree), &
+                  new_unittest("pie_shieldings_need_every_term", test_pie_shieldings_missing), &
                   new_unittest("h_cap_no_broken_bonds", test_h_cap_no_broken), &
                   new_unittest("h_cap_dimer_intact_internal", test_h_cap_dimer_intact), &
                   new_unittest("h_cap_positions_and_elements", test_h_cap_positions), &
@@ -399,6 +405,185 @@ contains
                  "and the two together conserve it")
       call cleanup_test_files()
    end subroutine test_cap_gradient_scaled
+
+   subroutine test_cap_shielding_dropped(error)
+      !! A fragment's shielding tensors land on the system atoms they belong
+      !! to, weighted, and the cap's lands nowhere
+      !!
+      !! This is the whole difference between a shielding and a gradient under
+      !! capping. A force on a cap is a force on the atoms that position it, so
+      !! it is redistributed; the shielding of a hydrogen the system does not
+      !! contain is a property of nothing in the system. Each atom is given a
+      !! tensor no other has, and no symmetric one, so a tensor put on the
+      !! wrong atom or transposed on the way fails.
+      type(error_type), allocatable, intent(out) :: error
+      type(system_geometry_t) :: sys_geom
+      type(physical_fragment_t) :: fragment
+      type(bond_t), allocatable :: bonds(:)
+      type(error_t) :: parse_error
+      real(dp), allocatable :: frag_sigma(:, :, :), sys_sigma(:, :, :)
+      real(dp), parameter :: WEIGHT = -2.0_dp
+      integer :: iatom, n_real
+
+      call cap_test_fragment(sys_geom, fragment, bonds, parse_error)
+      if (parse_error%has_error()) then
+         call check(error, .false., parse_error%get_message()); call cleanup_test_files(); return
+      end if
+
+      n_real = fragment%n_atoms - fragment%n_caps
+      call check(error, fragment%n_caps == 1, "the fixture is meant to carry one cap")
+      if (allocated(error)) then; call cleanup_test_files(); return; end if
+
+      allocate (frag_sigma(3, 3, fragment%n_atoms))
+      do iatom = 1, fragment%n_atoms
+         frag_sigma(:, :, iatom) = marked_tensor(iatom)
+      end do
+      allocate (sys_sigma(3, 3, sys_geom%total_atoms), source=0.0_dp)
+
+      call accumulate_fragment_shielding(fragment, frag_sigma, sys_sigma, scale=WEIGHT)
+
+      do iatom = 1, n_real
+         call check(error, maxval(abs(sys_sigma(:, :, fragment%local_to_global(iatom)) &
+                                      - WEIGHT*marked_tensor(iatom))) < tol, &
+                    "a real atom's tensor did not land on its system atom, weighted")
+         if (allocated(error)) then; call cleanup_test_files(); return; end if
+      end do
+      ! What is left once the real atoms are taken out is what the cap put in.
+      do iatom = 1, n_real
+         sys_sigma(:, :, fragment%local_to_global(iatom)) = 0.0_dp
+      end do
+      call check(error, maxval(abs(sys_sigma)) < tol, &
+                 "the cap's tensor reached an atom of the system")
+      call cleanup_test_files()
+   end subroutine test_cap_shielding_dropped
+
+   pure function marked_tensor(label) result(sigma)
+      !! A tensor that names its owner: no two labels share one, and it is
+      !! not symmetric
+      integer, intent(in) :: label
+      real(dp) :: sigma(3, 3)
+      integer :: i, j
+
+      do j = 1, 3
+         do i = 1, 3
+            sigma(i, j) = real(100*label + 10*i + j, dp)
+         end do
+      end do
+   end function marked_tensor
+
+   subroutine pie_test_terms(sys_geom, atom_sets, coefficients, results, parse_error)
+      !! Three inclusion-exclusion terms over the trimer, with one bond cut
+      !!
+      !! Two fragments of two waters each that share the middle one, and their
+      !! intersection with coefficient -1. The bond between atoms 0 and 3 is
+      !! declared and cut, so the second fragment and the intersection each
+      !! carry a cap and the first does not. Every term gives a system atom
+      !! the same tensor, `marked_tensor` of its system index, and gives a cap
+      !! one that belongs to no atom.
+      type(system_geometry_t), intent(out) :: sys_geom
+      integer, allocatable, intent(out) :: atom_sets(:, :)
+      integer, allocatable, intent(out) :: coefficients(:)
+      type(calculation_result_t), allocatable, intent(out) :: results(:)
+      type(error_t), intent(out) :: parse_error
+
+      integer, parameter :: N_CAPS(3) = [0, 1, 1]
+      integer :: iterm, iatom, n_real
+
+      call create_test_water_trimer()
+      call initialize_system_geometry(TEST_WATER_TRIMER, TEST_WATER_MONOMER, &
+                                      sys_geom, parse_error)
+      if (parse_error%has_error()) return
+      allocate (sys_geom%bonds(1))
+      sys_geom%bonds(1)%atom_i = 0
+      sys_geom%bonds(1)%atom_j = 3
+      sys_geom%bonds(1)%order = 1
+      sys_geom%bonds(1)%is_broken = .true.
+
+      allocate (atom_sets(6, 3), source=-1)
+      atom_sets(1:6, 1) = [0, 1, 2, 3, 4, 5]
+      atom_sets(1:6, 2) = [3, 4, 5, 6, 7, 8]
+      atom_sets(1:3, 3) = [3, 4, 5]
+      coefficients = [1, 1, -1]
+
+      allocate (results(3))
+      do iterm = 1, 3
+         n_real = count(atom_sets(:, iterm) >= 0)
+         allocate (results(iterm)%nmr_shielding(3, 3, n_real + N_CAPS(iterm)))
+         do iatom = 1, n_real
+            results(iterm)%nmr_shielding(:, :, iatom) = marked_tensor(atom_sets(iatom, iterm) + 1)
+         end do
+         do iatom = n_real + 1, n_real + N_CAPS(iterm)
+            results(iterm)%nmr_shielding(:, :, iatom) = marked_tensor(900 + iterm)
+         end do
+      end do
+   end subroutine pie_test_terms
+
+   subroutine test_pie_shieldings_agree(error)
+      !! Where every term gives an atom the same tensor, inclusion-exclusion
+      !! returns that tensor
+      !!
+      !! The coefficients of the terms containing an atom add to one, which is
+      !! what the principle counts, so this is the check on the assembly that
+      !! needs no shielding calculation: the middle water is in all three
+      !! terms with weights +1, +1 and -1, the outer ones in one each, and
+      !! all nine atoms must come back with their own tensor. A cap carried
+      !! onto an atom, a term weighted wrongly or an atom mapped through the
+      !! wrong term's list all break it.
+      type(error_type), allocatable, intent(out) :: error
+      type(system_geometry_t) :: sys_geom
+      integer, allocatable :: atom_sets(:, :), coefficients(:)
+      type(calculation_result_t), allocatable :: results(:)
+      real(dp), allocatable :: sigma(:, :, :)
+      type(error_t) :: err
+      integer :: iatom
+
+      call pie_test_terms(sys_geom, atom_sets, coefficients, results, err)
+      if (err%has_error()) then
+         call check(error, .false., err%get_message()); call cleanup_test_files(); return
+      end if
+
+      call assemble_pie_shieldings(atom_sets, coefficients, 3_int64, sys_geom, results, sigma, err)
+      call check(error,.not. err%has_error(), "assembly failed: "//err%get_message())
+      if (allocated(error)) then; call cleanup_test_files(); return; end if
+      call check(error, allocated(sigma), "no shieldings came back")
+      if (allocated(error)) then; call cleanup_test_files(); return; end if
+
+      do iatom = 1, sys_geom%total_atoms
+         call check(error, maxval(abs(sigma(:, :, iatom) - marked_tensor(iatom))) < tol, &
+                    "an atom did not come back with the tensor every term gave it")
+         if (allocated(error)) exit
+      end do
+      call cleanup_test_files()
+   end subroutine test_pie_shieldings_agree
+
+   subroutine test_pie_shieldings_missing(error)
+      !! One term without tensors means no shieldings, and no error
+      !!
+      !! A run that did not ask for the property has none on any term and must
+      !! pass through in silence. The case that matters is the partial one: a
+      !! sum over the terms that happen to carry tensors would have weights
+      !! that no longer add to one, and would be reported as a shielding.
+      type(error_type), allocatable, intent(out) :: error
+      type(system_geometry_t) :: sys_geom
+      integer, allocatable :: atom_sets(:, :), coefficients(:)
+      type(calculation_result_t), allocatable :: results(:)
+      real(dp), allocatable :: sigma(:, :, :)
+      type(error_t) :: err
+
+      call pie_test_terms(sys_geom, atom_sets, coefficients, results, err)
+      if (err%has_error()) then
+         call check(error, .false., err%get_message()); call cleanup_test_files(); return
+      end if
+      deallocate (results(3)%nmr_shielding)
+
+      call assemble_pie_shieldings(atom_sets, coefficients, 3_int64, sys_geom, results, sigma, err)
+      call check(error,.not. err%has_error(), "a missing property is not an error: "// &
+                 err%get_message())
+      if (allocated(error)) then; call cleanup_test_files(); return; end if
+      call check(error,.not. allocated(sigma), &
+                 "shieldings were assembled from a term list missing one term's tensors")
+      call cleanup_test_files()
+   end subroutine test_pie_shieldings_missing
 
    subroutine test_h_cap_single_broken(error)
       !! Test single monomer with one broken bond → should add 1 H-cap

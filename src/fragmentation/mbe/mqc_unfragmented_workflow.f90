@@ -398,6 +398,27 @@ contains
       ! fragmented path was fixed for this; this one was not.
       if (present(result_out)) result_out = result
 
+      ! Shieldings go out whichever writer follows: a Hessian deck may ask for
+      ! them too, and they were dropped there while only the energy branch
+      ! below copied them.
+      if (present(json_data)) then
+         if (allocated(result%nmr_shielding)) then
+            json_data%nmr_shielding = result%nmr_shielding
+            ! The element travels with each shielding: a spectrum is of one
+            ! nucleus, and the output is read by programs that have no
+            ! geometry to look it up in.
+            if (.not. allocated(json_data%atomic_numbers)) then
+               json_data%atomic_numbers = sys_geom%element_numbers
+            end if
+            if (allocated(result%nmr_diamagnetic)) then
+               json_data%nmr_diamagnetic = result%nmr_diamagnetic
+            end if
+            if (allocated(result%nmr_paramagnetic)) then
+               json_data%nmr_paramagnetic = result%nmr_paramagnetic
+            end if
+         end if
+      end if
+
       block
          ! Populate json_data for non-Hessian case if present
          ! (Hessian case already handled above in the vibrational block)
@@ -462,21 +483,6 @@ contains
                json_data%spin_spin_coupling = result%spin_spin_coupling
                if (.not. allocated(json_data%atomic_numbers)) then
                   json_data%atomic_numbers = sys_geom%element_numbers
-               end if
-            end if
-            if (allocated(result%nmr_shielding)) then
-               json_data%nmr_shielding = result%nmr_shielding
-               ! The element travels with each shielding: a spectrum is of one
-               ! nucleus, and the output is read by programs that have no
-               ! geometry to look it up in.
-               if (.not. allocated(json_data%atomic_numbers)) then
-                  json_data%atomic_numbers = sys_geom%element_numbers
-               end if
-               if (allocated(result%nmr_diamagnetic)) then
-                  json_data%nmr_diamagnetic = result%nmr_diamagnetic
-               end if
-               if (allocated(result%nmr_paramagnetic)) then
-                  json_data%nmr_paramagnetic = result%nmr_paramagnetic
                end if
             end if
             if (result%has_bond_orders) then
