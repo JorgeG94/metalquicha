@@ -1364,6 +1364,8 @@ contains
          call add_hessian(json, main_obj, data%hessian)
       end if
 
+      call write_nmr_section(json, main_obj, data)
+
       ! Count non-zero coefficient terms
       if (allocated(data%pie_coefficients)) then
          n_nonzero_terms = count(data%pie_coefficients(1:data%n_pie_terms) /= 0)
@@ -1507,6 +1509,10 @@ contains
          hess_norm = sqrt(sum(data%hessian**2))
          call add_hessian(json, main_obj, data%hessian)
       end if
+
+      ! A Hessian deck may ask for shieldings too; they belong to the
+      ! reference geometry and go in the section an energy run writes.
+      call write_nmr_section(json, main_obj, data)
 
       ! Vibrational analysis section
       call json%create_object(vib_obj, "vibrational_analysis")

@@ -67,6 +67,7 @@ contains
                   new_unittest("xtb_method_spelling", test_method_xtb), &
                   new_unittest("logger_level", test_log_level), &
                   new_unittest("memory_budget", test_memory_gb), &
+                  new_unittest("memory_budget_is_shared_among_ranks", test_memory_sharers), &
                   new_unittest("efp_dispersion_blocks", test_efp_dispersion), &
                   new_unittest("hessian_settings", test_hessian), &
                   new_unittest("hessian_method_spellings", test_hessian_method), &
@@ -452,6 +453,48 @@ contains
       call check(error, config%memory_gb < 0.0_dp, &
                  "memory_gb should stay negative, meaning the machine decides")
    end subroutine test_memory_gb
+
+   subroutine test_memory_sharers(error)
+      !! The machine's figure is divided among the ranks on the node, and the
+      !! deck's is not
+      !!
+      !! Every rank on a node reads the same free memory, so eight ranks each
+      !! planning on sixty per cent of it plan on nearly five times what
+      !! exists. `set_memory_sharers` is what tells a rank it is one of
+      !! several. The deck's figure is per rank already and must come back
+      !! whole whatever the count. The machine's own figure moves a little
+      !! between two readings, so the division is held to five per cent; on a
+      !! machine that reports nothing the budget is the caller's blind
+      !! constant either way and there is nothing to divide.
+      use mqc_memory, only: memory_budget, set_memory_budget, set_memory_sharers, &
+                            available_memory_bytes
+      type(error_type), allocatable, intent(out) :: error
+      real(dp), parameter :: BLIND = 1.0e9_dp, SHARE = 0.5_dp
+      real(dp) :: alone, among_four
+
+      call set_memory_budget(-1.0_dp)
+      call set_memory_sharers(1)
+      alone = memory_budget(BLIND, SHARE)
+      call set_memory_sharers(4)
+      among_four = memory_budget(BLIND, SHARE)
+      if (available_memory_bytes() > 0.0_dp) then
+         call check(error, abs(4.0_dp*among_four - alone) < 0.05_dp*alone, &
+                    "four ranks on a node should each plan on a quarter of the machine")
+      else
+         call check(error, abs(among_four - BLIND) <= 0.0_dp, &
+                    "with no figure from the machine the blind constant stands")
+      end if
+      if (allocated(error)) then
+         call set_memory_sharers(1)
+         return
+      end if
+
+      call set_memory_budget(2.0_dp)
+      call check(error, abs(memory_budget(BLIND, SHARE) - 2.0e9_dp) < 1.0_dp, &
+                 "the deck's figure is per rank and must not be divided again")
+      call set_memory_budget(-1.0_dp)
+      call set_memory_sharers(1)
+   end subroutine test_memory_sharers
 
    subroutine test_log_level(error)
       !! system.logger.level reaches log_level, and defaults when absent

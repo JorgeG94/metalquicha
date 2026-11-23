@@ -1114,31 +1114,36 @@ contains
    subroutine check_property_support(driver_config, error)
       !! Refuse a response property the chosen fragmentation does not assemble
       !!
-      !! Silent for an unfragmented run. A many-body expansion with disjoint
-      !! fragments assembles shieldings; nothing assembles spin-spin
-      !! couplings, and FMO, EE-MBE, EFMO and overlapping fragments assemble
-      !! neither.
+      !! Silent for an unfragmented run. A many-body expansion assembles
+      !! shieldings, over disjoint fragments or overlapping ones; nothing
+      !! assembles spin-spin couplings, FMO, EE-MBE and EFMO assemble
+      !! neither, and a fragmented Hessian run assembles no shieldings.
       type(driver_config_t), intent(in) :: driver_config
       type(error_t), intent(inout) :: error
 
-      logical :: plain_mbe
-
       if (driver_config%nlevel <= 0) return
-      plain_mbe = trim(driver_config%expansion_kind) == "mbe" &
-                  .and. .not. driver_config%allow_overlapping_fragments
       if (driver_config%method_config%properties%spin_spin_coupling) then
          call error%set(ERROR_VALIDATION, "properties.spin_spin_coupling is not "// &
                         "assembled over fragments: a coupling joins two nuclei that "// &
                         "may sit in different ones. Run it unfragmented.")
          return
       end if
-      if (driver_config%method_config%properties%nmr_shielding .and. .not. plain_mbe) then
+      if (driver_config%method_config%properties%nmr_shielding &
+          .and. driver_config%calc_type == CALC_TYPE_HESSIAN) then
+         call error%set(ERROR_VALIDATION, "properties.nmr is not assembled by a "// &
+                        "fragmented Hessian run: the displaced gradients a term's "// &
+                        "Hessian is differenced from carry no shieldings to "// &
+                        "assemble, and each would compute them. Ask for the "// &
+                        "shieldings on an Energy or Gradient deck.")
+         return
+      end if
+      if (driver_config%method_config%properties%nmr_shielding &
+          .and. trim(driver_config%expansion_kind) /= "mbe") then
          call error%set(ERROR_VALIDATION, "properties.nmr is assembled only by a "// &
-                        "many-body expansion over disjoint fragments "// &
-                        "(keywords.fragmentation.method 'mbe'). FMO, EE-MBE and EFMO "// &
-                        "solve their fragments in each other's field and overlapping "// &
-                        "fragments carry inclusion-exclusion terms; none of those "// &
-                        "sums to the property of the whole here.")
+                        "many-body expansion (keywords.fragmentation.method 'mbe' "// &
+                        "or 'gmbe'). FMO, EE-MBE and EFMO solve their fragments in "// &
+                        "each other's field, whose potential would need a gauge "// &
+                        "term that is not built.")
          return
       end if
    end subroutine check_property_support
