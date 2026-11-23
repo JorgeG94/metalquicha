@@ -376,6 +376,11 @@ What is not assembled:
   coupling joins two nuclei that may sit in different fragments; ask for them
   on an unfragmented run.
 - With FMO, EE-MBE or EFMO: the deck is refused.
+- On a fragmented Hessian run: the deck is refused. A term's Hessian is
+  differenced from displaced gradients, which carry no shieldings to
+  assemble. Ask for them on an Energy or Gradient deck. (An unfragmented
+  Hessian deck may carry ``properties.nmr``, and writes the section beside
+  the vibrational analysis.)
 - Under counterpoise, where the weights do not know a ghosted term from an
   ordinary one: a warning, and no shieldings.
 - For an interaction-energy run, which has no whole system to report on.

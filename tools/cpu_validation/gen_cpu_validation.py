@@ -499,10 +499,11 @@ HAND_MAINTAINED = {
     # Shieldings over overlapping, capped fragments: triglycine cut at three
     # backbone bonds into three overlapping pieces, at the level whose
     # inclusion-exclusion terms reach the whole molecule. The energy is then
-    # the unfragmented one, which is what the manifest pins, and the
-    # shieldings are the unfragmented ones too (1e-10 ppm, measured). Every
-    # smaller term is capped and cancels exactly, so the run exercises the
-    # caps being dropped and the coefficients being applied per atom.
+    # the unfragmented one and so are the shieldings, and the manifest pins
+    # both: expected_nmr_isotropic holds every atom's isotropic value from
+    # the unfragmented run, so a run that assembled or wrote none fails.
+    # Every smaller term is capped and cancels exactly, so the run exercises
+    # the caps being dropped and the coefficients being applied per atom.
     "cpu/mqc/nmr/cpu_gly3_sto-3g_gmbe_nmr.json",
     "cpu/mqc/charges/cpu_water_6-31g_mbis.json",
     # Raman activities beside a Hessian. The manifest checks the energy and

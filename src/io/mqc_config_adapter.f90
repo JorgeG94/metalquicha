@@ -1118,8 +1118,8 @@ contains
       !!
       !! Silent for an unfragmented run. A many-body expansion assembles
       !! shieldings, over disjoint fragments or overlapping ones; nothing
-      !! assembles spin-spin couplings, and FMO, EE-MBE and EFMO assemble
-      !! neither.
+      !! assembles spin-spin couplings, FMO, EE-MBE and EFMO assemble
+      !! neither, and a fragmented Hessian run assembles no shieldings.
       type(driver_config_t), intent(in) :: driver_config
       type(error_t), intent(inout) :: error
 
@@ -1128,6 +1128,15 @@ contains
          call error%set(ERROR_VALIDATION, "properties.spin_spin_coupling is not "// &
                         "assembled over fragments: a coupling joins two nuclei that "// &
                         "may sit in different ones. Run it unfragmented.")
+         return
+      end if
+      if (driver_config%method_config%properties%nmr_shielding &
+          .and. driver_config%calc_type == CALC_TYPE_HESSIAN) then
+         call error%set(ERROR_VALIDATION, "properties.nmr is not assembled by a "// &
+                        "fragmented Hessian run: the displaced gradients a term's "// &
+                        "Hessian is differenced from carry no shieldings to "// &
+                        "assemble, and each would compute them. Ask for the "// &
+                        "shieldings on an Energy or Gradient deck.")
          return
       end if
       if (driver_config%method_config%properties%nmr_shielding &

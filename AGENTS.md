@@ -500,7 +500,12 @@ carbon 0.41 ppm off, where disjoint two-carbon fragments at MBE(2) leave
 cap was tried and is worse** -- 5.5 ppm on the same windows -- because a cap
 two bonds away is still worth ppm to a carbon and nothing cancels it. A
 window that overlaps its neighbour by one atom leaves that atom beside a cap
-in every term. Couplings, counterpoise and embedding are not assembled. See
+in every term. Couplings, counterpoise and embedding are not assembled,
+and **a fragmented Hessian deck with `properties.nmr` is refused**: its terms
+are displaced gradients, which lost the tensors and computed them 6N+1
+times over. The validation manifest can pin shieldings
+(`expected_nmr_isotropic`), because the energy does not notice whether they
+were assembled. See
 `mqc_docs/source/nmr_shielding.rst`.
 
 Spin-spin couplings are `properties.spin_spin_coupling`, a separate request

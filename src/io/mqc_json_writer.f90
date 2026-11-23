@@ -1510,6 +1510,10 @@ contains
          call add_hessian(json, main_obj, data%hessian)
       end if
 
+      ! A Hessian deck may ask for shieldings too; they belong to the
+      ! reference geometry and go in the section an energy run writes.
+      call write_nmr_section(json, main_obj, data)
+
       ! Vibrational analysis section
       call json%create_object(vib_obj, "vibrational_analysis")
       call json%add(main_obj, vib_obj)

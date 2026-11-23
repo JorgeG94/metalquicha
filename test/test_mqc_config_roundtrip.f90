@@ -493,6 +493,15 @@ contains
       call check_property_support(driver, err)
       call check(error,.not. err%has_error(), "shieldings over overlapping fragments "// &
                  "must pass: "//err%get_message())
+      if (allocated(error)) return
+
+      ! A fragmented Hessian is differenced from displaced gradients, which
+      ! carry no shieldings: the deck ran to the end and wrote none.
+      driver%allow_overlapping_fragments = .false.
+      driver%calc_type = CALC_TYPE_HESSIAN
+      call check_property_support(driver, err)
+      call check(error, err%has_error() .and. index(err%get_message(), "Hessian") > 0, &
+                 "shieldings on a fragmented Hessian run were not refused by name")
    end subroutine test_property_support
 
    subroutine test_interaction_energy_support(error)

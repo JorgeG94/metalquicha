@@ -341,7 +341,7 @@ contains
       end if
 
       call publish_pie_shieldings(pie_atom_sets, pie_coefficients, n_pie_terms, sys_geom, &
-                                  results, json_data)
+                                  results, method_config%properties%nmr_shielding, json_data)
 
       deallocate (pie_energies, results)
       if (allocated(total_gradient)) deallocate (total_gradient)
@@ -424,7 +424,7 @@ contains
    end subroutine assemble_pie_shieldings
 
    subroutine publish_pie_shieldings(pie_atom_sets, pie_coefficients, n_pie_terms, sys_geom, &
-                                     results, json_data)
+                                     results, requested, json_data)
       !! Assemble the shieldings and hand them to the output, when both exist
       !!
       !! A failure to assemble is a warning and leaves the energy standing,
@@ -434,6 +434,9 @@ contains
       integer(int64), intent(in) :: n_pie_terms
       type(system_geometry_t), intent(in) :: sys_geom
       type(calculation_result_t), intent(in) :: results(:)
+      logical, intent(in) :: requested
+         !! Whether the deck asked for shieldings. A request that produced
+         !! none is said aloud; no request and none is the ordinary run.
       type(json_output_data_t), intent(inout), optional :: json_data
 
       real(dp), allocatable :: shielding(:, :, :)
@@ -445,7 +448,14 @@ contains
          call logger%warning("GMBE shieldings were not assembled: "//error%get_message())
          return
       end if
-      if (.not. allocated(shielding)) return
+      if (.not. allocated(shielding)) then
+         if (requested) then
+            call logger%warning("GMBE shieldings were not assembled: at least one "// &
+                                "term returned none. The energy stands; look for "// &
+                                "that term's own warning.")
+         end if
+         return
+      end if
       call logger%info("GMBE shieldings assembled for "//to_char(sys_geom%total_atoms)//" atoms")
       if (present(json_data)) then
          json_data%nmr_shielding = shielding
@@ -1253,7 +1263,7 @@ contains
       end if
 
       call publish_pie_shieldings(pie_atom_sets, pie_coefficients, n_pie_terms, sys_geom, &
-                                  results, json_data)
+                                  results, method_config%properties%nmr_shielding, json_data)
 
       if (allocated(task_atom_sets)) deallocate (task_atom_sets)
       if (allocated(task_offset)) deallocate (task_offset)
