@@ -215,25 +215,110 @@ def flatten_values(value) -> List:
     return [value]
 
 
+def list_shape(value) -> Optional[tuple]:
+    """The extents of a nested list, () for a scalar, None when it is ragged"""
+    if not isinstance(value, list):
+        return ()
+    inner = {list_shape(item) for item in value}
+    if len(inner) > 1 or None in inner:
+        return None
+    return (len(value),) + (inner.pop() if inner else ())
+
+
+# Every key a manifest entry may carry. An entry is checked against this
+# before anything runs, because a key the runner does not read is a check that
+# silently never happens: `expected_outputs` for `expected_output` would pass
+# on the energy alone.
+MANIFEST_KEYS = {
+    "name", "input", "type", "requires", "timeout", "reference_note",
+    "tolerance", "expect_converged",
+    "expected_energy", "expected_energies", "expected_interaction_energy",
+    "expected_gradient", "expected_gradient_norm", "gradient_tolerance",
+    "expected_hessian", "expected_hessian_frobenius_norm", "hessian_tolerance",
+    "expected_frequencies", "expected_zpe", "expected_gibbs_correction",
+    "expected_ir_intensities", "ir_tolerance",
+    "expected_raman_activities", "raman_tolerance",
+    "expected_nmr_isotropic", "nmr_tolerance",
+    "expected_excitation_energies", "excitation_tolerance",
+    "expected_oscillator_strengths", "oscillator_tolerance",
+    "expected_state_spins",
+    "expected_distances", "distance_tolerance",
+    "check_translation", "translation_tolerance",
+    "expected_output", "output_tolerance",
+}
+
+# What a multi_molecule entry may carry: its branch compares the energies and
+# nothing else, so any other pin on one would be accepted and never looked at.
+MULTI_MOLECULE_KEYS = {
+    "name", "input", "type", "requires", "timeout", "reference_note",
+    "tolerance", "expected_energies",
+}
+
+
+def is_number(value) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def manifest_problems(tests: List[Dict]) -> List[str]:
+    """What is wrong with the manifest's entries, one line each; empty when nothing is"""
+    problems = []
+    for test in tests:
+        label = test.get("input", test.get("name", "an entry with no input"))
+        allowed = MULTI_MOLECULE_KEYS if test.get("type") == "multi_molecule" else MANIFEST_KEYS
+        for key in sorted(set(test) - allowed):
+            if key in MANIFEST_KEYS:
+                problems.append(f"{label}: '{key}' is not compared for a multi_molecule case")
+            else:
+                problems.append(f"{label}: unknown key '{key}'")
+        if "output_tolerance" in test and not is_number(test["output_tolerance"]):
+            problems.append(f"{label}: output_tolerance is not a number")
+        pins = test.get("expected_output", {})
+        if not isinstance(pins, dict):
+            problems.append(f"{label}: expected_output is not an object")
+            continue
+        for path, spec in pins.items():
+            want = spec
+            if isinstance(spec, dict):
+                if set(spec) - {"value", "tolerance"} or "value" not in spec:
+                    problems.append(f"{label}: {path}: an object here is "
+                                    "{\"value\": ..., \"tolerance\": ...}")
+                    continue
+                if "tolerance" in spec and not is_number(spec["tolerance"]):
+                    problems.append(f"{label}: {path}: tolerance is not a number")
+                want = spec["value"]
+            if any(not (is_number(v) or isinstance(v, (bool, str))) for v in flatten_values(want)):
+                problems.append(f"{label}: {path}: a pinned value is a number, a boolean or a string")
+    return problems
+
+
 def compare_output_value(calculated, expected, tol: float) -> Optional[str]:
     """None when the two agree, else what is wrong
 
     Numbers within `tol`; booleans and strings exactly. A boolean is tested
-    before a number because Python counts it as one.
+    before a number because Python counts it as one, and for the same reason
+    a number in the output is not accepted where a boolean was expected. A
+    value that is not finite never agrees: every comparison with a NaN is
+    false, so a test for "greater than the tolerance" alone would pass one.
+    The nesting has to agree as well as the count, or a transposed-and-
+    flattened table would pass as the matrix.
     """
+    if list_shape(calculated) != list_shape(expected):
+        return f"shape {list_shape(calculated)} where {list_shape(expected)} was expected"
     calc, exp = flatten_values(calculated), flatten_values(expected)
     if len(calc) != len(exp):
         return f"{len(calc)} values where {len(exp)} were expected"
     worst = 0.0
     for c, e in zip(calc, exp):
         if isinstance(e, bool) or isinstance(e, str):
-            if c != e:
+            if type(c) is not type(e) or c != e:
                 return f"{c!r} where {e!r} was expected"
         else:
             if isinstance(c, bool) or not isinstance(c, (int, float)):
                 return f"{c!r} where a number was expected"
+            if not math.isfinite(float(c)):
+                return f"{c!r} is not a finite number"
             worst = max(worst, abs(float(c) - float(e)))
-    if worst > tol:
+    if not worst <= tol:
         return f"largest difference {worst:.2e} (tolerance {tol:.2e})"
     return None
 
@@ -647,6 +732,14 @@ def run_validation_tests(manifest_file: str = "validation_tests.json",
     # say -- which is better than loosening the bound for all 180 of them.
     tolerance = manifest.get("tolerance", 1.0e-9)
     tests = manifest.get("tests", [])
+
+    # The whole manifest, before the filter: a malformed entry is wrong
+    # whether or not this run would have reached it.
+    problems = manifest_problems(tests)
+    if problems:
+        for problem in problems:
+            print(f"{Colors.RED}{manifest_file}: {problem}{Colors.RESET}")
+        return 0, len(problems), [(manifest_file, problem) for problem in problems]
 
     # Filter tests if requested
     if test_filter:

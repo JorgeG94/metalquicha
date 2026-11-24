@@ -1097,7 +1097,11 @@ a day with the suite green. `expected_output` maps a path into the output to
 its value -- `atomic_charges.atoms[*].charge`, `stability.lowest_curvature`
 -- and a missing path is a failure; `expected_nmr_isotropic` and
 `expected_raman_activities` are the two with their own keys. Every property
-deck that writes its result pins it. **The quasi-atomic bonding analysis
+deck that writes its result pins it. Those pins are this program's own
+numbers, there to catch drift and absence; the comparison with another
+program is in the unit test each `reference_note` names. The runner checks
+every entry's keys before it runs anything, so a misspelt key is an error
+and not a check that never happens. **The quasi-atomic bonding analysis
 writes nothing to the output file**, so its seven decks still pin the energy
 alone.
 

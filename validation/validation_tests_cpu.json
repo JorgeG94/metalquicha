@@ -4888,7 +4888,7 @@
             "output_tolerance": 1e-05,
             "expected_energy": -75.984779843967,
             "type": "unfragmented",
-            "reference_note": "the checked energy is the ordinary RHF one, and pinning it is the point: asking for properties.bond_orders must not move the number the deck was already computing. The bond orders themselves have no place in this manifest and are pinned in test/test_mqc_mayer_bond_orders.f90 against PySCF and numpy over the same density; this deck reports O-H 0.7986 and an oxygen valence of 1.5972."
+            "reference_note": "the checked energy is the ordinary RHF one, and pinning it is the point: asking for properties.bond_orders must not move the number the deck was already computing. The bond orders are held against PySCF and numpy over the same density in test/test_mqc_mayer_bond_orders.f90; expected_output here is this program's own table from the deck, so that what reaches the JSON cannot drift or go missing unnoticed."
         },
         {
             "name": "UHF with Mayer bond orders O2 cc-pvdz multiplicity 3 (CPU)",
@@ -4906,7 +4906,7 @@
             "output_tolerance": 1e-05,
             "expected_energy": -75.984779843967,
             "type": "unfragmented",
-            "reference_note": "PySCF has no Fukui indices, so the checked energy is the ordinary RHF one. What this case covers is that the run completes: two SCFs on the ions and a sum rule that aborts rather than printing something wrong. The indices themselves are pinned in test/test_mqc_fukui.f90."
+            "reference_note": "PySCF has no Fukui indices, so the checked energy is the ordinary RHF one. What this case covers is the path from a deck: two SCFs on the ions and a sum rule that aborts rather than printing something wrong. The indices are held to their formulas in test/test_mqc_fukui.f90; expected_output here is this program's own table, so that what reaches the JSON cannot drift or go missing unnoticed."
         },
         {
             "name": "RHF with Fukui indices, ions given their own SCF group H2O 6-31g (CPU)",
@@ -4924,7 +4924,7 @@
             "output_tolerance": 1e-05,
             "expected_energy": -75.984779843967,
             "type": "unfragmented",
-            "reference_note": "PySCF has no Fukui indices, so the checked energy is the ordinary RHF one. What this case covers is that the run completes: two SCFs on the ions and a sum rule that aborts rather than printing something wrong. The indices themselves are pinned in test/test_mqc_fukui.f90."
+            "reference_note": "PySCF has no Fukui indices, so the checked energy is the ordinary RHF one. What this case covers is the path from a deck: two SCFs on the ions and a sum rule that aborts rather than printing something wrong. The indices are held to their formulas in test/test_mqc_fukui.f90; expected_output here is this program's own table, so that what reaches the JSON cannot drift or go missing unnoticed."
         },
         {
             "name": "RHF with Fukui indices (hirshfeld) H2O 6-31g (CPU)",
@@ -4933,7 +4933,7 @@
             "output_tolerance": 1e-05,
             "expected_energy": -75.984779843967,
             "type": "unfragmented",
-            "reference_note": "PySCF has no Fukui indices, so the checked energy is the ordinary RHF one, the same number as the chelpg and mulliken cases. What this case covers is that the run completes with the indices condensed by Hirshfeld weights: free atoms solved once, one partition for all three states, and a sum rule that aborts rather than printing something wrong. The indices themselves are pinned against PySCF in test/test_mqc_hirshfeld.f90.",
+            "reference_note": "PySCF has no Fukui indices, so the checked energy is the ordinary RHF one, the same number as the chelpg and mulliken cases. What this case covers is the path from a deck with the indices condensed by Hirshfeld weights: free atoms solved once, one partition for all three states, and a sum rule that aborts rather than printing something wrong. The weights are held against PySCF in test/test_mqc_hirshfeld.f90; expected_output here is this program's own table.",
             "requires": "libxc"
         },
         {
@@ -4963,7 +4963,7 @@
             "nmr_tolerance": 0.001,
             "expected_energy": -75.984779843967,
             "type": "unfragmented",
-            "reference_note": "The ordinary RHF energy, which asking for shieldings must not move; the manifest has nowhere to put a tensor. What the run exercises is the shielding end to end: the gauge-including integrals from libfint, the coupled-perturbed solve for the field, and the tensors written to the JSON. The tensors themselves are pinned against PySCF, element by element, in test/test_mqc_czt_nmr.f90."
+            "reference_note": "The ordinary RHF energy, which asking for shieldings must not move. What the run exercises is the shielding end to end: the gauge-including integrals from libfint, the coupled-perturbed solve for the field, and the tensors written to the JSON. The tensors are held against PySCF, element by element, in test/test_mqc_czt_nmr.f90; expected_nmr_isotropic here is this program's own isotropic values from the deck, so that what reaches the JSON cannot drift or go missing unnoticed."
         },
         {
             "name": "GMBE(2) with NMR shieldings, capped triglycine STO-3G (CPU)",
@@ -5001,7 +5001,7 @@
             "expected_energy": -76.298635406403,
             "tolerance": 1e-07,
             "type": "unfragmented",
-            "reference_note": "PySCF has no Fukui indices, so the checked energy is the ordinary Kohn-Sham one. What this case covers is that the run completes with a Fukui table: the two ions are doublets and need a spin-POLARISED functional while the neutral's context is unpolarised, and handing the wrong one across is refused rather than misread -- which would surface as a skipped analysis and a run that still exits zero. It also omits `population`, so it pins the Hirshfeld default. Grid level 4 rather than 3, because the Fukui descriptors are differences between three separately converged states and the quadrature error does not cancel the way it does within one SCF. The tolerance is 1e-7 rather than the manifest's 1e-9: both codes build a level-4 grid from the same tables but prune it differently, which is 3.1e-8 on this molecule and has nothing to do with the analysis being tested.",
+            "reference_note": "PySCF has no Fukui indices, so the checked energy is the ordinary Kohn-Sham one. What this case covers is the path from a deck to a Fukui table, pinned in expected_output as this program's own numbers: the two ions are doublets and need a spin-POLARISED functional while the neutral's context is unpolarised, and handing the wrong one across is refused rather than misread -- which would surface as a skipped analysis and a run that still exits zero. It also omits `population`, so it pins the Hirshfeld default. Grid level 4 rather than 3, because the Fukui descriptors are differences between three separately converged states and the quadrature error does not cancel the way it does within one SCF. The tolerance is 1e-7 rather than the manifest's 1e-9: both codes build a level-4 grid from the same tables but prune it differently, which is 3.1e-8 on this molecule and has nothing to do with the analysis being tested.",
             "requires": "libxc"
         },
         {
@@ -5142,7 +5142,7 @@
         {
             "name": "RHF N2 6-31G at 1.6 A, DIIS lands on a saddle (CPU)",
             "input": "inputs/cpu/mqc/soscf/n2_stretched_saddle.json",
-            "expected_output": {"stability.stable": false, "stability.lowest_curvature": {"value": -0.0676630782, "tolerance": 1e-05}},
+            "expected_output": {"stability.stable": false, "stability.lowest_curvature": -0.0676630782},
             "output_tolerance": 1e-05,
             "expected_energy": -108.551570996439,
             "tolerance": 1e-08,
@@ -5151,7 +5151,7 @@
         {
             "name": "RHF N2 6-31G at 1.6 A, second order finds the minimum (CPU)",
             "input": "inputs/cpu/mqc/soscf/n2_stretched_second_order.json",
-            "expected_output": {"stability.stable": true, "stability.lowest_curvature": {"value": 0.0, "tolerance": 1e-05}},
+            "expected_output": {"stability.stable": true, "stability.lowest_curvature": 0.0},
             "output_tolerance": 1e-05,
             "expected_energy": -108.571753302899,
             "tolerance": 1e-08,
@@ -5160,7 +5160,7 @@
         {
             "name": "RHF N2 6-31G at 1.6 A, second order asked for as the accelerator (CPU)",
             "input": "inputs/cpu/mqc/soscf/n2_stretched_soscf_accelerator.json",
-            "expected_output": {"stability.stable": true, "stability.lowest_curvature": {"value": 0.0, "tolerance": 1e-05}},
+            "expected_output": {"stability.stable": true, "stability.lowest_curvature": 0.0},
             "output_tolerance": 1e-05,
             "expected_energy": -108.571753302899,
             "tolerance": 1e-08,
@@ -5187,7 +5187,7 @@
         {
             "name": "RHF N2 6-31G at 1.6 A, geometric direct minimisation stays on the saddle (CPU)",
             "input": "inputs/cpu/mqc/gdm/n2_stretched_gdm.json",
-            "expected_output": {"stability.stable": false, "stability.lowest_curvature": {"value": -0.0676630779, "tolerance": 1e-05}},
+            "expected_output": {"stability.stable": false, "stability.lowest_curvature": -0.0676630779},
             "output_tolerance": 1e-05,
             "expected_energy": -108.551570996439,
             "tolerance": 1e-08,
