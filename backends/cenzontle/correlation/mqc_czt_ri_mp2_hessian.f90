@@ -74,7 +74,8 @@ module mqc_czt_ri_mp2_hessian
    use mqc_czt_gradient, only: two_centre_deriv
    use mqc_czt_xc, only: xc_context_t
    use mqc_czt_xc_hessian, only: xc_potential_deriv, xc_potential_hessian
-   use mqc_czt_mp2_hessian, only: ks_pair_kernel, ks_kernel_deriv_stack, ks_dl_pair_kernel
+   use mqc_czt_mp2_hessian, only: ks_pair_kernel, ks_kernel_deriv_stack, &
+                                  ks_pair_kernel_many, ks_dl_pair_kernel_many
    use mqc_czt_multipole, only: multipole_matrices, dipole_integral_derivatives
    use mqc_czt_hess_ints, only: hess_1e_block, hess_rinv_block, hess_2e_contract, &
                                 hess_3c2c_contract, h1_contract, &
@@ -160,7 +161,7 @@ contains
                                          hess_corr, error, n_frozen, tol, batch, &
                                          atom_batch, parts, xc, scf_density, pt2_scale, &
                                          dipole_derivatives, max_iter, declined, &
-                                         zvector_batched, ref_aux)
+                                         zvector_batched, ref_aux, mo1_in)
       !! The correlation block of the RI-MP2 Hessian, `(3, 3, natm, natm)`
       !!
       !! Add it to the RHF Hessian (`rhf_hessian`) for the total. `hess_corr(a, b,
@@ -204,6 +205,12 @@ contains
          !! The perturbative term's share of `d mu_a / dR_(X,b)`, `(3, 3N)`,
          !! scaled by `pt2_scale`. Requires `xc`: over Hartree-Fock an MP2 dipole
          !! derivative is a different quantity.
+      real(dp), intent(in), optional :: mo1_in(:, :, :, :)
+         !! The reference's first-order orbitals, `(n_mo, n_occ, 3, natm)`,
+         !! when the caller already has them from the reference's own
+         !! Hessian: the same equations, operator and tolerance, so the
+         !! solve here is skipped. They have to come from that reference at
+         !! that tolerance; nothing here can check either.
       logical, intent(out), optional :: declined
          !! True only when the error set is the refusal of a metric that drops
          !! a mode: the one condition a well-formed call can meet, and the one
@@ -279,20 +286,31 @@ contains
       call skeleton_matrices(st, h1, s1, fx, sx, error)
       if (error%has_error()) return
       call stage_done(clock, "skeleton matrices")
-      if (st%fitted .and. st%dh) then
-         call solve_mo1_batch(mol, st%c, st%eps, st%no, h1, s1, mo1, error, xc=xc, &
-                              reference=scf_density, k_scale=st%kf, max_iter=st%max_iter, &
-                              tol=use_tol, batch=use_batch, bounds=st%bounds, fit=st%fit)
-      else if (st%fitted) then
-         call solve_mo1_batch(mol, st%c, st%eps, st%no, h1, s1, mo1, error, max_iter=st%max_iter, &
-                              tol=use_tol, batch=use_batch, bounds=st%bounds, fit=st%fit)
-      else if (st%dh) then
-         call solve_mo1_batch(mol, st%c, st%eps, st%no, h1, s1, mo1, error, xc=xc, &
-                              reference=scf_density, k_scale=st%kf, max_iter=st%max_iter, &
-                              tol=use_tol, batch=use_batch, bounds=st%bounds)
+      if (present(mo1_in)) then
+         if (any(shape(mo1_in) /= [st%n, st%no, 3, st%natm])) then
+            call error%set(ERROR_VALIDATION, "RI-MP2 Hessian: the first-order "// &
+                           "orbitals handed in are not this reference's shape")
+            return
+         end if
+         mo1 = mo1_in
+         call logger%performance("  RI-MP2 Hessian: nuclear responses taken from the "// &
+                                 "reference's Hessian, not solved again")
       else
-         call solve_mo1_batch(mol, st%c, st%eps, st%no, h1, s1, mo1, error, max_iter=st%max_iter, &
-                              tol=use_tol, batch=use_batch, bounds=st%bounds)
+         if (st%fitted .and. st%dh) then
+            call solve_mo1_batch(mol, st%c, st%eps, st%no, h1, s1, mo1, error, xc=xc, &
+                                 reference=scf_density, k_scale=st%kf, max_iter=st%max_iter, &
+                                 tol=use_tol, batch=use_batch, bounds=st%bounds, fit=st%fit)
+         else if (st%fitted) then
+            call solve_mo1_batch(mol, st%c, st%eps, st%no, h1, s1, mo1, error, max_iter=st%max_iter, &
+                                 tol=use_tol, batch=use_batch, bounds=st%bounds, fit=st%fit)
+         else if (st%dh) then
+            call solve_mo1_batch(mol, st%c, st%eps, st%no, h1, s1, mo1, error, xc=xc, &
+                                 reference=scf_density, k_scale=st%kf, max_iter=st%max_iter, &
+                                 tol=use_tol, batch=use_batch, bounds=st%bounds)
+         else
+            call solve_mo1_batch(mol, st%c, st%eps, st%no, h1, s1, mo1, error, max_iter=st%max_iter, &
+                                 tol=use_tol, batch=use_batch, bounds=st%bounds)
+         end if
       end if
       if (error%has_error()) return
       call stage_done(clock, "coupled-perturbed solve")
@@ -485,7 +503,7 @@ contains
       n2 = real(st%n, dp)**2
       ov = real(st%na, dp)*real(st%nv, dp)
       np = real(st%np, dp)
-      bytes = 24.0_dp*n2*real(st%n3, dp) &
+      bytes = 29.0_dp*n2*real(st%n3, dp) &
               + 4.0_dp*n2*np &
               + 6.0_dp*ov**2 &
               + 12.0_dp*ov*np + 3.0_dp*np**2
@@ -714,7 +732,7 @@ contains
          !! Kohn-Sham reference; the total derivative asks for the exchange part
          !! alone because it differentiates the kernel itself.
 
-      real(dp), allocatable :: dens(:, :, :), g(:, :, :), half(:, :), vk(:, :)
+      real(dp), allocatable :: dens(:, :, :), g(:, :, :), half(:, :), vk(:, :, :)
       integer :: first, last, wide, q, nset
       logical :: with_kernel
 
@@ -751,11 +769,19 @@ contains
          first = last + 1
       end do
       if (with_kernel) then
-         allocate (vk(st%n, st%n))
-         do q = 1, nset
-            call ks_pair_kernel(st%xc, st%mol, st%c, st%scf_density, dmo(:, :, q), vk, error)
+         ! One pass over the grid for a batch, not one a member; in the
+         ! batches the exchange part above took, because each member costs
+         ! three more matrices inside.
+         first = 1
+         do while (first <= nset)
+            last = min(first + st%batch - 1, nset)
+            allocate (vk(st%n, st%n, last - first + 1))
+            call ks_pair_kernel_many(st%xc, st%mol, st%c, st%scf_density, &
+                                     dmo(:, :, first:last), vk, error)
             if (error%has_error()) return
-            t1(:, :, q) = t1(:, :, q) + 0.5_dp*vk
+            t1(:, :, first:last) = t1(:, :, first:last) + 0.5_dp*vk
+            deallocate (vk)
+            first = last + 1
          end do
       end if
    end subroutine t1_batch
@@ -1856,7 +1882,7 @@ contains
       real(dp), intent(in), optional :: kd(:, :, :), ddmat(:, :, :)
 
       real(dp), allocatable :: m(:, :, :), tm(:, :, :), w(:, :), vk(:, :), t1hf(:, :)
-      real(dp), allocatable :: wk(:, :)
+      real(dp), allocatable :: wk(:, :, :)
       integer :: y, n
 
       n = st%n
@@ -1869,7 +1895,7 @@ contains
       if (error%has_error()) return
       t1hf = t1d
       if (st%dh) then
-         allocate (vk(n, n), wk(n, n))
+         allocate (vk(n, n))
          call ks_pair_kernel(st%xc, st%mol, st%c, st%scf_density, d, vk, error)
          if (error%has_error()) return
          t1hf = t1d - 0.5_dp*vk
@@ -1878,14 +1904,15 @@ contains
          call pic_gemm(u_all(:, :, y), t1hf, w, transa="T")
          dt1(:, :, y) = t1x(:, :, y) + tm(:, :, y) + w
          call pic_gemm(t1hf, u_all(:, :, y), dt1(:, :, y), beta=1.0_dp)
-         if (st%dh) then
-            dt1(:, :, y) = dt1(:, :, y) - 0.5_dp*kd(:, :, y)
-            call ks_dl_pair_kernel(st%xc, st%mol, st%c, st%scf_density, d, vk, kd(:, :, y), &
-                                   u_all(:, :, y), ddmat(:, :, y), wk, error)
-            if (error%has_error()) return
-            dt1(:, :, y) = dt1(:, :, y) + 0.5_dp*wk
-         end if
       end do
+      if (st%dh) then
+         ! Every perturbation's kernel shares in two passes over the grid.
+         allocate (wk(n, n, st%n3))
+         call ks_dl_pair_kernel_many(st%xc, st%mol, st%c, st%scf_density, d, vk, kd, &
+                                     u_all, ddmat, wk, error)
+         if (error%has_error()) return
+         dt1 = dt1 - 0.5_dp*kd + 0.5_dp*wk
+      end if
    end subroutine total_derivative_t1
 
    subroutine lagrangian_perturbed(st, df, d, dd, lagc, t1sum, dip)

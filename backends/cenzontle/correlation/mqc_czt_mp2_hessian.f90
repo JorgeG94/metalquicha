@@ -55,7 +55,8 @@ module mqc_czt_mp2_hessian
    use mqc_czt_mp2_gradient, only: czt_mp2_gradient, build_amplitudes, &
                                    build_effective_2pdm_ao
    use mqc_czt_multipole, only: multipole_matrices, dipole_integral_derivatives
-   use mqc_czt_xc, only: xc_context_t, xc_kernel_apply, xc_kernel2_apply
+   use mqc_czt_xc, only: xc_context_t, xc_kernel_apply, xc_kernel2_apply, &
+                         xc_kernel_apply_many, xc_kernel2_apply_many
    use mqc_czt_xc_hessian, only: xc_potential_deriv, xc_kernel_deriv, &
                                  xc_potential_hessian
    implicit none
@@ -82,6 +83,7 @@ module mqc_czt_mp2_hessian
    public :: ks_pair_kernel
    public :: ks_kernel_deriv_stack
    public :: ks_dl_pair_kernel
+   public :: ks_pair_kernel_many, ks_dl_pair_kernel_many
 
 contains
 
@@ -2362,6 +2364,99 @@ contains
       w = w + 4.0_dp*matmul(transpose(coeff), matmul(vao, coeff))
       deallocate (msym, rot, tmp, m_ao, vao)
    end subroutine ks_dl_pair_kernel
+
+   subroutine ks_pair_kernel_many(xc, mol, coeff, scf_density, m_mo, vout, error)
+      !! `ks_pair_kernel` for a stack of generalized densities, in one pass
+      !! over the grid
+      type(xc_context_t), intent(inout) :: xc
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: coeff(:, :)
+      real(dp), intent(in) :: scf_density(:, :)   !! Where the kernel lives
+      real(dp), intent(in) :: m_mo(:, :, :)       !! (n_mo, n_mo, n_set)
+      real(dp), intent(out) :: vout(:, :, :)      !! (n_mo, n_mo, n_set)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: m_ao(:, :, :), vao(:, :, :), msym(:, :), half(:, :)
+      integer :: n_ao, n_mo, n_set, iset
+
+      vout = 0.0_dp
+      if (error%has_error()) return
+      n_ao = size(coeff, 1)
+      n_mo = size(coeff, 2)
+      n_set = size(m_mo, 3)
+      allocate (m_ao(n_ao, n_ao, n_set), vao(n_ao, n_ao, n_set))
+      allocate (msym(n_mo, n_mo), half(n_ao, n_mo))
+      do iset = 1, n_set
+         msym = 0.5_dp*(m_mo(:, :, iset) + transpose(m_mo(:, :, iset)))
+         call pic_gemm(coeff, msym, half)
+         call pic_gemm(half, coeff, m_ao(:, :, iset), transb="T")
+      end do
+      vao = 0.0_dp
+      call xc_kernel_apply_many(xc, mol, scf_density, m_ao, vao, error)
+      if (error%has_error()) return
+      do iset = 1, n_set
+         call pic_gemm(vao(:, :, iset), coeff, half)
+         call pic_gemm(coeff, half, vout(:, :, iset), transa="T", alpha=4.0_dp)
+      end do
+   end subroutine ks_pair_kernel_many
+
+   subroutine ks_dl_pair_kernel_many(xc, mol, coeff, scf_density, m_mo, vk_m, kd, &
+                                     u, ddmat_ao, w, error)
+      !! `ks_dl_pair_kernel` for every perturbation at once
+      !!
+      !! The same three terms per perturbation, with the two that touch the
+      !! grid taken for the whole stack in one pass each: the kernel on the
+      !! rotated densities, and the second kernel between each perturbation's
+      !! reference-density response and the fixed generalized density. One
+      !! perturbation at a time those are two passes over the grid per
+      !! Cartesian coordinate, and were most of a double hybrid's Hessian.
+      type(xc_context_t), intent(inout) :: xc
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: coeff(:, :)
+      real(dp), intent(in) :: scf_density(:, :)
+      real(dp), intent(in) :: m_mo(:, :)           !! The fixed generalized density
+      real(dp), intent(in) :: vk_m(:, :)           !! `ks_pair_kernel` at `m_mo`
+      real(dp), intent(in) :: kd(:, :, :)          !! The derivative stack, (n_mo, n_mo, n_pert)
+      real(dp), intent(in) :: u(:, :, :)           !! `U^X`, full MO rotations
+      real(dp), intent(in) :: ddmat_ao(:, :, :)    !! Reference density's responses, AO
+      real(dp), intent(out) :: w(:, :, :)          !! (n_mo, n_mo, n_pert)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: msym(:, :), rot(:, :, :), tmp(:, :, :)
+      real(dp), allocatable :: m_ao(:, :), vao(:, :, :), half(:, :)
+      integer :: n_ao, n_mo, n_pert, x
+
+      w = 0.0_dp
+      if (error%has_error()) return
+      n_ao = size(coeff, 1)
+      n_mo = size(coeff, 2)
+      n_pert = size(u, 3)
+      allocate (msym(n_mo, n_mo), rot(n_mo, n_mo, n_pert), tmp(n_mo, n_mo, n_pert))
+      msym = 0.5_dp*(m_mo + transpose(m_mo))
+
+      do x = 1, n_pert
+         call pic_gemm(u(:, :, x), vk_m, w(:, :, x), transa="T")
+         call pic_gemm(vk_m, u(:, :, x), w(:, :, x), beta=1.0_dp)
+         w(:, :, x) = w(:, :, x) + kd(:, :, x)
+         call pic_gemm(u(:, :, x), msym, rot(:, :, x))
+         call pic_gemm(msym, u(:, :, x), rot(:, :, x), transb="T", beta=1.0_dp)
+      end do
+      call ks_pair_kernel_many(xc, mol, coeff, scf_density, rot, tmp, error)
+      if (error%has_error()) return
+      w = w + tmp
+      deallocate (rot, tmp)
+
+      allocate (m_ao(n_ao, n_ao), vao(n_ao, n_ao, n_pert), half(n_ao, n_mo))
+      call pic_gemm(coeff, msym, half)
+      call pic_gemm(half, coeff, m_ao, transb="T")
+      vao = 0.0_dp
+      call xc_kernel2_apply_many(xc, mol, scf_density, ddmat_ao, m_ao, vao, error)
+      if (error%has_error()) return
+      do x = 1, n_pert
+         call pic_gemm(vao(:, :, x), coeff, half)
+         call pic_gemm(coeff, half, w(:, :, x), transa="T", alpha=4.0_dp, beta=1.0_dp)
+      end do
+   end subroutine ks_dl_pair_kernel_many
 
    subroutine correlation_dipole_derivatives(mol, coeff, orbital_energies, n_occ, &
                                              n_frozen, dm1mo, ddrel, mo1, sx, fx, &

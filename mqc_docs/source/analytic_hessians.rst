@@ -415,6 +415,21 @@ together, as the fitted Kohn-Sham Hessian's do. The reference Hessian under
 the block is the fitted Kohn-Sham one. A seven-point stencil of the fitted
 gradient on a fixed grid agrees with the block to 8e-10.
 
+**The nuclear responses are solved once.** The reference's Hessian and the
+fitted correlation block need the same first-order orbitals, from the same
+equations at the same tolerance, so the block takes the reference's and skips
+its own coupled-perturbed solve; the log says ``nuclear responses taken from
+the reference's Hessian``. That holds for RI-MP2 and for a fitted double
+hybrid, over an exact or a fitted reference. The conventional MP2 block
+solves at a tighter tolerance than the deck's and keeps its own.
+
+**A double hybrid's kernel terms take every perturbation in one pass over the
+grid**, and are threaded over grid blocks. On 1,3,5-trifluorobenzene, B2PLYP
+in 6-31G on four threads, the perturbed ladder's first stage went from 195 s
+to 47 s and the whole Hessian from 343 s to 151 s, the Hessian itself
+unchanged to 1e-11. The conventional (not fitted) double-hybrid block still
+takes one perturbation at a time.
+
 **Conventional MP2 over a fitted reference.** Still excluded. The conventional
 block contracts four-index integrals throughout.
 

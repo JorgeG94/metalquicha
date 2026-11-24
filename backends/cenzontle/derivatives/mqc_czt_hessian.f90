@@ -1010,7 +1010,8 @@ contains
 
    subroutine response_hessian(mol, density, orbitals, energies, n_occ, hess, error, &
                                xc, reference, k_scale, rs_k_lr, rs_omega, &
-                               max_iter, tol, dipole_derivatives, clk, batch, fit)
+                               max_iter, tol, dipole_derivatives, clk, batch, fit, &
+                               mo1_out)
       !! What the Hessian gains from letting the density relax
       !!
       !! The gradient needs no density derivative -- that is what makes the
@@ -1043,6 +1044,10 @@ contains
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: max_iter
       real(dp), intent(in), optional :: tol
+      real(dp), allocatable, intent(out), optional :: mo1_out(:, :, :, :)
+         !! The first-order orbitals the response was built from,
+         !! `(n_mo, n_occ, 3, natm)`, for a caller that needs the same
+         !! solve again and would otherwise repeat it.
       real(dp), allocatable, intent(out), optional :: dipole_derivatives(:, :)
          !! `d mu_a / dR_(X,b)`, `(3, 3*natm)` in atomic units, the Cartesian
          !! index fastest -- the layout `finite_diff_dipole_derivatives`
@@ -1220,6 +1225,7 @@ contains
                            max_iter=max_iter, tol=tol, batch=width, bounds=bounds, &
                            fit=fit)
       if (error%has_error()) return
+      if (present(mo1_out)) mo1_out = mo1
       call lap(clk, STAGE_CPHF)
 
       do ia = 1, natm
@@ -1325,7 +1331,7 @@ contains
    end subroutine response_hessian
 
    subroutine rhf_hessian(mol, density, orbitals, energies, n_occ, &
-                          hess, error, max_iter, tol, dipole_derivatives, batch)
+                          hess, error, max_iter, tol, dipole_derivatives, batch, mo1)
       !! The analytic Hessian of a converged restricted Hartree-Fock energy
       !!
       !! Three pieces, only meaningful added together: the nuclear repulsion,
@@ -1343,6 +1349,10 @@ contains
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: max_iter
       real(dp), intent(in), optional :: tol
+      real(dp), allocatable, intent(out), optional :: mo1(:, :, :, :)
+         !! The first-order orbitals the response was built from,
+         !! `(n_mo, n_occ, 3, natm)`, for a caller that needs the same
+         !! solve again and would otherwise repeat it.
       real(dp), allocatable, intent(out), optional :: dipole_derivatives(:, :)
          !! `d mu_a / dR_(X,b)`, `(3, 3*natm)`, forwarded from
          !! `response_hessian` -- see there for why it comes out beside the
@@ -1367,7 +1377,7 @@ contains
       call partial_hessian(mol, density, weighted, part, error, clk=clk)
       call response_hessian(mol, density, orbitals, energies, n_occ, resp, error, &
                             max_iter=max_iter, tol=tol, batch=batch, &
-                            dipole_derivatives=dipole_derivatives, clk=clk)
+                            dipole_derivatives=dipole_derivatives, clk=clk, mo1_out=mo1)
       if (error%has_error()) return
 
       hess = hess + part + resp
@@ -1377,7 +1387,7 @@ contains
    end subroutine rhf_hessian
 
    subroutine df_rhf_hessian(mol, aux, density, orbitals, energies, n_occ, hess, error, &
-                             controls, dipole_derivatives, xc)
+                             controls, dipole_derivatives, xc, mo1)
       !! The analytic Hessian of a density-fitted closed-shell SCF energy
       !!
       !! `rhf_hessian` with every two-electron term taken from the fit: the
@@ -1404,6 +1414,10 @@ contains
       type(error_t), intent(inout) :: error
       type(response_controls_t), intent(in), optional :: controls
          !! The solve's limits; the program defaults when absent.
+      real(dp), allocatable, intent(out), optional :: mo1(:, :, :, :)
+         !! The first-order orbitals the response was built from,
+         !! `(n_mo, n_occ, 3, natm)`, for a caller that needs the same
+         !! solve again and would otherwise repeat it.
       real(dp), allocatable, intent(out), optional :: dipole_derivatives(:, :)
          !! `d mu_a / dR_(X,b)`, (3, 3*natm), for infrared intensities
       type(xc_context_t), intent(inout), optional :: xc
@@ -1453,11 +1467,13 @@ contains
          call response_hessian(mol, density, orbitals, energies, n_occ, resp, error, &
                                xc=xc, reference=density, k_scale=kf, &
                                max_iter=ctl%max_iter, tol=ctl%tol, batch=ctl%batch, &
-                               dipole_derivatives=dipole_derivatives, clk=clk, fit=fit)
+                               dipole_derivatives=dipole_derivatives, clk=clk, fit=fit, &
+                               mo1_out=mo1)
       else
          call response_hessian(mol, density, orbitals, energies, n_occ, resp, error, &
                                max_iter=ctl%max_iter, tol=ctl%tol, batch=ctl%batch, &
-                               dipole_derivatives=dipole_derivatives, clk=clk, fit=fit)
+                               dipole_derivatives=dipole_derivatives, clk=clk, fit=fit, &
+                               mo1_out=mo1)
       end if
       if (error%has_error()) return
 
@@ -1469,7 +1485,8 @@ contains
    end subroutine df_rhf_hessian
 
    subroutine ks_hessian(mol, density, orbitals, energies, n_occ, &
-                         xc, k_scale, hess, error, max_iter, tol, dipole_derivatives, batch)
+                         xc, k_scale, hess, error, max_iter, tol, dipole_derivatives, batch, &
+                         mo1)
       !! The analytic Hessian of a converged Kohn-Sham energy
       !!
       !! `rhf_hessian` with the exchange-correlation parts put back. Three
@@ -1502,6 +1519,10 @@ contains
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: max_iter
       real(dp), intent(in), optional :: tol
+      real(dp), allocatable, intent(out), optional :: mo1(:, :, :, :)
+         !! The first-order orbitals the response was built from,
+         !! `(n_mo, n_occ, 3, natm)`, for a caller that needs the same
+         !! solve again and would otherwise repeat it.
       real(dp), allocatable, intent(out), optional :: dipole_derivatives(:, :)
          !! `d mu_a / dR_(X,b)`, `(3, 3*natm)`, forwarded from
          !! `response_hessian` -- see there for why it comes out beside the
@@ -1553,7 +1574,7 @@ contains
                             xc=xc, reference=density, k_scale=k_scale, &
                             rs_k_lr=xc%rs_k_lr, rs_omega=xc%rs_omega, &
                             max_iter=max_iter, tol=tol, batch=batch, &
-                            dipole_derivatives=dipole_derivatives, clk=clk)
+                            dipole_derivatives=dipole_derivatives, clk=clk, mo1_out=mo1)
       if (error%has_error()) return
 
       hess = hess + part + resp
