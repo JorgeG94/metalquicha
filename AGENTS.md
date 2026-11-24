@@ -345,7 +345,14 @@ The methods:
   threaded over grid blocks as their siblings `xc_potential_deriv` and
   `xc_hessian` already were: 47 s and 164 s, the Hessian the same to 1e-11.
   The conventional (not RI) double-hybrid Hessian still calls
-  `ks_dl_pair_kernel` in a loop. **Read the phase lines before assuming
+  `ks_dl_pair_kernel` in a loop. **The nuclear responses are solved once**: the
+  reference's Hessian returns its first-order orbitals (`mo1=`) and
+  `ri_mp2_correlation_hessian` takes them (`mo1_in=`) in place of its own
+  solve, for RI-MP2 and for a fitted double hybrid alike. That is right only
+  because both solves had the same equations, operator and tolerance; the
+  conventional MP2 block solves at 1e-13 where the reference solves at the
+  deck's tolerance, and a range-separated functional's perturbative solve
+  carries no long-range exchange, so neither shares. **Read the phase lines before assuming
   which method a slow Hessian is**: plain RI-MP2 on the same molecule has a
   ladder A of 3 s.
   **Density-fitted Hartree-Fock and Kohn-Sham have their own analytic

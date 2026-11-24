@@ -161,7 +161,7 @@ contains
                                          hess_corr, error, n_frozen, tol, batch, &
                                          atom_batch, parts, xc, scf_density, pt2_scale, &
                                          dipole_derivatives, max_iter, declined, &
-                                         zvector_batched, ref_aux)
+                                         zvector_batched, ref_aux, mo1_in)
       !! The correlation block of the RI-MP2 Hessian, `(3, 3, natm, natm)`
       !!
       !! Add it to the RHF Hessian (`rhf_hessian`) for the total. `hess_corr(a, b,
@@ -205,6 +205,12 @@ contains
          !! The perturbative term's share of `d mu_a / dR_(X,b)`, `(3, 3N)`,
          !! scaled by `pt2_scale`. Requires `xc`: over Hartree-Fock an MP2 dipole
          !! derivative is a different quantity.
+      real(dp), intent(in), optional :: mo1_in(:, :, :, :)
+         !! The reference's first-order orbitals, `(n_mo, n_occ, 3, natm)`,
+         !! when the caller already has them from the reference's own
+         !! Hessian: the same equations, operator and tolerance, so the
+         !! solve here is skipped. They have to come from that reference at
+         !! that tolerance; nothing here can check either.
       logical, intent(out), optional :: declined
          !! True only when the error set is the refusal of a metric that drops
          !! a mode: the one condition a well-formed call can meet, and the one
@@ -280,20 +286,31 @@ contains
       call skeleton_matrices(st, h1, s1, fx, sx, error)
       if (error%has_error()) return
       call stage_done(clock, "skeleton matrices")
-      if (st%fitted .and. st%dh) then
-         call solve_mo1_batch(mol, st%c, st%eps, st%no, h1, s1, mo1, error, xc=xc, &
-                              reference=scf_density, k_scale=st%kf, max_iter=st%max_iter, &
-                              tol=use_tol, batch=use_batch, bounds=st%bounds, fit=st%fit)
-      else if (st%fitted) then
-         call solve_mo1_batch(mol, st%c, st%eps, st%no, h1, s1, mo1, error, max_iter=st%max_iter, &
-                              tol=use_tol, batch=use_batch, bounds=st%bounds, fit=st%fit)
-      else if (st%dh) then
-         call solve_mo1_batch(mol, st%c, st%eps, st%no, h1, s1, mo1, error, xc=xc, &
-                              reference=scf_density, k_scale=st%kf, max_iter=st%max_iter, &
-                              tol=use_tol, batch=use_batch, bounds=st%bounds)
+      if (present(mo1_in)) then
+         if (any(shape(mo1_in) /= [st%n, st%no, 3, st%natm])) then
+            call error%set(ERROR_VALIDATION, "RI-MP2 Hessian: the first-order "// &
+                           "orbitals handed in are not this reference's shape")
+            return
+         end if
+         mo1 = mo1_in
+         call logger%performance("  RI-MP2 Hessian: nuclear responses taken from the "// &
+                                 "reference's Hessian, not solved again")
       else
-         call solve_mo1_batch(mol, st%c, st%eps, st%no, h1, s1, mo1, error, max_iter=st%max_iter, &
-                              tol=use_tol, batch=use_batch, bounds=st%bounds)
+         if (st%fitted .and. st%dh) then
+            call solve_mo1_batch(mol, st%c, st%eps, st%no, h1, s1, mo1, error, xc=xc, &
+                                 reference=scf_density, k_scale=st%kf, max_iter=st%max_iter, &
+                                 tol=use_tol, batch=use_batch, bounds=st%bounds, fit=st%fit)
+         else if (st%fitted) then
+            call solve_mo1_batch(mol, st%c, st%eps, st%no, h1, s1, mo1, error, max_iter=st%max_iter, &
+                                 tol=use_tol, batch=use_batch, bounds=st%bounds, fit=st%fit)
+         else if (st%dh) then
+            call solve_mo1_batch(mol, st%c, st%eps, st%no, h1, s1, mo1, error, xc=xc, &
+                                 reference=scf_density, k_scale=st%kf, max_iter=st%max_iter, &
+                                 tol=use_tol, batch=use_batch, bounds=st%bounds)
+         else
+            call solve_mo1_batch(mol, st%c, st%eps, st%no, h1, s1, mo1, error, max_iter=st%max_iter, &
+                                 tol=use_tol, batch=use_batch, bounds=st%bounds)
+         end if
       end if
       if (error%has_error()) return
       call stage_done(clock, "coupled-perturbed solve")

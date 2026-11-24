@@ -2938,6 +2938,9 @@ contains
             real(dp), allocatable :: hess4(:, :, :, :)
             real(dp), allocatable :: hess_pt2(:, :, :, :), hess_discard(:, :, :, :)
             real(dp), allocatable :: ddip(:, :), ddip_pt2(:, :)
+            real(dp), allocatable :: mo1_ref(:, :, :, :)
+               !! The reference's nuclear responses, kept for the
+               !! perturbative term so it does not solve them again
             type(timer_type) :: hess_clock
             logical :: pt2_built, declined
 
@@ -2952,7 +2955,7 @@ contains
                                    max_iter=settings%hessian_response_max_iter, &
                                    tol=settings%hessian_response_tol, &
                                    batch=settings%hessian_response_batch), &
-                                   dipole_derivatives=ddip, xc=xc)
+                                   dipole_derivatives=ddip, xc=xc, mo1=mo1_ref)
             else if (df_analytic) then
                call df_rhf_hessian(mol, aux, scf%density, scf%orbitals, &
                                    scf%orbital_energies, scf%n_occupied, hess4, error, &
@@ -2960,19 +2963,21 @@ contains
                                    max_iter=settings%hessian_response_max_iter, &
                                    tol=settings%hessian_response_tol, &
                                    batch=settings%hessian_response_batch), &
-                                   dipole_derivatives=ddip)
+                                   dipole_derivatives=ddip, mo1=mo1_ref)
             else if (kohn_sham) then
                call ks_hessian(mol, scf%density, scf%orbitals, &
                                scf%orbital_energies, scf%n_occupied, xc, xc%exx_fraction, &
                                hess4, error, max_iter=settings%hessian_response_max_iter, &
                                tol=settings%hessian_response_tol, &
-                               batch=settings%hessian_response_batch, dipole_derivatives=ddip)
+                               batch=settings%hessian_response_batch, dipole_derivatives=ddip, &
+                               mo1=mo1_ref)
             else
                call rhf_hessian(mol, scf%density, scf%orbitals, &
                                 scf%orbital_energies, scf%n_occupied, hess4, error, &
                                 max_iter=settings%hessian_response_max_iter, &
                                 tol=settings%hessian_response_tol, &
-                                batch=settings%hessian_response_batch, dipole_derivatives=ddip)
+                                batch=settings%hessian_response_batch, dipole_derivatives=ddip, &
+                                mo1=mo1_ref)
             end if
             ! The perturbative term, on top of the Kohn-Sham one, and the same
             ! split the gradient uses: `ks_hessian` is the whole reference --
@@ -2988,6 +2993,10 @@ contains
             ! both is the error.
             if (dh_analytic .and. .not. error%has_error()) then
                call logger%info("  computing the perturbative term's Hessian")
+               ! The perturbative term's own solve carries no long-range
+               ! exchange, so under a range-separated functional it is not
+               ! the reference's and is left to solve for itself.
+               if (xc%range_separated .and. allocated(mo1_ref)) deallocate (mo1_ref)
                if (settings%aux_basis_named) then
                   ! The energy above was fitted, so its Hessian is the fitted
                   ! block's: the same auxiliary basis, an exact reference, and
@@ -3002,7 +3011,8 @@ contains
                         max_iter=settings%hessian_response_max_iter, &
                         batch=settings%hessian_response_batch, xc=xc, &
                         scf_density=scf%density, pt2_scale=xc%pt2_fraction, &
-                        dipole_derivatives=ddip_pt2, declined=declined, ref_aux=aux)
+                        dipole_derivatives=ddip_pt2, declined=declined, ref_aux=aux, &
+                        mo1_in=mo1_ref)
                      call corr_aux%destroy()
                   else if (.not. error%has_error()) then
                      call ri_mp2_correlation_hessian( &
@@ -3011,7 +3021,7 @@ contains
                         max_iter=settings%hessian_response_max_iter, &
                         batch=settings%hessian_response_batch, xc=xc, &
                         scf_density=scf%density, pt2_scale=xc%pt2_fraction, &
-                        dipole_derivatives=ddip_pt2, declined=declined)
+                        dipole_derivatives=ddip_pt2, declined=declined, mo1_in=mo1_ref)
                      call corr_aux%destroy()
                   end if
                   ! Only the named refusal is differenced instead; any other
@@ -3362,6 +3372,9 @@ contains
                 .and. settings%scs_ss == 1.0_dp .and. settings%scs_os == 1.0_dp) then
                block
                   real(dp), allocatable :: hcorr(:, :, :, :), href(:, :, :, :)
+                  real(dp), allocatable :: mo1_ref(:, :, :, :)
+                     !! The reference's nuclear responses, kept for the
+                     !! correlation block so it does not solve them again
                   real(dp), allocatable :: hnuc(:, :, :, :), hresp(:, :, :, :)
                   type(timer_type) :: hess_clock
                   logical :: built, declined
@@ -3380,14 +3393,16 @@ contains
                                             controls=response_controls_t( &
                                             max_iter=settings%hessian_response_max_iter, &
                                             tol=settings%hessian_response_tol, &
-                                            batch=settings%hessian_response_batch))
+                                            batch=settings%hessian_response_batch), &
+                                            mo1=mo1_ref)
                      else
                         call rhf_hessian(mol, scf%density, &
                                          scf%orbitals, scf%orbital_energies, scf%n_occupied, &
                                          href, error, &
                                          max_iter=settings%hessian_response_max_iter, &
                                          tol=settings%hessian_response_tol, &
-                                         batch=settings%hessian_response_batch)
+                                         batch=settings%hessian_response_batch, &
+                                         mo1=mo1_ref)
                      end if
                      if (.not. error%has_error()) then
                         call correlation_aux_basis(settings, fragment, symbols, corr_aux, error)
@@ -3399,7 +3414,7 @@ contains
                            tol=settings%hessian_response_tol, &
                            max_iter=settings%hessian_response_max_iter, &
                            batch=settings%hessian_response_batch, declined=declined, &
-                           ref_aux=aux)
+                           ref_aux=aux, mo1_in=mo1_ref)
                         call corr_aux%destroy()
                      else if (.not. error%has_error()) then
                         call ri_mp2_correlation_hessian( &
@@ -3407,7 +3422,8 @@ contains
                            scf%n_occupied, hcorr, error, n_frozen=frozen, &
                            tol=settings%hessian_response_tol, &
                            max_iter=settings%hessian_response_max_iter, &
-                           batch=settings%hessian_response_batch, declined=declined)
+                           batch=settings%hessian_response_batch, declined=declined, &
+                           mo1_in=mo1_ref)
                         call corr_aux%destroy()
                      end if
                      ! A metric that drops a mode is correct by differences
