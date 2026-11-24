@@ -1828,8 +1828,126 @@
                 ]
             ],
             "hessian_tolerance": 1e-07,
+            "expected_raman_activities": [7.98516460, 45.84388382, 16.73971997],
+            "raman_tolerance": 0.001,
             "type": "unfragmented",
-            "reference_note": "The energy and Hessian of the plain Hessian case, which asking for Raman activities must not move; the manifest has nowhere to put an activity. What the run exercises is the property end to end: the polarizability's Cartesian derivatives beside the analytic Hessian, their projection on the modes, and the activities and depolarization ratios written to the JSON. The derivatives themselves are pinned against PySCF in test/test_mqc_czt_raman.f90."
+            "reference_note": "expected_raman_activities is the three vibrations' activities from the analytic route, in A^4/amu; the finite-field route gives 7.98516434, 45.84383146 and 16.73967926 and the displacement route the same to that route's truncation, 5e-5 away at most, under a tolerance of 1e-3. They are pinned because the energy and the Hessian do not notice the activities: a mean field built with no exchange gave 8.307, 33.758 and 11.782 here and this case stayed green. The energy and Hessian of the plain Hessian case, which asking for Raman activities must not move; the manifest has nowhere to put an activity. What the run exercises is the property end to end: the polarizability's Cartesian derivatives beside the analytic Hessian, their projection on the modes, and the activities and depolarization ratios written to the JSON. The derivatives themselves are pinned against PySCF in test/test_mqc_czt_raman.f90."
+        },
+        {
+            "name": "B3LYP Hessian with Raman activities H2O sto-3g (CPU)",
+            "input": "inputs/cpu/mqc/raman/cpu_water_sto-3g_b3lyp_raman.json",
+            "expected_energy": -75.311397472377,
+            "expected_hessian": [
+                [
+                    -0.103252451526,
+                    -0.0,
+                    0.0,
+                    0.051839939744,
+                    -0.0,
+                    0.0,
+                    0.051839939521,
+                    0.0,
+                    0.0
+                ],
+                [
+                    -0.0,
+                    0.948518337446,
+                    -6.52e-10,
+                    0.0,
+                    -0.474267920076,
+                    0.387220353209,
+                    -0.0,
+                    -0.474267919478,
+                    -0.387220352559
+                ],
+                [
+                    0.0,
+                    -6.5e-10,
+                    0.549192945549,
+                    0.0,
+                    0.261287248791,
+                    -0.274743399518,
+                    0.0,
+                    -0.261287248139,
+                    -0.274743399166
+                ],
+                [
+                    0.051839939744,
+                    0.0,
+                    0.0,
+                    -0.040207321473,
+                    0.0,
+                    -0.0,
+                    -0.011634893672,
+                    0.0,
+                    -0.0
+                ],
+                [
+                    -0.0,
+                    -0.474267920076,
+                    0.261287248791,
+                    0.0,
+                    0.494100867976,
+                    -0.324254261311,
+                    -0.0,
+                    -0.019834166113,
+                    0.062966608562
+                ],
+                [
+                    0.0,
+                    0.387220353209,
+                    -0.274743399518,
+                    -0.0,
+                    -0.32425426131,
+                    0.265584978047,
+                    -0.0,
+                    -0.062966608569,
+                    0.009157553486
+                ],
+                [
+                    0.051839939521,
+                    -0.0,
+                    0.0,
+                    -0.011634893672,
+                    -0.0,
+                    -0.0,
+                    -0.04020732125,
+                    -0.0,
+                    -0.0
+                ],
+                [
+                    0.0,
+                    -0.474267919478,
+                    -0.261287248139,
+                    0.0,
+                    -0.019834166113,
+                    -0.062966608569,
+                    -0.0,
+                    0.494100867377,
+                    0.324254260663
+                ],
+                [
+                    0.0,
+                    -0.387220352559,
+                    -0.274743399166,
+                    -0.0,
+                    0.062966608562,
+                    0.009157553486,
+                    -0.0,
+                    0.324254260661,
+                    0.265584977699
+                ]
+            ],
+            "hessian_tolerance": 1e-07,
+            "expected_raman_activities": [
+                7.8879116,
+                37.64119959,
+                14.17395927
+            ],
+            "raman_tolerance": 0.001,
+            "type": "unfragmented",
+            "requires": "libxc",
+            "reference_note": "The energy and Hessian are the PySCF ones the B3LYP Hessian case pins, which asking for Raman activities must not move. expected_raman_activities is the three vibrations' activities from the analytic Kohn-Sham route, in A^4/amu: the route that differences nothing, with the functional's kernel in every response solve and its third derivative in the second-order Fock matrix and in the gradient. The finite-field route, which shares no formula with it and differences the ordinary Kohn-Sham gradient over thirteen SCFs, gives 7.88787138, 37.64139670 and 14.17390910 on the same deck, 2e-4 away at most, which is that route's own truncation at a field of 1e-3; the tolerance is 1e-3. A missing term is wrong in the first or second digit. The derivatives themselves are held to the extrapolated finite-field ones, 2e-7, in test/test_mqc_czt_raman.f90."
         },
         {
             "name": "RHF Hessian H2O cc-pvdz (CPU)",
@@ -4766,13 +4884,17 @@
         {
             "name": "RHF with Mayer bond orders H2O 6-31g (CPU)",
             "input": "inputs/cpu/mqc/bond_orders/cpu_water_6-31g_mayer.json",
+            "expected_output": {"bond_orders.scheme": "mayer", "bond_orders.matrix": [[0.0, 0.7986245708, 0.7986245708], [0.7986245708, 0.0, 0.0033604673], [0.7986245708, 0.0033604673, 0.0]], "bond_orders.atoms[*].valence": [1.5972491416, 0.8019850382, 0.8019850382]},
+            "output_tolerance": 1e-05,
             "expected_energy": -75.984779843967,
             "type": "unfragmented",
-            "reference_note": "the checked energy is the ordinary RHF one, and pinning it is the point: asking for properties.bond_orders must not move the number the deck was already computing. The bond orders themselves have no place in this manifest and are pinned in test/test_mqc_mayer_bond_orders.f90 against PySCF and numpy over the same density; this deck reports O-H 0.7986 and an oxygen valence of 1.5972."
+            "reference_note": "the checked energy is the ordinary RHF one, and pinning it is the point: asking for properties.bond_orders must not move the number the deck was already computing. The bond orders are held against PySCF and numpy over the same density in test/test_mqc_mayer_bond_orders.f90; expected_output here is this program's own table from the deck, so that what reaches the JSON cannot drift or go missing unnoticed."
         },
         {
             "name": "UHF with Mayer bond orders O2 cc-pvdz multiplicity 3 (CPU)",
             "input": "inputs/cpu/mqc/bond_orders/cpu_o2_cc-pvdz_mayer.json",
+            "expected_output": {"bond_orders.scheme": "mayer", "bond_orders.matrix": [[0.0, 1.8542708711], [1.8542708711, 0.0]], "bond_orders.atoms[*].valence": [1.8542708711, 1.8542708711]},
+            "output_tolerance": 1e-05,
             "expected_energy": -149.627757503695,
             "type": "unfragmented",
             "reference_note": "the open-shell case, and the energy is the same UHF number cpu_o2_cc-pvdz_m3.json pins -- the property changes nothing about the SCF. What the run exercises is the spin-resolved formula: Mayer's open-shell bond order is a sum over spins and NOT the closed-shell expression applied to the total density. PySCF over the same converged density gives 1.854271 the right way and 1.406158 the wrong way, so a table printing 1.8543 has taken the right branch."
@@ -4780,13 +4902,17 @@
         {
             "name": "RHF with Fukui indices (chelpg) H2O 6-31g (CPU)",
             "input": "inputs/cpu/mqc/fukui/cpu_water_6-31g_fukui_chelpg.json",
+            "expected_output": {"fukui.population_scheme": "chelpg", "fukui.ionisation_potential": 0.4020495103, "fukui.electron_affinity": -0.1944238782, "fukui.hardness": 0.2982366943, "fukui.atoms[*].f_plus": [-0.161689085, 0.5797471086, 0.5819419764], "fukui.atoms[*].f_minus": [0.7803535774, 0.1095566168, 0.1100898058], "fukui.atoms[*].f_zero": [0.3093322462, 0.3446518627, 0.3460158911]},
+            "output_tolerance": 1e-05,
             "expected_energy": -75.984779843967,
             "type": "unfragmented",
-            "reference_note": "PySCF has no Fukui indices, so the checked energy is the ordinary RHF one. What this case covers is that the run completes: two SCFs on the ions and a sum rule that aborts rather than printing something wrong. The indices themselves are pinned in test/test_mqc_fukui.f90."
+            "reference_note": "PySCF has no Fukui indices, so the checked energy is the ordinary RHF one. What this case covers is the path from a deck: two SCFs on the ions and a sum rule that aborts rather than printing something wrong. The indices are held to their formulas in test/test_mqc_fukui.f90; expected_output here is this program's own table, so that what reaches the JSON cannot drift or go missing unnoticed."
         },
         {
             "name": "RHF with Fukui indices, ions given their own SCF group H2O 6-31g (CPU)",
             "input": "inputs/cpu/mqc/fukui/cpu_water_6-31g_fukui_scf_group.json",
+            "expected_output": {"fukui.population_scheme": "chelpg", "fukui.ionisation_potential": 0.4020495103, "fukui.electron_affinity": -0.1944238782, "fukui.hardness": 0.2982366943, "fukui.atoms[*].f_plus": [-0.1616890949, 0.5797471134, 0.5819419815], "fukui.atoms[*].f_minus": [0.7803535743, 0.1095566183, 0.1100898073], "fukui.atoms[*].f_zero": [0.3093322397, 0.3446518659, 0.3460158944]},
+            "output_tolerance": 1e-05,
             "expected_energy": -75.984779843967,
             "type": "unfragmented",
             "reference_note": "Same molecule, basis and reference as the chelpg case above, and deliberately the same energy: properties.fukui.scf configures the two ion SCFs only, so a deck that sets a level shift, an EDIIS opening and a longer budget for them must leave the neutral's energy exactly where it was. A regression that leaked these settings onto the neutral would move this number while the chelpg case held still, which is what makes the pair diagnostic. The indices themselves are pinned in test/test_mqc_fukui.f90."
@@ -4794,21 +4920,27 @@
         {
             "name": "RHF with Fukui indices (mulliken) H2O 6-31g (CPU)",
             "input": "inputs/cpu/mqc/fukui/cpu_water_6-31g_fukui_mulliken.json",
+            "expected_output": {"fukui.population_scheme": "mulliken", "fukui.ionisation_potential": 0.4020495103, "fukui.electron_affinity": -0.1944238782, "fukui.hardness": 0.2982366943, "fukui.atoms[*].f_plus": [-0.1423974122, 0.5711987057, 0.5711987065], "fukui.atoms[*].f_minus": [0.6914482199, 0.15427589, 0.1542758901], "fukui.atoms[*].f_zero": [0.2745254038, 0.3627372978, 0.3627372983]},
+            "output_tolerance": 1e-05,
             "expected_energy": -75.984779843967,
             "type": "unfragmented",
-            "reference_note": "PySCF has no Fukui indices, so the checked energy is the ordinary RHF one. What this case covers is that the run completes: two SCFs on the ions and a sum rule that aborts rather than printing something wrong. The indices themselves are pinned in test/test_mqc_fukui.f90."
+            "reference_note": "PySCF has no Fukui indices, so the checked energy is the ordinary RHF one. What this case covers is the path from a deck: two SCFs on the ions and a sum rule that aborts rather than printing something wrong. The indices are held to their formulas in test/test_mqc_fukui.f90; expected_output here is this program's own table, so that what reaches the JSON cannot drift or go missing unnoticed."
         },
         {
             "name": "RHF with Fukui indices (hirshfeld) H2O 6-31g (CPU)",
             "input": "inputs/cpu/mqc/fukui/cpu_water_6-31g_fukui_hirshfeld.json",
+            "expected_output": {"fukui.population_scheme": "hirshfeld", "fukui.ionisation_potential": 0.4020495103, "fukui.electron_affinity": -0.1944238782, "fukui.hardness": 0.2982366943, "fukui.atoms[*].f_plus": [0.2928569927, 0.3535715034, 0.3535715039], "fukui.atoms[*].f_minus": [0.673277687, 0.1633611565, 0.1633611565], "fukui.atoms[*].f_zero": [0.4830673398, 0.2584663299, 0.2584663302]},
+            "output_tolerance": 1e-05,
             "expected_energy": -75.984779843967,
             "type": "unfragmented",
-            "reference_note": "PySCF has no Fukui indices, so the checked energy is the ordinary RHF one, the same number as the chelpg and mulliken cases. What this case covers is that the run completes with the indices condensed by Hirshfeld weights: free atoms solved once, one partition for all three states, and a sum rule that aborts rather than printing something wrong. The indices themselves are pinned against PySCF in test/test_mqc_hirshfeld.f90.",
+            "reference_note": "PySCF has no Fukui indices, so the checked energy is the ordinary RHF one, the same number as the chelpg and mulliken cases. What this case covers is the path from a deck with the indices condensed by Hirshfeld weights: free atoms solved once, one partition for all three states, and a sum rule that aborts rather than printing something wrong. The weights are held against PySCF in test/test_mqc_hirshfeld.f90; expected_output here is this program's own table.",
             "requires": "libxc"
         },
         {
             "name": "RHF with Hirshfeld charges H2O 6-31g (CPU)",
             "input": "inputs/cpu/mqc/charges/cpu_water_6-31g_hirshfeld.json",
+            "expected_output": {"atomic_charges.scheme": "hirshfeld", "atomic_charges.atoms[*].charge": [-0.3459781776, 0.1729890888, 0.1729890888]},
+            "output_tolerance": 1e-05,
             "expected_energy": -75.984779843967,
             "type": "unfragmented",
             "reference_note": "The ordinary RHF energy, which asking for charges must not move. What the run exercises is the Hirshfeld partition end to end: free atoms solved with wB97X in def2-TZVP, the molecular density divided by their shares, and the charges written to the JSON with their sum, renormalised to Tr(D S) so it is the molecular charge to round-off (before renormalisation the grid left it at -1.2e-8). The charges themselves are pinned against PySCF in test/test_mqc_hirshfeld.f90.",
@@ -4817,6 +4949,8 @@
         {
             "name": "UHF with Hirshfeld charges and spin populations O2 cc-pvdz multiplicity 3 (CPU)",
             "input": "inputs/cpu/mqc/charges/cpu_o2_cc-pvdz_hirshfeld.json",
+            "expected_output": {"atomic_charges.scheme": "hirshfeld", "atomic_charges.atoms[*].charge": [-0.0, 0.0], "atomic_charges.atoms[*].spin_population": [1.0, 1.0]},
+            "output_tolerance": 1e-05,
             "expected_energy": -149.627757503695,
             "type": "unfragmented",
             "reference_note": "The same UHF number cpu_o2_cc-pvdz_mayer.json pins. The open-shell path: spin populations come from the same Hirshfeld weights as the charges, and by symmetry each oxygen is neutral and carries one unpaired electron -- the run writes charges of 2e-10 and spin populations of 0.999999999.",
@@ -4825,9 +4959,11 @@
         {
             "name": "RHF with NMR shieldings H2O 6-31g (CPU)",
             "input": "inputs/cpu/mqc/nmr/cpu_water_6-31g_nmr.json",
+            "expected_nmr_isotropic": [326.47613634, 32.49829073, 32.49829072],
+            "nmr_tolerance": 0.001,
             "expected_energy": -75.984779843967,
             "type": "unfragmented",
-            "reference_note": "The ordinary RHF energy, which asking for shieldings must not move; the manifest has nowhere to put a tensor. What the run exercises is the shielding end to end: the gauge-including integrals from libfint, the coupled-perturbed solve for the field, and the tensors written to the JSON. The tensors themselves are pinned against PySCF, element by element, in test/test_mqc_czt_nmr.f90."
+            "reference_note": "The ordinary RHF energy, which asking for shieldings must not move. What the run exercises is the shielding end to end: the gauge-including integrals from libfint, the coupled-perturbed solve for the field, and the tensors written to the JSON. The tensors are held against PySCF, element by element, in test/test_mqc_czt_nmr.f90; expected_nmr_isotropic here is this program's own isotropic values from the deck, so that what reaches the JSON cannot drift or go missing unnoticed."
         },
         {
             "name": "GMBE(2) with NMR shieldings, capped triglycine STO-3G (CPU)",
@@ -4842,6 +4978,8 @@
         {
             "name": "RHF with MBIS charges H2O 6-31g (CPU)",
             "input": "inputs/cpu/mqc/charges/cpu_water_6-31g_mbis.json",
+            "expected_output": {"atomic_charges.scheme": "mbis", "atomic_charges.atoms[*].charge": [-0.9107227674, 0.4553613837, 0.4553613837]},
+            "output_tolerance": 1e-05,
             "expected_energy": -75.984779843967,
             "type": "unfragmented",
             "reference_note": "The ordinary RHF energy, which asking for charges must not move. What the run exercises is MBIS end to end: the density evaluated on the grid once, exponential pro-atom shells fitted to it by the fixed-point iteration, and the charges written to the JSON with their sum, renormalised to Tr(D S) so it is the molecular charge to round-off. The charges themselves are pinned against denspart in test/test_mqc_mbis.f90."
@@ -4849,6 +4987,8 @@
         {
             "name": "UHF with MBIS charges and spin populations O2 cc-pvdz multiplicity 3 (CPU)",
             "input": "inputs/cpu/mqc/charges/cpu_o2_cc-pvdz_mbis.json",
+            "expected_output": {"atomic_charges.scheme": "mbis", "atomic_charges.atoms[*].charge": [-0.0, 0.0], "atomic_charges.atoms[*].spin_population": [1.0, 1.0]},
+            "output_tolerance": 1e-05,
             "expected_energy": -149.627757503695,
             "type": "unfragmented",
             "reference_note": "The same UHF number cpu_o2_cc-pvdz_mayer.json pins. The open-shell path: spin populations come from the converged MBIS weights, and by symmetry each oxygen is neutral and carries one unpaired electron -- the run writes charges of 0 to six places and spin populations of 0.999999999."
@@ -4856,15 +4996,19 @@
         {
             "name": "KS PBE with Fukui indices (hirshfeld default) H2O 6-31g grid 4 (CPU)",
             "input": "inputs/cpu/mqc/fukui/cpu_water_6-31g_pbe_fukui.json",
+            "expected_output": {"fukui.population_scheme": "hirshfeld", "fukui.ionisation_potential": 0.4542949558, "fukui.electron_affinity": -0.1638512338, "fukui.hardness": 0.3090730948, "fukui.atoms[*].f_plus": [0.3009946883, 0.3495026555, 0.3495026562], "fukui.atoms[*].f_minus": [0.6724845101, 0.1637577449, 0.163757745], "fukui.atoms[*].f_zero": [0.4867395992, 0.2566302002, 0.2566302006]},
+            "output_tolerance": 1e-05,
             "expected_energy": -76.298635406403,
             "tolerance": 1e-07,
             "type": "unfragmented",
-            "reference_note": "PySCF has no Fukui indices, so the checked energy is the ordinary Kohn-Sham one. What this case covers is that the run completes with a Fukui table: the two ions are doublets and need a spin-POLARISED functional while the neutral's context is unpolarised, and handing the wrong one across is refused rather than misread -- which would surface as a skipped analysis and a run that still exits zero. It also omits `population`, so it pins the Hirshfeld default. Grid level 4 rather than 3, because the Fukui descriptors are differences between three separately converged states and the quadrature error does not cancel the way it does within one SCF. The tolerance is 1e-7 rather than the manifest's 1e-9: both codes build a level-4 grid from the same tables but prune it differently, which is 3.1e-8 on this molecule and has nothing to do with the analysis being tested.",
+            "reference_note": "PySCF has no Fukui indices, so the checked energy is the ordinary Kohn-Sham one. What this case covers is the path from a deck to a Fukui table, pinned in expected_output as this program's own numbers: the two ions are doublets and need a spin-POLARISED functional while the neutral's context is unpolarised, and handing the wrong one across is refused rather than misread -- which would surface as a skipped analysis and a run that still exits zero. It also omits `population`, so it pins the Hirshfeld default. Grid level 4 rather than 3, because the Fukui descriptors are differences between three separately converged states and the quadrature error does not cancel the way it does within one SCF. The tolerance is 1e-7 rather than the manifest's 1e-9: both codes build a level-4 grid from the same tables but prune it differently, which is 3.1e-8 on this molecule and has nothing to do with the analysis being tested.",
             "requires": "libxc"
         },
         {
             "name": "RHF with Fukui indices in C-PCM water H2O 6-31g (CPU)",
             "input": "inputs/cpu/mqc/fukui/cpu_water_6-31g_fukui_cpcm.json",
+            "expected_output": {"fukui.population_scheme": "chelpg", "fukui.ionisation_potential": 0.2706708377, "fukui.electron_affinity": -0.080845395, "fukui.hardness": 0.1757581163, "fukui.atoms[*].f_plus": [-0.2205626602, 0.6091509047, 0.6114117554], "fukui.atoms[*].f_minus": [0.8193801733, 0.0900577307, 0.090562096], "fukui.atoms[*].f_zero": [0.2994087566, 0.3496043177, 0.3509869257]},
+            "output_tolerance": 1e-05,
             "expected_energy": -75.997887460269,
             "type": "unfragmented",
             "reference_note": "The checked number is the ordinary solvated RHF energy, as for the gas-phase Fukui cases -- PySCF has no Fukui indices. What this case covers is that the two ion SCFs run in the SAME continuum the neutral did. They used to be refused outright rather than run, because solving the ions in the gas phase and differencing them against a solvated neutral is an ionisation potential across two different physics, wrong by the solvation energy of a charged species -- which here is 3.6 eV on the IP and 3.1 eV on the EA, the size of the answer rather than a correction to it. Reference by the recipe the PCM decks use: pyscf.solvent.pcm, C-PCM at 78.3553, lebedev_order 29, radii_table = 1.2 * Bondi. Equilibrium solvation in all three states, so the IP and EA are the adiabatic ones."
@@ -4998,6 +5142,8 @@
         {
             "name": "RHF N2 6-31G at 1.6 A, DIIS lands on a saddle (CPU)",
             "input": "inputs/cpu/mqc/soscf/n2_stretched_saddle.json",
+            "expected_output": {"stability.stable": false, "stability.lowest_curvature": -0.0676630782},
+            "output_tolerance": 1e-05,
             "expected_energy": -108.551570996439,
             "tolerance": 1e-08,
             "type": "unfragmented"
@@ -5005,6 +5151,8 @@
         {
             "name": "RHF N2 6-31G at 1.6 A, second order finds the minimum (CPU)",
             "input": "inputs/cpu/mqc/soscf/n2_stretched_second_order.json",
+            "expected_output": {"stability.stable": true, "stability.lowest_curvature": 0.0},
+            "output_tolerance": 1e-05,
             "expected_energy": -108.571753302899,
             "tolerance": 1e-08,
             "type": "unfragmented"
@@ -5012,6 +5160,8 @@
         {
             "name": "RHF N2 6-31G at 1.6 A, second order asked for as the accelerator (CPU)",
             "input": "inputs/cpu/mqc/soscf/n2_stretched_soscf_accelerator.json",
+            "expected_output": {"stability.stable": true, "stability.lowest_curvature": 0.0},
+            "output_tolerance": 1e-05,
             "expected_energy": -108.571753302899,
             "tolerance": 1e-08,
             "type": "unfragmented",
@@ -5037,6 +5187,8 @@
         {
             "name": "RHF N2 6-31G at 1.6 A, geometric direct minimisation stays on the saddle (CPU)",
             "input": "inputs/cpu/mqc/gdm/n2_stretched_gdm.json",
+            "expected_output": {"stability.stable": false, "stability.lowest_curvature": -0.0676630779},
+            "output_tolerance": 1e-05,
             "expected_energy": -108.551570996439,
             "tolerance": 1e-08,
             "type": "unfragmented",

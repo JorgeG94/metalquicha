@@ -552,12 +552,41 @@ is visible. The derivative pass over the ten-density stack holds two
 potentials per density per thread, so it is taken in pieces against
 `memory_budget`. Measured on four threads,
 the Raman step of a Hessian run went from 24.8 s to 2.2 s on propane in
-cc-pVDZ and from 55.2 s to 5.5 s on a water hexamer in 6-31G*. `cphf_solve`'s
-other callers still iterate that way. Its
+cc-pVDZ and from 55.2 s to 5.5 s on a water hexamer in 6-31G*. Its
 check is the translational sum rule, 1e-13, and PySCF's differences
-*extrapolated to zero step*; the plain ones are 3e-5 off, their own error. A
-Kohn-Sham reference takes the next route instead, since the analytic one
-would need the functional's third derivative. `polarizability_derivatives_field`
+*extrapolated to zero step*; the plain ones are 3e-5 off, their own error. **A
+Kohn-Sham reference takes the same route**, LDA, GGA and global hybrids
+(`xc=` to `polarizability_derivatives_analytic`); a meta-GGA, a
+range-separated hybrid and VV10 take the next one. Three additions, each a
+derivative of the functional further: the kernel in every response solve,
+`xc_kernel2_apply(D; D^k, D^l)` in the second-order Fock matrix -- there
+whatever `D^kl` is, because the potential is not linear in the density -- and
+in the gradient `xc_potential_gradient(D, D^kl)` plus `xc_kernel_gradient(D;
+D^k, D^l)`, the derivative of `Tr(P_a f_xc P_b)` with all three densities
+held and the grid moving. Both are threaded over grid blocks with a private
+gradient per thread; **an internal procedure called from the parallel region
+reaches the host's variable, not the thread's private copy**, so the block's
+error is passed to `report_failure` as an argument. The exchange term is
+`two_electron_deriv_many(..., exx_fraction=)`. **A context that was never
+created is present, inactive, and says its exchange fraction is zero**: it is
+what the bridge holds for Hartree-Fock, and passing it down made the mean
+field one with no exchange, activities of 33.8 for 45.8 on water with every
+test green. The routine forwards the context only when it is active, and
+`has_functional` in `mqc_czt_response_product` is the test everywhere there
+-- never `present(xc)` alone. No other program gives a
+Kohn-Sham reference number here, so the check is the finite-field route,
+which shares no formula with it, *extrapolated over two field strengths*:
+1e-7 for an LDA and a GGA, 2e-7 for B3LYP at fields of 4e-3 and 2e-3.
+**Unextrapolated it is 1e-4 off and hides a missing term; at smaller fields
+the hybrid's reference is the noisy one** (7e-6 at 2e-3 and 1e-3), the
+exchange build's noise divided by the field squared. The KS solves are
+iterated, since the factorized matrix has no kernel, and **`cphf_solve` now
+advances its right-hand sides in lockstep**, `LOCKSTEP_GROUP` at a time, one
+`response_product` per iteration for every member still unconverged: each
+member's iterates are the ones it would have had alone, and nine solves cost
+two solves' passes. Every caller of `cphf_solve` gets that. On four
+threads at B3LYP the Raman step is 22 s against the field route's 56 on
+propane in cc-pVDZ, and 50 against 157 on a water hexamer in 6-31G*. `polarizability_derivatives_field`
 differences the analytic gradient twice over twelve electric fields --
 thirteen SCFs and gradients whatever the molecule's size, the field entering
 through `run_czt_rhf`'s `h_extra` and its own gradient term added by hand,
@@ -1059,6 +1088,22 @@ python3 run_validation.py --manifest validation_tests_cpu.json  # 347 cases, the
 python3 run_validation.py -t water_sto-3g                       # substring filter on the test name
 python3 run_validation.py --mpi --np 4                          # fragmented on 4 ranks
 ```
+
+**A case that pins only the energy says nothing about a property.** What
+`properties` asks for changes no energy, so a deck that requests one and a
+manifest entry holding `expected_energy` alone pass whether the property is
+right, wrong or absent: Hartree-Fock Raman activities were 33.8 for 45.8 for
+a day with the suite green. `expected_output` maps a path into the output to
+its value -- `atomic_charges.atoms[*].charge`, `stability.lowest_curvature`
+-- and a missing path is a failure; `expected_nmr_isotropic` and
+`expected_raman_activities` are the two with their own keys. Every property
+deck that writes its result pins it. Those pins are this program's own
+numbers, there to catch drift and absence; the comparison with another
+program is in the unit test each `reference_note` names. The runner checks
+every entry's keys before it runs anything, so a misspelt key is an error
+and not a check that never happens. **The quasi-atomic bonding analysis
+writes nothing to the output file**, so its seven decks still pin the energy
+alone.
 
 **A build without tblite skips most of the default manifest, and skips are not
 failures.** `-t h3o` on such a build runs zero tests and prints a green summary.

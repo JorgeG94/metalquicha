@@ -168,7 +168,7 @@ contains
       kf = 1.0_dp
       k_lr = 0.0_dp
       omega = 0.0_dp
-      if (present(xc)) then
+      if (has_functional(xc)) then
          kf = xc%exx_fraction
          if (xc%range_separated) then
             k_lr = xc%rs_k_lr
@@ -179,7 +179,7 @@ contains
       if (present(rs_k_lr)) k_lr = rs_k_lr
       if (present(rs_omega)) omega = rs_omega
 
-      if (present(xc) .and. .not. present(reference)) then
+      if (has_functional(xc) .and. .not. present(reference)) then
          call error%set(ERROR_VALIDATION, "the response operator was given an "// &
                         "exchange-correlation context but no reference density to "// &
                         "evaluate its kernel at")
@@ -267,7 +267,7 @@ contains
       ! The kernel, for a Kohn-Sham reference, on top of whatever built `g`.
       ! Leaving it out does not fail; it converges to the wrong orbital
       ! response. One grid pass serves the whole batch.
-      if (present(xc) .and. .not. anti) then
+      if (has_functional(xc) .and. .not. anti) then
          call response_xc_kernel(xc, mol, reference, dens, g, error, cache=cache, &
                                  triplet=spin_flip)
          if (error%has_error()) return
@@ -484,7 +484,7 @@ contains
       ! Only the fitted branch needs this here; the others let
       ! `response_mean_field` resolve it the same way.
       kf = 1.0_dp
-      if (present(xc)) kf = xc%exx_fraction
+      if (has_functional(xc)) kf = xc%exx_fraction
       if (present(k_scale)) kf = k_scale
 
       n_ao = size(c_occ, 1)
@@ -514,7 +514,7 @@ contains
                            "Coulomb term unconditionally, and a triplet has none")
             return
          end if
-         if (present(xc)) then
+         if (has_functional(xc)) then
             ! TODO(mqc): unreachable today for the same reason the stored-tensor
             ! refusal in `response_mean_field` is -- a fitted reference reaches
             ! here only from a double-hybrid Z-vector solve, and all three
@@ -537,7 +537,7 @@ contains
             call response_mean_field_df(bmat, half(:, :, m), c_occ, dens(:, :, m), &
                                         g(:, :, m), minus, k_scale=kf)
          end do
-         if (present(xc) .and. .not. minus) then
+         if (has_functional(xc) .and. .not. minus) then
             if (.not. present(reference)) then
                call error%set(ERROR_VALIDATION, "the response operator was given an "// &
                               "exchange-correlation context but no reference density "// &
@@ -732,7 +732,7 @@ contains
       kf = 1.0_dp
       k_lr = 0.0_dp
       omega = 0.0_dp
-      if (present(xc)) then
+      if (has_functional(xc)) then
          kf = xc%exx_fraction
          if (xc%range_separated) then
             k_lr = xc%rs_k_lr
@@ -743,7 +743,7 @@ contains
       if (present(rs_k_lr)) k_lr = rs_k_lr
       if (present(rs_omega)) omega = rs_omega
 
-      if (present(xc) .and. .not. (present(ref_a) .and. present(ref_b))) then
+      if (has_functional(xc) .and. .not. (present(ref_a) .and. present(ref_b))) then
          call error%set(ERROR_VALIDATION, "the unrestricted response operator was "// &
                         "given an exchange-correlation context but not both spin "// &
                         "densities to evaluate its kernel at")
@@ -779,7 +779,7 @@ contains
       ! No VV10: a non-local reference is refused before the SCF, because its
       ! kernel here would be a term silently left out rather than one this
       ! routine could supply.
-      if (present(xc) .and. .not. anti) then
+      if (has_functional(xc) .and. .not. anti) then
          if (use_cache) then
             call xc_kernel_apply_uks_many(xc, mol, ref_a, ref_b, dens_a, dens_b, &
                                           g_a, g_b, error, cache=cache)
@@ -906,4 +906,17 @@ contains
       deallocate (da, db, ga, gb, half_a, half_b, work_a, work_b)
    end subroutine response_product_uhf
 
+   pure function has_functional(xc) result(yes)
+      !! Whether a context was given *and* carries a functional
+      !!
+      !! A context that was never created is present and inactive, with an
+      !! exchange fraction of zero. Reading that fraction made the mean field
+      !! of a Hartree-Fock reference one with no exchange at all, so presence
+      !! alone is never the test.
+      type(xc_context_t), intent(in), optional :: xc
+      logical :: yes
+
+      yes = .false.
+      if (present(xc)) yes = xc%active
+   end function has_functional
 end module mqc_czt_response_product

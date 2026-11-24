@@ -292,11 +292,30 @@ otherwise. The translational sum rule,
 which a finite difference satisfies to its truncation error, holds to
 :math:`10^{-13}` on water.
 
-It is built for closed-shell Hartree-Fock. Under a functional the same
-derivation needs the functional's third derivative, which is not built, and a
-Kohn-Sham reference asked for ``"analytic"`` -- which is every Kohn-Sham
-reference that does not say otherwise -- takes the field route below, and the
-log says so.
+**Under a functional** the same route holds, with three additions, each one
+derivative of the functional further than the last. The mean field in every
+response solve keeps the functional's fraction of exchange and gains its
+kernel :math:`f_{xc}`. The second-order Fock matrix gains the potential's
+second variation along the two first-order densities,
+:math:`g_{xc}\rho^k\rho^l`, which is there whatever :math:`D^{kl}` turns out to
+be because the potential is not linear in the density. And the gradient gains
+
+.. math::
+
+   \frac{\partial}{\partial x}\mathrm{Tr}\big(D^{kl}\,V_{xc}[D]\big)
+   + \frac{\partial}{\partial x}\mathrm{Tr}\big(D^{k}\,f_{xc}[D]\,D^{l}\big)
+
+each differentiated with the densities held fixed and the quadrature moving:
+the basis functions, the grid points travelling with their atom, and the
+partition weights. The second of those is where the third derivative of the
+functional enters the gradient.
+
+That is built for **LDA, GGA and their global hybrids**. A meta-GGA, a
+range-separated hybrid and a functional with non-local correlation asked for
+``"analytic"`` take the field route below, and the log says so. The nine
+solves are iterated under a functional, three and then six together so each
+pass over the integrals and the grid serves all of them; the factorized
+matrix is Hartree-Fock's.
 
 **By field** (``"method": "field"``). In a uniform field
 :math:`\mathbf{F}` the energy is
@@ -326,6 +345,32 @@ The two are different finite differences of the same quantity and agree to the
 error of each, about :math:`3\times10^{-5}` Bohr\ :sup:`2` on water's
 derivatives of order ten. The analytic route agrees with either to that error
 and with their extrapolation to zero step to :math:`4\times10^{-7}`.
+
+Under a functional there is no other program's number to hold the analytic
+route to, so it is held to the field route, which shares no formula with it:
+that one only differences the ordinary Kohn-Sham gradient. Taken at two field
+strengths and extrapolated, the two agree on water in 6-31G to
+:math:`1\times10^{-7}` for an LDA, :math:`8\times10^{-8}` for PBE and
+:math:`2\times10^{-7}` for B3LYP, and the analytic derivatives obey the
+translational sum rule to :math:`10^{-13}`. The hybrid's figure is the
+reference's: exchange puts noise in the gradient that a second difference
+divides by the field squared.
+
+The Raman step of a Hessian run at B3LYP, on four threads:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 40 20 20
+
+   * - System
+     - Analytic (s)
+     - By field (s)
+   * - Propane, cc-pVDZ
+     - 22
+     - 56
+   * - Six waters, 6-31G*
+     - 50
+     - 157
 
 Projected onto mode :math:`i`,
 
@@ -478,9 +523,11 @@ Limits
 - **Static polarizability.** The derivative is of the zero-frequency
   polarizability, which is the usual approximation far from an electronic
   absorption and wrong near one: there is no resonance Raman here.
-- **Analytic for Hartree-Fock only.** Under a functional the derivative is
-  taken by finite field, since the analytic one would need the functional's
-  third derivative.
+- **Analytic for Hartree-Fock, LDA, GGA and global hybrids.** A meta-GGA, a
+  range-separated hybrid and non-local correlation take the finite-field
+  route, since their third derivatives are not built. An analytic route
+  that fails -- its response solves can, on a reference that is a saddle --
+  falls back to the finite-field one with a warning.
 - **The extra calculations run one after another**, not distributed over MPI
   ranks as the displacements of a semi-numerical Hessian are.
 - **Harmonic, like everything else on this page.**

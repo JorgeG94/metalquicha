@@ -29,6 +29,7 @@ module mqc_czt_cphf
    !! reference solved without one silently gets the Hartree-Fock response of its
    !! orbitals.
    use, intrinsic :: iso_fortran_env, only: output_unit
+   use, intrinsic :: ieee_arithmetic, only: ieee_is_nan
    use pic_types, only: dp, int64
    use pic_timer, only: timer_type
    use pic_blas_interfaces, only: pic_gemm
@@ -117,6 +118,12 @@ module mqc_czt_cphf
    end type response_hessian_t
 
    integer, parameter :: DEFAULT_MAX_ITER = 200  !! CG iterations before giving up
+   integer, parameter :: LOCKSTEP_GROUP = 6
+      !! Perturbations `cphf_solve` iterates together, sharing each pass over
+      !! the integrals and the grid. A batch size, not a memory bound: the
+      !! direct build holds one matrix per member whatever the thread count.
+      !! Past a handful the members converge at different iterations and
+      !! the later passes carry few of them.
 
    integer, parameter :: HESSIAN_CHUNK = 64
       !! Columns of the Hessian built per pass over the integrals. At 115
@@ -246,11 +253,15 @@ contains
       real(dp), allocatable, target :: eri_own(:, :, :, :)
       real(dp), pointer :: eri(:, :, :, :)
       real(dp), allocatable :: c_occ(:, :), c_vir(:, :), bounds(:, :)
-      real(dp), allocatable :: gaps(:, :), rhs(:, :), x(:, :), r(:, :), z(:, :)
-      real(dp), allocatable :: p(:, :), ap(:, :), work(:, :), zero_h(:, :)
+      real(dp), allocatable :: gaps(:, :), x(:, :, :), r(:, :, :), z(:, :, :)
+      real(dp), allocatable :: p(:, :, :), ap(:, :, :), work(:, :), zero_h(:, :)
+      real(dp), allocatable :: rz(:), target_norm(:)
+      integer, allocatable :: idx(:)
       type(xc_kernel_cache_t) :: kernel_cache
-      real(dp) :: rz, rz_new, pap, target_norm, step, use_tol
+      real(dp) :: rz_new, pap, step, use_tol
       integer :: n_ao, n_mo, n_vir, n_pert, ipert, a, i, iter, worst, limit
+      integer :: first, n_group, member, nact, still, k
+      logical :: kohn_sham
       logical :: direct
       character(len=32) :: text
 
@@ -319,7 +330,7 @@ contains
       if (present(bmat)) then
          ! Neither stored nor direct: fitting removes the four-index integrals
          ! rather than choosing where to keep them, so both of the others are
-         ! left empty and `response_operator` takes a third path.
+         ! left empty and `response_product` takes a third path.
          if (present(eri_in)) then
             call error%set(ERROR_VALIDATION, "CPHF: given both a fitted tensor and an "// &
                            "exact one. They are different operators, not two routes to "// &
@@ -347,89 +358,123 @@ contains
       zero_h = 0.0_dp
 
       allocate (response(n_vir, n_occ, n_pert))
-      allocate (rhs(n_vir, n_occ), x(n_vir, n_occ), r(n_vir, n_occ))
-      allocate (z(n_vir, n_occ), p(n_vir, n_occ), ap(n_vir, n_occ))
       allocate (work(n_ao, n_occ))
       worst = 0
 
       ! The kernel's coefficients over the grid, once for every application
-      ! this solve makes -- three perturbations times their conjugate-gradient
+      ! this solve makes -- every perturbation times its conjugate-gradient
       ! iterations, each of which would otherwise re-evaluate the reference
       ! density per grid block and run libxc over it again. They depend on the
       ! reference alone, which does not move here.
-      if (present(xc) .and. present(density)) then
+      kohn_sham = .false.
+      if (present(xc)) kohn_sham = xc%active
+      if (kohn_sham .and. present(density)) then
          call xc_kernel_cache_fill(xc, mol, density, kernel_cache, error, triplet=triplet)
          if (error%has_error()) return
       end if
 
-      do ipert = 1, n_pert
-         ! h_ai, the perturbation in the occupied-virtual block -- or that
-         ! block itself, when the caller assembled it there.
-         if (present(perturbations)) then
-            call pic_gemm(perturbations(:, :, ipert), c_occ, work)
-            call pic_gemm(c_vir, work, rhs, transa="T")
-         else
-            rhs = mo_rhs(:, :, ipert)
-         end if
-         rhs = -rhs
+      ! The perturbations are solved a group at a time, each by its own
+      ! conjugate gradients but all of a group advanced together: one
+      ! application of the operator serves every member still iterating, and
+      ! an application is a pass over the integrals and, under a functional,
+      ! the grid. Each member's iterates are the ones it would have had alone.
+      do first = 1, n_pert, LOCKSTEP_GROUP
+         n_group = min(LOCKSTEP_GROUP, n_pert - first + 1)
+         allocate (x(n_vir, n_occ, n_group), r(n_vir, n_occ, n_group))
+         allocate (z(n_vir, n_occ, n_group), p(n_vir, n_occ, n_group))
+         allocate (ap(n_vir, n_occ, n_group))
+         allocate (rz(n_group), target_norm(n_group), idx(n_group))
 
-         target_norm = sqrt(sum(rhs*rhs))
-         if (target_norm <= 0.0_dp) then
-            response(:, :, ipert) = 0.0_dp
-            cycle
-         end if
-         target_norm = target_norm*use_tol
-
-         ! Preconditioned CG from zero rather than from the uncoupled solution:
-         ! with x = 0 the first iterate *is* the uncoupled answer, and the
-         ! residual norm then starts at ||h|| so the threshold means what it says.
-         x = 0.0_dp
-         r = rhs
-         z = r/gaps
-         p = z
-         rz = sum(r*z)
-
-         iter = 0
-         do iter = 1, limit
-            ! An absent optional passes straight through as absent, so the
-            ! four cases the operator used to be dispatched by are one call.
-            call response_operator(mol, direct, eri, bounds, zero_h, c_occ, c_vir, &
-                                   gaps, p, ap, error, bmat=bmat, xc=xc, &
-                                   density=density, cache=kernel_cache, triplet=triplet)
-            if (error%has_error()) return
-            pap = sum(p*ap)
-            if (pap <= 0.0_dp) then
-               call error%set(ERROR_VALIDATION, "CPHF: the response operator is not "// &
-                              "positive definite along a search direction, which means "// &
-                              "the reference SCF is a saddle point"//instability_kind())
-               return
+         nact = 0
+         do member = 1, n_group
+            ipert = first + member - 1
+            ! h_ai, the perturbation in the occupied-virtual block -- or that
+            ! block itself, when the caller assembled it there.
+            if (present(perturbations)) then
+               call pic_gemm(perturbations(:, :, ipert), c_occ, work)
+               call pic_gemm(c_vir, work, r(:, :, member), transa="T")
+            else
+               r(:, :, member) = mo_rhs(:, :, ipert)
             end if
-            step = rz/pap
-            x = x + step*p
-            r = r - step*ap
-            if (sqrt(sum(r*r)) <= target_norm) exit
-            z = r/gaps
-            rz_new = sum(r*z)
-            p = z + (rz_new/rz)*p
-            rz = rz_new
+            r(:, :, member) = -r(:, :, member)
+
+            ! Preconditioned CG from zero rather than from the uncoupled
+            ! solution: with x = 0 the first iterate *is* the uncoupled
+            ! answer, and the residual norm then starts at ||h|| so the
+            ! threshold means what it says.
+            x(:, :, member) = 0.0_dp
+            target_norm(member) = sqrt(sum(r(:, :, member)**2))*use_tol
+            if (target_norm(member) <= 0.0_dp) cycle
+            z(:, :, member) = r(:, :, member)/gaps
+            p(:, :, member) = z(:, :, member)
+            rz(member) = sum(r(:, :, member)*z(:, :, member))
+            nact = nact + 1
+            idx(nact) = member
          end do
 
-         if (sqrt(sum(r*r)) > target_norm) then
-            write (text, "(i0)") iter - 1
+         iter = 0
+         do while (nact > 0 .and. iter < limit)
+            iter = iter + 1
+            do k = 1, nact
+               ap(:, :, idx(k)) = 0.0_dp
+            end do
+            ! An absent optional passes straight through as absent, so the
+            ! cases the operator used to be dispatched by are one call.
+            call response_product(mol, c_occ, c_vir, gaps, zero_h, p, idx, nact, &
+                                  .false., ap, error, direct=direct, eri=eri, &
+                                  bounds=bounds, xc=xc, reference=density, &
+                                  cache=kernel_cache, bmat=bmat, triplet=triplet)
+            if (error%has_error()) return
+
+            still = 0
+            do k = 1, nact
+               member = idx(k)
+               pap = sum(p(:, :, member)*ap(:, :, member))
+               if (ieee_is_nan(pap)) then
+                  ! Tested apart from the sign: a NaN fails `pap > 0` too,
+                  ! and is not evidence about the reference.
+                  call error%set(ERROR_VALIDATION, "CPHF: a search direction's "// &
+                                 "curvature is not a number, so the right-hand side "// &
+                                 "or the operator's product was not finite")
+                  return
+               end if
+               if (.not. pap > 0.0_dp) then
+                  call error%set(ERROR_VALIDATION, "CPHF: the response operator is not "// &
+                                 "positive definite along a search direction, which means "// &
+                                 "the reference SCF is a saddle point"//instability_kind())
+                  return
+               end if
+               step = rz(member)/pap
+               x(:, :, member) = x(:, :, member) + step*p(:, :, member)
+               r(:, :, member) = r(:, :, member) - step*ap(:, :, member)
+               if (sqrt(sum(r(:, :, member)**2)) <= target_norm(member)) cycle
+               z(:, :, member) = r(:, :, member)/gaps
+               rz_new = sum(r(:, :, member)*z(:, :, member))
+               p(:, :, member) = z(:, :, member) + (rz_new/rz(member))*p(:, :, member)
+               rz(member) = rz_new
+               still = still + 1
+               idx(still) = member
+            end do
+            nact = still
+         end do
+
+         if (nact > 0) then
+            write (text, "(i0)") iter
             call error%set(ERROR_GENERIC, "CPHF did not converge in "// &
                            trim(text)//" iterations")
             return
          end if
 
-         response(:, :, ipert) = x
+         response(:, :, first:first + n_group - 1) = x
          worst = max(worst, iter)
+         deallocate (x, r, z, p, ap, rz, target_norm, idx)
       end do
 
       if (present(iterations)) iterations = worst
       nullify (eri)
       if (allocated(eri_own)) deallocate (eri_own)
       call kernel_cache%destroy()
-      deallocate (bounds, c_occ, c_vir, gaps, rhs, x, r, z, p, ap, work, zero_h)
+      deallocate (bounds, c_occ, c_vir, gaps, work, zero_h)
 
    contains
 
@@ -443,54 +488,6 @@ contains
          end if
       end function instability_kind
    end subroutine cphf_solve
-
-   subroutine response_operator(mol, direct, eri, bounds, zero_h, c_occ, c_vir, &
-                                gaps, u, au, error, bmat, xc, density, cache, triplet)
-      !! Apply the coupled-perturbed operator to a trial rotation
-      !!
-      !! `(A+B)` on one vector, which is what a conjugate-gradient iteration
-      !! wants. A batch of one through the shared product: the symmetrised
-      !! response density, the two-electron build at the reference's own
-      !! exchange fraction, a range-separated functional's attenuated second
-      !! pass, and the exchange-correlation kernel where there is one.
-      type(czt_molecule_t), intent(in) :: mol
-      logical, intent(in) :: direct          !! Recompute integrals rather than store them
-      real(dp), intent(in) :: eri(:, :, :, :)   !! Zero-sized when `direct`
-      real(dp), intent(in) :: bounds(:, :)      !! Zero-sized when not `direct`
-      real(dp), intent(in) :: zero_h(:, :)   !! Zero, so the build returns only G
-      real(dp), intent(in) :: c_occ(:, :), c_vir(:, :)
-      real(dp), intent(in) :: gaps(:, :)
-      real(dp), intent(in) :: u(:, :)
-      real(dp), intent(out) :: au(:, :)
-      type(error_t), intent(inout) :: error
-      type(xc_context_t), intent(inout), optional :: xc
-         !! Present, the exchange-correlation kernel is added on top of the
-         !! two-electron part, whichever integral source built it, and the
-         !! exchange coefficients come from the context.
-      real(dp), intent(in), optional :: density(:, :)
-         !! The reference density the kernel is evaluated at. Required with `xc`.
-      real(dp), intent(in), optional :: bmat(:, :)
-         !! The fitted tensor `B(mu nu, P)`. Present, the operator is built from
-         !! it and neither `eri` nor the direct build is touched.
-      type(xc_kernel_cache_t), intent(in), optional :: cache
-         !! The reference's kernel coefficients, filled once by the caller.
-         !! An unfilled one is ignored, so it may be passed unconditionally.
-      logical, intent(in), optional :: triplet   !! The triplet operator; off by default
-
-      real(dp), allocatable :: one_u(:, :, :), one_au(:, :, :)
-      integer :: one_idx(1)
-
-      allocate (one_u(size(u, 1), size(u, 2), 1), one_au(size(au, 1), size(au, 2), 1))
-      one_u(:, :, 1) = u
-      one_au = 0.0_dp
-      one_idx = 1
-      call response_product(mol, c_occ, c_vir, gaps, zero_h, one_u, one_idx, 1, &
-                            .false., one_au, error, direct=direct, eri=eri, &
-                            bounds=bounds, xc=xc, reference=density, cache=cache, &
-                            bmat=bmat, triplet=triplet)
-      if (.not. error%has_error()) au = one_au(:, :, 1)
-      deallocate (one_u, one_au)
-   end subroutine response_operator
 
    subroutine fitted_potential_general(b, dens, g, k_scale)
       !! `J - k K/2` from the fitted tensor, for a density with no structure
