@@ -351,8 +351,11 @@ The methods:
   solve, for RI-MP2 and for a fitted double hybrid alike. That is right only
   because both solves had the same equations, operator and tolerance; the
   conventional MP2 block solves at 1e-13 where the reference solves at the
-  deck's tolerance, and a range-separated functional's perturbative solve
-  carries no long-range exchange, so neither shares. **Read the phase lines before assuming
+  deck's tolerance, so it does not share; a range-separated double hybrid
+  never reaches the analytic path. `test_mqc_ri_mp2_hessian_dh` holds the
+  shared block to the block's own solve, and `test_mqc_xc_hessian` holds the
+  threaded kernel routines to one thread -- **ctest and the validation runner
+  both run one thread**, so nothing else exercises a parallel region. **Read the phase lines before assuming
   which method a slow Hessian is**: plain RI-MP2 on the same molecule has a
   ladder A of 3 s.
   **Density-fitted Hartree-Fock and Kohn-Sham have their own analytic

@@ -2979,6 +2979,9 @@ contains
                                 batch=settings%hessian_response_batch, dipole_derivatives=ddip, &
                                 mo1=mo1_ref)
             end if
+            ! Kept only for a perturbative term to take in place of its own
+            ! solve.
+            if (.not. dh_analytic .and. allocated(mo1_ref)) deallocate (mo1_ref)
             ! The perturbative term, on top of the Kohn-Sham one, and the same
             ! split the gradient uses: `ks_hessian` is the whole reference --
             ! skeleton, response and nuclear repulsion -- so what is wanted from
@@ -2993,10 +2996,6 @@ contains
             ! both is the error.
             if (dh_analytic .and. .not. error%has_error()) then
                call logger%info("  computing the perturbative term's Hessian")
-               ! The perturbative term's own solve carries no long-range
-               ! exchange, so under a range-separated functional it is not
-               ! the reference's and is left to solve for itself.
-               if (xc%range_separated .and. allocated(mo1_ref)) deallocate (mo1_ref)
                if (settings%aux_basis_named) then
                   ! The energy above was fitted, so its Hessian is the fitted
                   ! block's: the same auxiliary basis, an exact reference, and
@@ -3039,6 +3038,7 @@ contains
                                                dipole_derivatives=ddip_pt2)
                end if
                if (.not. error%has_error() .and. pt2_built) hess4 = hess4 + hess_pt2
+               if (allocated(mo1_ref)) deallocate (mo1_ref)
             end if
             if (error%has_error()) then
                call result%error%set(ERROR_VALIDATION, "Hessian: "//error%get_message())

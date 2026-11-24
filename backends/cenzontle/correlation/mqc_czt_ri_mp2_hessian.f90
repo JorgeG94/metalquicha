@@ -503,7 +503,7 @@ contains
       n2 = real(st%n, dp)**2
       ov = real(st%na, dp)*real(st%nv, dp)
       np = real(st%np, dp)
-      bytes = 24.0_dp*n2*real(st%n3, dp) &
+      bytes = 29.0_dp*n2*real(st%n3, dp) &
               + 4.0_dp*n2*np &
               + 6.0_dp*ov**2 &
               + 12.0_dp*ov*np + 3.0_dp*np**2
@@ -769,11 +769,20 @@ contains
          first = last + 1
       end do
       if (with_kernel) then
-         ! One pass over the grid for the whole stack, not one a member.
-         allocate (vk(st%n, st%n, nset))
-         call ks_pair_kernel_many(st%xc, st%mol, st%c, st%scf_density, dmo, vk, error)
-         if (error%has_error()) return
-         t1(:, :, 1:nset) = t1(:, :, 1:nset) + 0.5_dp*vk
+         ! One pass over the grid for a batch, not one a member; in the
+         ! batches the exchange part above took, because each member costs
+         ! three more matrices inside.
+         first = 1
+         do while (first <= nset)
+            last = min(first + st%batch - 1, nset)
+            allocate (vk(st%n, st%n, last - first + 1))
+            call ks_pair_kernel_many(st%xc, st%mol, st%c, st%scf_density, &
+                                     dmo(:, :, first:last), vk, error)
+            if (error%has_error()) return
+            t1(:, :, first:last) = t1(:, :, first:last) + 0.5_dp*vk
+            deallocate (vk)
+            first = last + 1
+         end do
       end if
    end subroutine t1_batch
 

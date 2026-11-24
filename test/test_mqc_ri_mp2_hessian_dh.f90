@@ -23,7 +23,8 @@ module test_mqc_ri_mp2_hessian_dh
    use mqc_czt_ri_mp2_gradient, only: czt_ri_mp2_gradient
    use mqc_czt_ri_mp2_hessian, only: ri_mp2_correlation_hessian
    use mqc_czt_mp2_hessian, only: mp2_correlation_hessian
-   use mqc_czt_hessian, only: solve_zvector_batch
+   use mqc_czt_hessian, only: solve_zvector_batch, ks_hessian, df_rhf_hessian, &
+                              response_controls_t
    use mqc_czt_cphf, only: cphf_solve
    use omp_lib, only: omp_set_num_threads, omp_get_max_threads
    implicit none
@@ -62,6 +63,10 @@ contains
                   new_unittest("b2plyp_cc_pvdz_against_the_conventional_block", &
                                against_conventional_dz), &
                   new_unittest("batching_changes_nothing", batching), &
+                  new_unittest("reference_responses_stand_in_for_the_blocks_own", &
+                               shared_responses), &
+                  new_unittest("fitted_reference_responses_stand_in_for_the_blocks_own", &
+                               shared_responses_fitted), &
                   new_unittest("batched_zvectors_match_cphf_solve", batched_zvectors), &
                   new_unittest("batched_zvector_block_matches_per_rhs", batched_block) &
                   ]
@@ -303,6 +308,88 @@ contains
       call mol%destroy()
       call aux%destroy()
    end subroutine batching
+
+   subroutine shared_responses(error)
+      type(error_type), allocatable, intent(out) :: error
+
+      call shared_case(error, fitted=.false.)
+   end subroutine shared_responses
+
+   subroutine shared_responses_fitted(error)
+      type(error_type), allocatable, intent(out) :: error
+
+      call shared_case(error, fitted=.true.)
+   end subroutine shared_responses_fitted
+
+   subroutine shared_case(error, fitted)
+      !! The block given the reference Hessian's first-order orbitals is the
+      !! block that solved for its own
+      !!
+      !! A Hessian run solves the nuclear coupled-perturbed equations once, in
+      !! the reference's Hessian, and hands the result to the perturbative
+      !! term. That is right only while the two routines would have solved
+      !! the same equations: the same operator, exchange fraction, kernel,
+      !! fit and tolerance, and the same layout of what comes back. Nothing
+      !! in either routine says so; a change to one side's right-hand side or
+      !! operator leaves both running and the sum the Hessian of no energy.
+      !! So the block is built both ways from one reference and compared.
+      !! Over an exact and a fitted Kohn-Sham reference, because those are
+      !! two different operators and two different reference routines.
+      type(error_type), allocatable, intent(out) :: error
+      logical, intent(in) :: fitted
+
+      real(dp), parameter :: RESPONSE_TOL = 1.0e-9_dp
+      real(dp), parameter :: SHARED_TOL = 1.0e-9_dp
+         !! Both solves stop at RESPONSE_TOL, by different iterations in the
+         !! fitted case: measured 1e-15 over an exact reference, 9e-13 over
+         !! a fitted one. A mismatched operator is the size of the block.
+      type(czt_molecule_t) :: mol, aux
+      type(xc_context_t) :: ctx
+      type(rhf_result_t) :: scf
+      type(error_t) :: err
+      real(dp), allocatable :: href(:, :, :, :), mo1(:, :, :, :)
+      real(dp), allocatable :: own(:, :, :, :), shared(:, :, :, :)
+
+      if (.not. xc_available()) return
+      call make_context("6-31g", ctx, err)
+      if (.not. err%has_error()) &
+         call setup_case("6-31g", "cc-pvdz-rifit", WATER, mol, aux, ctx, scf, err, fitted=fitted)
+      call check(error,.not. err%has_error(), "the reference must converge")
+      if (allocated(error)) return
+
+      if (fitted) then
+         call df_rhf_hessian(mol, aux, scf%density, scf%orbitals, scf%orbital_energies, 5, &
+                             href, err, controls=response_controls_t(max_iter=100, &
+                                                                     tol=RESPONSE_TOL, batch=12), &
+                             xc=ctx, mo1=mo1)
+         call ri_mp2_correlation_hessian(mol, aux, scf%orbitals, scf%orbital_energies, 5, own, &
+                                         err, tol=RESPONSE_TOL, xc=ctx, scf_density=scf%density, &
+                                         pt2_scale=ctx%pt2_fraction, ref_aux=aux)
+         call ri_mp2_correlation_hessian(mol, aux, scf%orbitals, scf%orbital_energies, 5, shared, &
+                                         err, tol=RESPONSE_TOL, xc=ctx, scf_density=scf%density, &
+                                         pt2_scale=ctx%pt2_fraction, ref_aux=aux, mo1_in=mo1)
+      else
+         call ks_hessian(mol, scf%density, scf%orbitals, scf%orbital_energies, 5, ctx, &
+                         ctx%exx_fraction, href, err, max_iter=100, tol=RESPONSE_TOL, batch=12, &
+                         mo1=mo1)
+         call ri_mp2_correlation_hessian(mol, aux, scf%orbitals, scf%orbital_energies, 5, own, &
+                                         err, tol=RESPONSE_TOL, xc=ctx, scf_density=scf%density, &
+                                         pt2_scale=ctx%pt2_fraction)
+         call ri_mp2_correlation_hessian(mol, aux, scf%orbitals, scf%orbital_energies, 5, shared, &
+                                         err, tol=RESPONSE_TOL, xc=ctx, scf_density=scf%density, &
+                                         pt2_scale=ctx%pt2_fraction, mo1_in=mo1)
+      end if
+      call check(error,.not. err%has_error(), "every run must succeed: "//err%get_full_trace())
+      if (allocated(error)) return
+      write (*, "(4x,a,2es10.2)") "block with the reference's responses against its own, and its size ", &
+         maxval(abs(shared - own)), maxval(abs(own))
+      call check(error, maxval(abs(own)) > 1.0e-4_dp, "the block is zero: nothing was compared")
+      if (allocated(error)) return
+      call check(error, maxval(abs(shared - own)) < SHARED_TOL, &
+                 "the reference's first-order orbitals are not the block's own")
+      call mol%destroy()
+      call aux%destroy()
+   end subroutine shared_case
 
    subroutine batched_zvectors(error)
       !! `solve_zvector_batch` against `cphf_solve` over a Kohn-Sham reference:

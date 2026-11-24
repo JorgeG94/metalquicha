@@ -3733,6 +3733,7 @@ contains
       integer :: g0, g1, nb, i, ig, id, npts
       integer :: n_set, iset, first, last, chunk, iblock, n_blocks, nao
       logical :: gga, failed, stop_early
+      real(dp) :: budget
 
       if (error%has_error()) return
       if (.not. ctx%active) return
@@ -3756,11 +3757,17 @@ contains
       n_blocks = (npts + ctx%point_block - 1)/ctx%point_block
       call shell_extents(mol, ctx%screen_tol, extents)
 
+      if (n_set == 0) return
+
       ! Every thread sums into matrices of its own, one per set, so the sets
-      ! go through in as many pieces as keeps those within the budget.
+      ! go through in as many pieces as keeps those within the budget. The
+      ! share is applied here and not by `memory_budget`, which hands back a
+      ! deck's figure whole: these copies sit on top of the caller's stacks
+      ! and may not have all of it either way.
+      budget = KERNEL2_BUDGET_SHARE*memory_budget(KERNEL2_BLIND_BUDGET/KERNEL2_BUDGET_SHARE, 1.0_dp)
       chunk = int(min(real(n_set, dp), max(1.0_dp, &
-                                           memory_budget(KERNEL2_BLIND_BUDGET, KERNEL2_BUDGET_SHARE) &
-                                           /(8.0_dp*real(nao, dp)**2*real(kernel2_threads(), dp)))))
+                                           budget/(8.0_dp*real(nao, dp)**2 &
+                                                   *real(kernel2_threads(), dp)))))
 
       failed = .false.
       do first = 1, n_set, chunk
