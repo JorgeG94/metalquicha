@@ -259,6 +259,7 @@ contains
                            json_data%solvation_energy = result%energy%solvation
                            json_data%has_solvation = .true.
                         end if
+                        call json_data%set_correlation(result%energy)
 
                         ! The excited-state spectrum, when
                         ! `keywords.excited_states` asked for one. The request
@@ -542,6 +543,7 @@ contains
                json_data%solvation_energy = result%energy%solvation
                json_data%has_solvation = .true.
             end if
+            call json_data%set_correlation(result%energy)
 
             ! The excited-state spectrum, when `keywords.excited_states` asked
             ! for one. The request itself travels beside the roots: which

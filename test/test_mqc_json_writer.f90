@@ -23,7 +23,7 @@ module test_mqc_json_writer
    use json_module, only: json_file
    use mqc_program_limits, only: N_EFMO_TERMS
    use mqc_result_types, only: STATE_SPIN_SINGLET, STATE_SPIN_TRIPLET, &
-                               STATE_SPIN_UNRESTRICTED, STATE_SPIN_UNKNOWN
+                               STATE_SPIN_UNRESTRICTED, STATE_SPIN_UNKNOWN, energy_t
    implicit none
    private
 
@@ -42,6 +42,8 @@ contains
                   new_unittest("connected_pairs_are_flagged_noted_and_sorted_last", &
                                test_connected_pairs), &
                   new_unittest("mbe_correlation_split_is_written", test_correlation_split), &
+                  new_unittest("unfragmented_correlation_split_is_written", &
+                               test_unfragmented_correlation), &
                   new_unittest("pie_document_counts_nonzero_terms", test_pie), &
                   new_unittest("pie_atom_set_with_no_sentinel_stays_in_bounds", test_pie_full_set), &
                   new_unittest("a_fingerprint_is_written_when_there_is_one", test_fingerprint), &
@@ -493,6 +495,93 @@ contains
       call json%get("jw_corr.levels(1).fragments(1).correlation_energy", value, found)
       call check(error, found, "a monomer carried no correlation energy")
    end subroutine test_correlation_split
+
+   subroutine test_unfragmented_correlation(error)
+      !! One system's correlated energy is written split as a fragmented run's
+      !! is: SCF and correlation adding up to the total, and the parts the
+      !! method has, under their own names, adding up to the correlation
+      !!
+      !! An unfragmented coupled cluster run used to write `total_energy` and
+      !! nothing else, so the reference energy and the triples correction had
+      !! to be read from the log. The numbers below are distinct in every part
+      !! so that a part written under another's name shows.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(json_output_data_t) :: data
+      type(json_file) :: json
+      type(energy_t) :: energy
+      real(dp) :: value, scf, correlation
+      logical :: found
+
+      energy%scf = -76.02_dp
+      energy%cc%singles = -0.0001_dp
+      energy%cc%doubles = -0.2100_dp
+      energy%cc%triples = -0.0030_dp
+
+      data%output_mode = OUTPUT_MODE_UNFRAGMENTED
+      data%total_energy = energy%total()
+      data%has_energy = .true.
+      call data%set_correlation(energy)
+
+      call written_document(data, json, "jw_unfrag_corr.json")
+
+      call json%get("jw_unfrag_corr.correlation_energy", correlation, found)
+      call check(error, found, "the correlation energy is missing")
+      if (allocated(error)) return
+      call check(error, correlation, -0.2131_dp, thr=1.0e-12_dp, &
+                 message="the correlation energy is not singles + doubles + triples")
+      if (allocated(error)) return
+      call json%get("jw_unfrag_corr.scf_energy", scf, found)
+      call check(error, found, "the SCF energy is missing")
+      if (allocated(error)) return
+      call check(error, scf, -76.02_dp, thr=1.0e-12_dp, &
+                 message="the SCF energy is not the reference's")
+      if (allocated(error)) return
+      call check(error, scf + correlation, data%total_energy, thr=1.0e-12_dp, &
+                 message="the two parts do not add up to the total")
+      if (allocated(error)) return
+
+      call json%get("jw_unfrag_corr.correlation_parts.cc_singles", value, found)
+      call check(error, found, "the singles part is missing")
+      if (allocated(error)) return
+      call check(error, value, -0.0001_dp, thr=1.0e-12_dp, message="the singles part is wrong")
+      if (allocated(error)) return
+      call json%get("jw_unfrag_corr.correlation_parts.cc_doubles", value, found)
+      call check(error, found, "the doubles part is missing")
+      if (allocated(error)) return
+      call check(error, value, -0.2100_dp, thr=1.0e-12_dp, message="the doubles part is wrong")
+      if (allocated(error)) return
+      call json%get("jw_unfrag_corr.correlation_parts.cc_triples", value, found)
+      call check(error, found, "the (T) part is missing")
+      if (allocated(error)) return
+      call check(error, value, -0.0030_dp, thr=1.0e-12_dp, message="the (T) part is wrong")
+      if (allocated(error)) return
+      call json%get("jw_unfrag_corr.correlation_parts.mp2_same_spin", value, found)
+      call check(error,.not. found, "a part the method does not have was written")
+      if (allocated(error)) return
+      call json%destroy()
+      call data%destroy()
+
+      ! A run with no correlation energy writes none of the three keys: an
+      ! `scf_energy` beside every Hartree-Fock total would say nothing, and a
+      ! `correlation_energy` of zero would read as a method that found none.
+      call data%reset()
+      energy%cc%singles = 0.0_dp
+      energy%cc%doubles = 0.0_dp
+      energy%cc%triples = 0.0_dp
+      data%output_mode = OUTPUT_MODE_UNFRAGMENTED
+      data%total_energy = energy%total()
+      data%has_energy = .true.
+      call data%set_correlation(energy)
+      call written_document(data, json, "jw_unfrag_scf.json")
+      call json%get("jw_unfrag_scf.correlation_energy", value, found)
+      call check(error,.not. found, "an SCF-only run wrote a correlation energy")
+      if (allocated(error)) return
+      call json%get("jw_unfrag_scf.scf_energy", value, found)
+      call check(error,.not. found, "an SCF-only run wrote an scf_energy")
+      call json%destroy()
+      call data%destroy()
+   end subroutine test_unfragmented_correlation
 
    subroutine test_pie(error)
       type(error_type), allocatable, intent(out) :: error

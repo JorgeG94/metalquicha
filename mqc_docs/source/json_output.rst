@@ -231,6 +231,31 @@ All fields are optional depending on the calculation type:
 - ``gradient``, ``gradient_units``, ``gradient_norm``: Present for Gradient and
   Hessian calculations
 - ``hessian_frobenius_norm``: Present for Hessian calculations
+- ``scf_energy``, ``correlation_energy``, ``correlation_parts``: Present for a
+  correlated method -- the MP2 family, CCSD, CCSD(T) -- on either backend,
+  with the meaning they have in a fragmented run (see `SCF and correlation
+  parts`_). ``scf_energy`` is the total less the correlation energy, so the
+  two add up to ``total_energy``; ``correlation_parts`` holds the pieces the
+  method has -- ``mp2_same_spin`` and ``mp2_opposite_spin``, or
+  ``cc_singles``, ``cc_doubles`` and, with triples, ``cc_triples`` -- which
+  add up to ``correlation_energy``. A Hessian run's document carries them too.
+
+.. code-block:: json
+
+   {
+     "<basename>": {
+       "total_energy": -76.120184922296,
+       "scf_energy": -75.984367,
+       "correlation_energy": -0.135818,
+       "correlation_parts": {
+         "cc_singles": -0.000004,
+         "cc_doubles": -0.133103,
+         "cc_triples": -0.002711
+       }
+     }
+   }
+
+The numbers above show the shape, not a reference.
 
 The components are what a validation case compares. A norm cannot tell a
 correct gradient from one with a sign error, a swapped pair of atoms, or a

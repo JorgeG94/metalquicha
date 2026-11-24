@@ -116,74 +116,140 @@ contains
    subroutine write_json_output(output_data)
       !! The single entry point for all JSON output
       !!
-      !! Dispatches on `output_mode`. The only place in the codebase where JSON
-      !! files are written.
+      !! The only place in the codebase where a JSON output file is written,
+      !! and the only writer: every mode gets the same document, opened and
+      !! closed the same way and carrying the same common sections, and
+      !! `output_mode` adds its own on top -- the levels of a many-body
+      !! expansion, the terms of an inclusion-exclusion one, or, for a Hessian
+      !! run in any mode, the vibrational analysis in their place.
       type(json_output_data_t), intent(in) :: output_data
 
+      type(json_core) :: json
+      type(json_value), pointer :: root, main_obj
+
       select case (output_data%output_mode)
-      case (OUTPUT_MODE_UNFRAGMENTED)
-         if (output_data%has_vibrational) then
-            call write_vibrational_json_impl(output_data)
-         else
-            call write_unfragmented_json_impl(output_data)
-         end if
-
-      case (OUTPUT_MODE_MBE)
-         if (output_data%has_vibrational) then
-            call write_vibrational_json_impl(output_data)
-         else
-            ! The per-fragment table goes to exactly one place: in the JSON it
-            ! costs six times as much per fragment and forces the consumer to
-            ! hold the whole document resident. The summary is written either
-            ! way, so "csv" loses nothing but the duplication.
-            call write_mbe_breakdown_json_impl(output_data)
-            if (trim(output_data%fragment_breakdown) == "csv") then
-               call write_fragment_table(output_data)
-            end if
-         end if
-
-      case (OUTPUT_MODE_GMBE_PIE)
-         if (output_data%has_vibrational) then
-            call write_vibrational_json_impl(output_data)
-         else
-            ! TODO(mqc): no per-fragment CSV is written here, where the MBE
-            ! branch above writes one. `fragment_breakdown` defaults to "csv"
-            ! and is simply ignored on this path, so a GMBE run leaves no
-            ! per-term table at all and the deck is not told.
-            call write_gmbe_pie_json_impl(output_data)
-         end if
-
+      case (OUTPUT_MODE_UNFRAGMENTED, OUTPUT_MODE_MBE, OUTPUT_MODE_GMBE_PIE)
+         continue
       case default
          call logger%error("Unknown output mode in write_json_output")
+         return
       end select
 
+      call open_document(json, root, main_obj, output_data)
+      call write_common_sections(json, main_obj, output_data)
+
+      if (output_data%has_vibrational) then
+         call write_vibrational_section(json, main_obj, output_data)
+      else if (output_data%output_mode == OUTPUT_MODE_MBE) then
+         call write_levels_section(json, main_obj, output_data)
+      else if (output_data%output_mode == OUTPUT_MODE_GMBE_PIE) then
+         ! TODO(mqc): no per-fragment CSV is written here, where the MBE
+         ! branch below writes one. `fragment_breakdown` defaults to "csv"
+         ! for both, so a GMBE run asked for a table gets none.
+         call write_pie_section(json, main_obj, output_data)
+      end if
+
+      call close_document(json, root)
+
+      ! The per-fragment table goes to exactly one place: in the JSON it costs
+      ! six times as much per fragment and forces the consumer to hold the
+      ! whole document resident. The summary is written either way, so "csv"
+      ! loses nothing but the duplication.
+      if (output_data%output_mode == OUTPUT_MODE_MBE .and. .not. output_data%has_vibrational) then
+         if (trim(output_data%fragment_breakdown) == "csv") call write_fragment_table(output_data)
+      end if
    end subroutine write_json_output
 
-   subroutine write_unfragmented_json_impl(data)
-      !! Write unfragmented calculation results to output JSON file
+   subroutine open_document(json, root, main_obj, data)
+      !! Start the document: the root, and under it the object named for the deck
+      type(json_core), intent(inout) :: json
+      type(json_value), pointer, intent(out) :: root
+      type(json_value), pointer, intent(out) :: main_obj
+         !! Where every section goes
       type(json_output_data_t), intent(in) :: data
 
-      type(json_core) :: json
-      type(json_value), pointer :: root, main_obj, dipole_obj
-      integer :: iunit, io_stat
-      character(len=256) :: output_file, basename
+      character(len=256) :: basename
 
-      output_file = get_output_json_filename()
       basename = get_basename()
-
       call json%initialize(real_format=JSON_REAL_FORMAT)
       call json%create_object(root, "")
       call json%create_object(main_obj, trim(basename))
       call json%add(root, main_obj)
-      ! Stamped by every writer; a restart reads it before it reuses anything.
+      ! A restart reads it before it reuses anything.
       if (len_trim(data%fingerprint) > 0) then
          call json%add(main_obj, "fingerprint", trim(data%fingerprint))
       end if
+   end subroutine open_document
 
-      if (data%has_energy) call json%add(main_obj, "total_energy", data%total_energy)
-      ! FMO2's interaction energy of one fragment is written on this path, and
-      ! like the MBE one in place of `total_energy`, never beside it.
+   subroutine close_document(json, root)
+      !! Write the document to the output file and release it
+      type(json_core), intent(inout) :: json
+      type(json_value), pointer, intent(inout) :: root
+
+      integer :: iunit, io_stat
+      character(len=256) :: output_file
+
+      output_file = get_output_json_filename()
+      call logger%info("Writing JSON output to "//trim(output_file))
+      open (newunit=iunit, file=trim(output_file), status="replace", action="write", iostat=io_stat)
+      if (io_stat /= 0) then
+         call logger%error("Failed to open "//trim(output_file)//" for writing")
+         call json%destroy(root)
+         return
+      end if
+
+      call json%print(root, iunit)
+      close (iunit)
+      call json%destroy(root)
+      call logger%info("JSON output written successfully to "//trim(output_file))
+   end subroutine close_document
+
+   pure function writes_total(data) result(yes)
+      !! Whether the document carries `total_energy`
+      !!
+      !! One system reports a total when it has an energy. An expansion always
+      !! has one, except in an interaction-energy run: its term list was
+      !! reduced to what one fragment's interactions need, and the sum over it
+      !! is not the system's energy, so the key a consumer reads a total from
+      !! is absent rather than present and holding something else.
+      type(json_output_data_t), intent(in) :: data
+      logical :: yes
+
+      if (data%output_mode == OUTPUT_MODE_UNFRAGMENTED .or. data%has_vibrational) then
+         yes = data%has_energy
+      else if (data%output_mode == OUTPUT_MODE_MBE) then
+         yes = .not. data%has_interaction
+      else
+         yes = .true.
+      end if
+   end function writes_total
+
+   subroutine write_common_sections(json, main_obj, data)
+      !! Everything a document carries whatever the mode
+      !!
+      !! The energy and its parts, the analyses, the orbitals, the dipole and
+      !! the derivatives. Each section writes nothing when the run did not
+      !! produce it, so a mode that never fills one is unaffected by it being
+      !! called here.
+      type(json_core), intent(inout) :: json
+      type(json_value), pointer, intent(in) :: main_obj
+      type(json_output_data_t), intent(in) :: data
+
+      type(json_value), pointer :: dipole_obj
+
+      ! Named where it applies, so a reader of the table knows which rows are
+      ! summed. Absent without counterpoise, and a deck without it is unchanged.
+      if (len_trim(data%counterpoise) > 0) then
+         call json%add(main_obj, "counterpoise", trim(data%counterpoise))
+      end if
+
+      ! An interaction energy is written in place of `total_energy` in an
+      ! expansion (`writes_total`), and FMO2's of one fragment likewise.
       if (data%has_interaction) call write_interaction_section(json, main_obj, data)
+      if (writes_total(data)) then
+         call json%add(main_obj, "total_energy", data%total_energy)
+         call write_correlation_section(json, main_obj, data)
+      end if
       ! Inside the total above, and written again on its own: see
       ! `dispersion_energy` in `json_output_data_t`.
       if (data%has_dispersion) then
@@ -192,6 +258,8 @@ contains
       if (data%has_solvation) then
          call json%add(main_obj, "solvation_energy", data%solvation_energy)
       end if
+
+      call write_unconverged_section(json, main_obj, data)
 
       call write_sapt_section(json, main_obj, data)
       call write_efmo_section(json, main_obj, data)
@@ -232,80 +300,25 @@ contains
       if (data%has_hessian .and. allocated(data%hessian)) then
          call add_hessian(json, main_obj, data%hessian)
       end if
+   end subroutine write_common_sections
 
-      call logger%info("Writing JSON output to "//trim(output_file))
-      open (newunit=iunit, file=trim(output_file), status="replace", action="write", iostat=io_stat)
-      if (io_stat /= 0) then
-         call logger%error("Failed to open "//trim(output_file)//" for writing")
-         call json%destroy(root)
-         return
-      end if
-
-      call json%print(root, iunit)
-      close (iunit)
-      call json%destroy(root)
-      call logger%info("JSON output written successfully to "//trim(output_file))
-
-   end subroutine write_unfragmented_json_impl
-
-   subroutine write_mbe_breakdown_json_impl(data)
-      !! Write detailed MBE energy breakdown to JSON file
+   subroutine write_levels_section(json, main_obj, data)
+      !! The `levels` array of a many-body expansion, and the note that goes with it
+      type(json_core), intent(inout) :: json
+      type(json_value), pointer, intent(in) :: main_obj
       type(json_output_data_t), intent(in) :: data
 
-      type(json_core) :: json
-      type(json_value), pointer :: root, main_obj, levels_arr, level_obj, frags_arr, frag_obj
-      type(json_value), pointer :: dipole_obj
+      type(json_value), pointer :: levels_arr, level_obj, frags_arr, frag_obj
       integer(int64) :: i, count_by_level
       integer(int64), allocatable :: row_order(:)
       integer :: k
-      ! TODO(mqc): `j` is dead here.
-      integer :: fragment_size, j, frag_level, iunit, io_stat
+      integer :: fragment_size, frag_level
       integer, allocatable :: indices(:), ghosts(:)
       character(len=32) :: level_name
-      character(len=256) :: output_file, basename
-
-      output_file = get_output_json_filename()
-      basename = get_basename()
 
       if (data%max_level > 10) then
          call logger%warning("Fragment levels exceed decamers (10-mers). JSON will use generic N-mers notation.")
       end if
-
-      call json%initialize(real_format=JSON_REAL_FORMAT)
-      call json%create_object(root, "")
-      call json%create_object(main_obj, trim(basename))
-      call json%add(root, main_obj)
-      ! Stamped by every writer; a restart reads it before it reuses anything.
-      if (len_trim(data%fingerprint) > 0) then
-         call json%add(main_obj, "fingerprint", trim(data%fingerprint))
-      end if
-
-      ! Named where it applies, so a reader of the table knows which rows are
-      ! summed. Absent without counterpoise, and a deck without it is unchanged.
-      if (len_trim(data%counterpoise) > 0) then
-         call json%add(main_obj, "counterpoise", trim(data%counterpoise))
-      end if
-
-      ! An interaction-energy run has no total: its term list was reduced to
-      ! what one fragment's interactions need, and the sum over it is not the
-      ! system's energy. So the key a consumer reads a total from is absent,
-      ! rather than present and holding something else.
-      if (data%has_interaction) then
-         call write_interaction_section(json, main_obj, data)
-      else
-         call json%add(main_obj, "total_energy", data%total_energy)
-         ! The total split in two, so a correlated expansion's SCF and
-         ! correlation parts can be followed separately level by level.
-         if (allocated(data%correlation_by_level)) then
-            call json%add(main_obj, "scf_energy", data%total_energy - sum(data%correlation_by_level))
-            call json%add(main_obj, "correlation_energy", sum(data%correlation_by_level))
-            if (allocated(data%correlation_parts_by_level)) then
-               call add_correlation_parts(json, main_obj, data, 0)
-            end if
-         end if
-      end if
-
-      call write_unconverged_section(json, main_obj, data)
 
       ! Said once, above the levels, rather than on each row it applies to: a
       ! reader who scans the table and never reads a per-row key still meets
@@ -341,11 +354,14 @@ contains
             if (allocated(data%sum_by_level)) then
                call json%add(level_obj, "total_energy", data%sum_by_level(frag_level))
                if (allocated(data%correlation_by_level)) then
-                  call json%add(level_obj, "scf_energy", data%sum_by_level(frag_level) - &
-                                data%correlation_by_level(frag_level))
-                  call json%add(level_obj, "correlation_energy", data%correlation_by_level(frag_level))
                   if (allocated(data%correlation_parts_by_level)) then
-                     call add_correlation_parts(json, level_obj, data, frag_level)
+                     call add_energy_split(json, level_obj, data%sum_by_level(frag_level), &
+                                           data%correlation_by_level(frag_level), &
+                                           data%correlation_part_present, &
+                                           data%correlation_parts_by_level(frag_level, :))
+                  else
+                     call add_energy_split(json, level_obj, data%sum_by_level(frag_level), &
+                                           data%correlation_by_level(frag_level))
                   end if
                end if
             end if
@@ -402,71 +418,58 @@ contains
             deallocate (row_order)
          end if
       end do
+   end subroutine write_levels_section
 
-      ! Add dipole if computed
-      if (data%has_dipole .and. allocated(data%dipole)) then
-         call json%create_object(dipole_obj, "dipole")
-         call json%add(main_obj, dipole_obj)
-         call json%add(dipole_obj, "x", data%dipole(1))
-         call json%add(dipole_obj, "y", data%dipole(2))
-         call json%add(dipole_obj, "z", data%dipole(3))
-         call json%add(dipole_obj, "magnitude_debye", norm2(data%dipole)*AU_TO_DEBYE)
-      end if
-
-      if (data%has_gradient .and. allocated(data%gradient)) then
-         call add_gradient(json, main_obj, data%gradient)
-      end if
-
-      if (data%has_hessian .and. allocated(data%hessian)) then
-         call add_hessian(json, main_obj, data%hessian)
-      end if
-
-      ! Shieldings assembled over the expansion, in the section an
-      ! unfragmented run writes them in.
-      call write_nmr_section(json, main_obj, data)
-
-      ! Write to file
-      call logger%info("Writing JSON output to "//trim(output_file))
-      open (newunit=iunit, file=trim(output_file), status="replace", action="write", iostat=io_stat)
-      if (io_stat /= 0) then
-         call logger%error("Failed to open "//trim(output_file)//" for writing")
-         call json%destroy(root)
-         return
-      end if
-
-      call json%print(root, iunit)
-      close (iunit)
-      call json%destroy(root)
-      call logger%info("JSON output written successfully to "//trim(output_file))
-
-   end subroutine write_mbe_breakdown_json_impl
-
-   subroutine add_correlation_parts(json, parent, data, level)
-      !! A `correlation_parts` object: one key per part some term had
+   subroutine write_correlation_section(json, parent, data)
+      !! The whole run's `scf_energy`, `correlation_energy` and `correlation_parts`
       !!
-      !! `level` 0 gives the whole expansion's parts, a level its own. The
-      !! parts add up to the `correlation_energy` beside them.
+      !! One system reports its own correlation energy; an expansion's is the
+      !! sum over its levels. Either way the keys and their meaning are those
+      !! of `add_energy_split`. Writes nothing without a correlation energy.
       type(json_core), intent(inout) :: json
       type(json_value), pointer, intent(in) :: parent
       type(json_output_data_t), intent(in) :: data
-      integer, intent(in) :: level
+
+      if (data%has_correlation) then
+         call add_energy_split(json, parent, data%total_energy, data%correlation_energy, &
+                               data%correlation_part_present, data%correlation_parts)
+      else if (allocated(data%correlation_by_level)) then
+         if (allocated(data%correlation_parts_by_level)) then
+            call add_energy_split(json, parent, data%total_energy, sum(data%correlation_by_level), &
+                                  data%correlation_part_present, sum(data%correlation_parts_by_level, dim=1))
+         else
+            call add_energy_split(json, parent, data%total_energy, sum(data%correlation_by_level))
+         end if
+      end if
+   end subroutine write_correlation_section
+
+   subroutine add_energy_split(json, parent, total, correlation, present_parts, parts)
+      !! `scf_energy`, `correlation_energy` and `correlation_parts` under `parent`
+      !!
+      !! The one place these keys are written, for a whole run and for a level
+      !! of an expansion alike. `scf_energy` is `total` less `correlation`, so
+      !! the two add up to the total beside them; `correlation_parts` holds
+      !! the parts flagged in `present_parts` under `CORRELATION_PART_NAMES`,
+      !! which add up to `correlation`, and is left out when `parts` is.
+      type(json_core), intent(inout) :: json
+      type(json_value), pointer, intent(in) :: parent
+      real(dp), intent(in) :: total
+      real(dp), intent(in) :: correlation
+      logical, intent(in), optional :: present_parts(N_CORRELATION_PARTS)
+      real(dp), intent(in), optional :: parts(N_CORRELATION_PARTS)
 
       type(json_value), pointer :: obj
       integer :: part
-      real(dp) :: value
 
+      call json%add(parent, "scf_energy", total - correlation)
+      call json%add(parent, "correlation_energy", correlation)
+      if (.not. (present(parts) .and. present(present_parts))) return
       call json%create_object(obj, "correlation_parts")
       call json%add(parent, obj)
       do part = 1, N_CORRELATION_PARTS
-         if (.not. data%correlation_part_present(part)) cycle
-         if (level == 0) then
-            value = sum(data%correlation_parts_by_level(:, part))
-         else
-            value = data%correlation_parts_by_level(level, part)
-         end if
-         call json%add(obj, trim(CORRELATION_PART_NAMES(part)), value)
+         if (present_parts(part)) call json%add(obj, trim(CORRELATION_PART_NAMES(part)), parts(part))
       end do
-   end subroutine add_correlation_parts
+   end subroutine add_energy_split
 
    subroutine write_interaction_section(json, parent, data)
       !! The `interaction_energy` object of a `driver: "InteractionEnergy"` run
@@ -1331,40 +1334,16 @@ contains
       end if
    end subroutine write_unconverged_section
 
-   subroutine write_gmbe_pie_json_impl(data)
-      !! Write GMBE PIE calculation results to output JSON file
+   subroutine write_pie_section(json, main_obj, data)
+      !! The inclusion-exclusion terms of a GMBE run, under `pie_terms`
+      type(json_core), intent(inout) :: json
+      type(json_value), pointer, intent(in) :: main_obj
       type(json_output_data_t), intent(in) :: data
 
-      type(json_core) :: json
-      type(json_value), pointer :: root, main_obj, pie_obj, terms_arr, term_obj
-      ! TODO(mqc): `j` is dead here.
-      integer :: j, max_atoms, n_atoms, iunit, io_stat
+      type(json_value), pointer :: pie_obj, terms_arr, term_obj
+      integer :: max_atoms, n_atoms
       integer(int64) :: i, n_nonzero_terms
       integer, allocatable :: atom_indices(:)
-      character(len=256) :: output_file, basename
-
-      output_file = get_output_json_filename()
-      basename = get_basename()
-
-      call json%initialize(real_format=JSON_REAL_FORMAT)
-      call json%create_object(root, "")
-      call json%create_object(main_obj, trim(basename))
-      call json%add(root, main_obj)
-      ! Stamped by every writer; a restart reads it before it reuses anything.
-      if (len_trim(data%fingerprint) > 0) then
-         call json%add(main_obj, "fingerprint", trim(data%fingerprint))
-      end if
-
-      call json%add(main_obj, "total_energy", data%total_energy)
-
-      if (data%has_gradient .and. allocated(data%gradient)) then
-         call add_gradient(json, main_obj, data%gradient)
-      end if
-      if (data%has_hessian .and. allocated(data%hessian)) then
-         call add_hessian(json, main_obj, data%hessian)
-      end if
-
-      call write_nmr_section(json, main_obj, data)
 
       ! Count non-zero coefficient terms
       if (allocated(data%pie_coefficients)) then
@@ -1413,106 +1392,22 @@ contains
             call json%add(term_obj, "weighted_energy", real(data%pie_coefficients(i), dp)*data%pie_energies(i))
          end do
       end if
+   end subroutine write_pie_section
 
-      ! Write to file
-      call logger%info("Writing GMBE PIE JSON output to "//trim(output_file))
-      open (newunit=iunit, file=trim(output_file), status="replace", action="write", iostat=io_stat)
-      if (io_stat /= 0) then
-         call logger%error("Failed to open "//trim(output_file)//" for writing")
-         call json%destroy(root)
-         return
-      end if
-
-      call json%print(root, iunit)
-      close (iunit)
-      call json%destroy(root)
-      call logger%info("GMBE PIE JSON output written successfully to "//trim(output_file))
-
-   end subroutine write_gmbe_pie_json_impl
-
-   subroutine write_vibrational_json_impl(data)
-      !! Write vibrational analysis and thermochemistry results to JSON file
+   subroutine write_vibrational_section(json, main_obj, data)
+      !! The `vibrational_analysis` and `thermochemistry` objects of a Hessian run
+      type(json_core), intent(inout) :: json
+      type(json_value), pointer, intent(in) :: main_obj
       type(json_output_data_t), intent(in) :: data
 
-      type(json_core) :: json
-      type(json_value), pointer :: root, main_obj, dipole_obj, vib_obj, thermo_obj
+      type(json_value), pointer :: vib_obj, thermo_obj
       type(json_value), pointer :: moi_obj, rot_obj, pf_obj, contrib_obj, table_obj
       type(json_value), pointer :: trans_obj, rot_contrib, vib_contrib, elec_obj
       type(json_value), pointer :: vib_row, rot_row, int_row, tr_row, tot_row
       type(json_value), pointer :: thermal_obj, total_e_obj, pol_rows
-      integer :: io_stat, iunit, ipol
-      character(len=256) :: output_file, basename
+      integer :: ipol
       real(dp) :: pV_cal, H_vib_cal, H_rot_cal, H_trans_cal, H_total_cal
       real(dp) :: Cv_total, S_total, S_total_J, H_int_cal, Cv_int, S_int, S_int_J, Cp_trans
-      ! TODO(mqc): `hess_norm` is computed below and never read; `add_hessian`
-      ! writes the norm itself.
-      real(dp) :: hess_norm
-
-      output_file = get_output_json_filename()
-      basename = get_basename()
-
-      call json%initialize(real_format=JSON_REAL_FORMAT)
-
-      ! Create root object
-      call json%create_object(root, "")
-
-      ! Create main object with basename as key
-      call json%create_object(main_obj, trim(basename))
-      call json%add(root, main_obj)
-      ! Stamped by every writer; a restart reads it before it reuses anything.
-      if (len_trim(data%fingerprint) > 0) then
-         call json%add(main_obj, "fingerprint", trim(data%fingerprint))
-      end if
-
-      ! Total energy
-      if (data%has_energy) call json%add(main_obj, "total_energy", data%total_energy)
-      ! Inside the total above, and written again on its own: see
-      ! `dispersion_energy` in `json_output_data_t`.
-      if (data%has_dispersion) then
-         call json%add(main_obj, "dispersion_energy", data%dispersion_energy)
-      end if
-      if (data%has_solvation) then
-         call json%add(main_obj, "solvation_energy", data%solvation_energy)
-      end if
-
-      ! Only where one SCF covered one system. A fragmented run never sets
-      ! this, because a gap assembled from fragment gaps would be arithmetic
-      ! without a meaning.
-      if (data%has_orbitals) then
-         call json%add(main_obj, "homo", data%homo)
-         call json%add(main_obj, "lumo", data%lumo)
-         call json%add(main_obj, "homo_lumo_gap_ev", (data%lumo - data%homo)*HARTREE_TO_EV)
-      end if
-
-      ! The same block the energy-only writer emits. A frequency run rests on
-      ! the same reference, and a saddle point there is what produces the
-      ! imaginary modes below.
-      call write_stability_section(json, main_obj, data)
-      call write_excited_states_section(json, main_obj, data)
-      call write_mcscf_states_section(json, main_obj, data)
-
-      ! Dipole
-      if (data%has_dipole .and. allocated(data%dipole)) then
-         call json%create_object(dipole_obj, "dipole")
-         call json%add(main_obj, dipole_obj)
-         call json%add(dipole_obj, "x", data%dipole(1))
-         call json%add(dipole_obj, "y", data%dipole(2))
-         call json%add(dipole_obj, "z", data%dipole(3))
-         call json%add(dipole_obj, "magnitude_debye", norm2(data%dipole)*AU_TO_DEBYE)
-      end if
-
-      ! Gradient and Hessian norms
-      if (data%has_gradient .and. allocated(data%gradient)) then
-         call add_gradient(json, main_obj, data%gradient)
-      end if
-      if (data%has_hessian .and. allocated(data%hessian)) then
-         hess_norm = sqrt(sum(data%hessian**2))
-         call add_hessian(json, main_obj, data%hessian)
-      end if
-
-      ! A Hessian deck may ask for shieldings too; they belong to the
-      ! reference geometry and go in the section an energy run writes.
-      call write_nmr_section(json, main_obj, data)
 
       ! Vibrational analysis section
       call json%create_object(vib_obj, "vibrational_analysis")
@@ -1679,23 +1574,7 @@ contains
       call json%add(total_e_obj, "electronic_plus_thermal_E", data%total_energy + data%thermo%thermal_correction_energy)
       call json%add(total_e_obj, "electronic_plus_thermal_H", data%total_energy + data%thermo%thermal_correction_enthalpy)
       call json%add(total_e_obj, "electronic_plus_thermal_G", data%total_energy + data%thermo%thermal_correction_gibbs)
-
-      ! Write to file
-      call logger%info("Writing vibrational/thermochemistry JSON to "//trim(output_file))
-      open (newunit=iunit, file=trim(output_file), status="replace", action="write", iostat=io_stat)
-      if (io_stat /= 0) then
-         call logger%error("Failed to open "//trim(output_file)//" for writing")
-         call json%destroy(root)
-         return
-      end if
-
-      call json%print(root, iunit)
-      close (iunit)
-
-      call json%destroy(root)
-      call logger%info("Vibrational/thermochemistry JSON written successfully to "//trim(output_file))
-
-   end subroutine write_vibrational_json_impl
+   end subroutine write_vibrational_section
 
    subroutine write_ieda_section(json, parent, data)
       !! The energy resolved onto atoms and atom pairs, under `bonding_energy`

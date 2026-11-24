@@ -4,7 +4,7 @@ module mqc_json_output_types
    use pic_types, only: int64, dp
    use mqc_thermochemistry, only: thermochemistry_result_t
    use mqc_quao_rows, only: quao_rows_t
-   use mqc_result_types, only: N_CORRELATION_PARTS
+   use mqc_result_types, only: N_CORRELATION_PARTS, energy_t, correlation_parts
    implicit none
    private
 
@@ -69,6 +69,16 @@ module mqc_json_output_types
          !! The continuum free energy evaluated after the wave function
          !! (`keywords.pcm.correlation "ptd"`), beside the total it is inside.
       logical :: has_solvation = .false.
+      real(dp) :: correlation_energy = 0.0_dp
+         !! One system's post-SCF correlation energy, MP2 and CC parts
+         !! together. Already inside `total_energy`.
+      real(dp) :: correlation_parts(N_CORRELATION_PARTS) = 0.0_dp
+         !! The same in the order of `CORRELATION_PART_NAMES`; the entries
+         !! flagged in `correlation_part_present` add up to it.
+      logical :: has_correlation = .false.
+         !! Set by `set_correlation` when an unfragmented run had a
+         !! correlation energy. A fragmented run reports its own through the
+         !! `*_by_level` arrays below and leaves this false.
       real(dp), allocatable :: gradient(:, :)     !! (3, natoms)
       real(dp), allocatable :: hessian(:, :)      !! (3*natoms, 3*natoms)
       real(dp), allocatable :: dipole(:)          !! (3)
@@ -416,6 +426,7 @@ module mqc_json_output_types
    contains
       procedure :: destroy => json_output_data_destroy
       procedure :: reset => json_output_data_reset
+      procedure :: set_correlation => json_output_data_set_correlation
    end type json_output_data_t
 
 contains
@@ -600,6 +611,24 @@ contains
       call this%reset()
    end subroutine json_output_data_destroy
 
+   subroutine json_output_data_set_correlation(this, energy)
+      !! Record one system's correlation energy and its parts for the output
+      !!
+      !! Leaves the container untouched when `energy` has no MP2 or CC part,
+      !! so an SCF-only run writes no correlation keys.
+      class(json_output_data_t), intent(inout) :: this
+      type(energy_t), intent(in) :: energy
+
+      real(dp) :: parts(N_CORRELATION_PARTS)
+
+      parts = correlation_parts(energy)
+      if (all(parts == 0.0_dp)) return
+      this%correlation_energy = energy%mp2%total() + energy%cc%total()
+      this%correlation_parts = parts
+      this%correlation_part_present = parts /= 0.0_dp
+      this%has_correlation = .true.
+   end subroutine json_output_data_set_correlation
+
    subroutine json_output_data_reset(this)
       !! Reset all flags and scalar values to defaults
       ! TODO(mqc): `has_charges`, `has_orbitals`, `charge_scheme`,
@@ -613,6 +642,9 @@ contains
       this%has_dispersion = .false.
       this%solvation_energy = 0.0_dp
       this%has_solvation = .false.
+      this%correlation_energy = 0.0_dp
+      this%correlation_parts = 0.0_dp
+      this%has_correlation = .false.
       this%has_energy = .false.
       this%has_gradient = .false.
       this%has_hessian = .false.
