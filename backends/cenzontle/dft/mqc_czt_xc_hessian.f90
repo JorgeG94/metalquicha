@@ -521,7 +521,9 @@ contains
       integer :: natm, nao, npts, g0, g1, nb, n_sig, isig, jsig
       integer :: ia, a, b, i, ig, gg, p, q, c, d, ih
       real(dp) :: acc, accp, wa, wb, wc
-      logical :: gga
+      real(dp), allocatable :: hloc(:, :, :, :)
+      type(error_t) :: local_error
+      logical :: gga, failed, stop_early
       integer, parameter :: PAIR(3, 3) = reshape([1, 2, 3, 2, 4, 5, 3, 5, 6], [3, 3])
 
       if (error%has_error()) return
@@ -549,11 +551,32 @@ contains
 
       allocate (extents(mol%nbas))
       call shell_extents(mol, ctx%screen_tol, extents)
+      ! Threaded over blocks of points as `xc_hessian` is: each thread sums
+      ! into a Hessian of its own, which is `(3 natm)^2`, and the sums are
+      ! added once at the end.
+      failed = .false.
+      !$omp parallel default(none) &
+      !$omp    shared(ctx, mol, density, pmat, hess, error, failed, extents, natm, nao, &
+      !$omp           npts, gga, rho, rho_grad, vrho, vsigma, frr, frs, fss, grrr, grrs, &
+      !$omp           grss, gsss) &
+      !$omp    private(ao, ao_grad, ao_hess, ao_d3, d_sig, p_sig, dmu, pmu, dmu_d, pmu_d, &
+      !$omp            dchi, pchi, dgrad, pgrad, dsig, psig, rho_p, p_grad, sig_p, vrho_eff, &
+      !$omp            vsig_eff, wsig, zmat, wg, shell_mask, ao_offset, ao_list, c_offsets, &
+      !$omp            c_counts, g0, g1, nb, n_sig, isig, jsig, ia, a, b, i, ig, gg, p, q, &
+      !$omp            c, d, ih, acc, accp, wa, wb, wc, hloc, local_error, stop_early)
       allocate (shell_mask(mol%nbas), ao_offset(mol%nbas), ao_list(nao))
       allocate (c_offsets(natm), c_counts(natm))
       allocate (d_sig(nao, nao), p_sig(nao, nao))
+      allocate (hloc(3, 3, natm, natm))
+      hloc = 0.0_dp
+      ! A private copy is not default-initialised.
+      call local_error%clear()
 
+      !$omp do schedule(dynamic)
       do g0 = 1, npts, ctx%point_block
+         !$omp atomic read
+         stop_early = failed
+         if (stop_early) cycle
          g1 = min(g0 + ctx%point_block - 1, npts)
          nb = g1 - g0 + 1
 
@@ -570,15 +593,24 @@ contains
          end do
 
          if (gga) then
-            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, &
+            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error, &
                                grad=ao_grad, hess=ao_hess, deriv3=ao_d3, &
                                shell_mask=shell_mask, ao_offset=ao_offset, n_ao_out=n_sig)
          else
-            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, &
+            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error, &
                                grad=ao_grad, hess=ao_hess, shell_mask=shell_mask, &
                                ao_offset=ao_offset, n_ao_out=n_sig)
          end if
-         if (error%has_error()) return
+         if (local_error%has_error()) then
+            !$omp critical (xc_potential_hessian_failure)
+            if (.not. failed) then
+               !$omp atomic write
+               failed = .true.
+               error = local_error
+            end if
+            !$omp end critical (xc_potential_hessian_failure)
+            cycle
+         end if
 
          if (allocated(wg)) deallocate (wg)
          allocate (wg(nb))
@@ -746,8 +778,8 @@ contains
                                       + dsig(p, ig)*pchi(q, ig) + pchi(p, ig)*dsig(q, ig)) &
                            + fss(gg)*(dsig(p, ig)*psig(q, ig) + psig(p, ig)*dsig(q, ig))
                   end if
-                  hess(mod(p - 1, 3) + 1, mod(q - 1, 3) + 1, (p - 1)/3 + 1, (q - 1)/3 + 1) = &
-                     hess(mod(p - 1, 3) + 1, mod(q - 1, 3) + 1, (p - 1)/3 + 1, (q - 1)/3 + 1) &
+                  hloc(mod(p - 1, 3) + 1, mod(q - 1, 3) + 1, (p - 1)/3 + 1, (q - 1)/3 + 1) = &
+                     hloc(mod(p - 1, 3) + 1, mod(q - 1, 3) + 1, (p - 1)/3 + 1, (q - 1)/3 + 1) &
                      + wg(ig)*acc
                end do
             end do
@@ -769,8 +801,8 @@ contains
                         accp = accp + pgrad(p, d, ig)*dgrad(q, d, ig) &
                                + dgrad(p, d, ig)*pgrad(q, d, ig)
                      end do
-                     hess(mod(p - 1, 3) + 1, mod(q - 1, 3) + 1, (p - 1)/3 + 1, (q - 1)/3 + 1) = &
-                        hess(mod(p - 1, 3) + 1, mod(q - 1, 3) + 1, (p - 1)/3 + 1, (q - 1)/3 + 1) &
+                     hloc(mod(p - 1, 3) + 1, mod(q - 1, 3) + 1, (p - 1)/3 + 1, (q - 1)/3 + 1) = &
+                        hloc(mod(p - 1, 3) + 1, mod(q - 1, 3) + 1, (p - 1)/3 + 1, (q - 1)/3 + 1) &
                         + 2.0_dp*wg(ig)*(vsig_eff(ig)*acc + vsigma(gg)*accp)
                   end do
                end do
@@ -787,11 +819,11 @@ contains
             do b = 1, 3
                call weighted_overlap(ao_grad(1:nb, 1:n_sig, a), ao_grad(1:nb, 1:n_sig, b), &
                                      wg*vrho_eff, zmat)
-               call add_masked(hess, d_sig, zmat, c_offsets, c_counts, &
+               call add_masked(hloc, d_sig, zmat, c_offsets, c_counts, &
                                natm, n_sig, a, b, 2.0_dp, diagonal=.false.)
                call weighted_overlap(ao_grad(1:nb, 1:n_sig, a), ao_grad(1:nb, 1:n_sig, b), &
                                      wg*vrho(g0:g1), zmat)
-               call add_masked(hess, p_sig, zmat, c_offsets, c_counts, &
+               call add_masked(hloc, p_sig, zmat, c_offsets, c_counts, &
                                natm, n_sig, a, b, 2.0_dp, diagonal=.false.)
             end do
          end do
@@ -801,15 +833,15 @@ contains
             call hess_component(ih, a, b)
             call weighted_overlap(ao_hess(1:nb, 1:n_sig, ih), ao(1:nb, 1:n_sig), &
                                   wg*vrho_eff, zmat)
-            call add_masked(hess, d_sig, zmat, c_offsets, c_counts, &
+            call add_masked(hloc, d_sig, zmat, c_offsets, c_counts, &
                             natm, n_sig, a, b, 2.0_dp, diagonal=.true.)
-            if (a /= b) call add_masked(hess, d_sig, zmat, c_offsets, c_counts, &
+            if (a /= b) call add_masked(hloc, d_sig, zmat, c_offsets, c_counts, &
                                         natm, n_sig, b, a, 2.0_dp, diagonal=.true.)
             call weighted_overlap(ao_hess(1:nb, 1:n_sig, ih), ao(1:nb, 1:n_sig), &
                                   wg*vrho(g0:g1), zmat)
-            call add_masked(hess, p_sig, zmat, c_offsets, c_counts, &
+            call add_masked(hloc, p_sig, zmat, c_offsets, c_counts, &
                             natm, n_sig, a, b, 2.0_dp, diagonal=.true.)
-            if (a /= b) call add_masked(hess, p_sig, zmat, c_offsets, c_counts, &
+            if (a /= b) call add_masked(hloc, p_sig, zmat, c_offsets, c_counts, &
                                         natm, n_sig, b, a, 2.0_dp, diagonal=.true.)
          end do
 
@@ -825,20 +857,26 @@ contains
             do d = 1, 3
                wsig(:, d) = 2.0_dp*wg*vsig_eff*rho_grad(g0:g1, d)
             end do
-            call d2grad_sigma_term(hess, d_sig, wsig, ao, ao_grad, ao_hess, ao_d3, &
+            call d2grad_sigma_term(hloc, d_sig, wsig, ao, ao_grad, ao_hess, ao_d3, &
                                    c_offsets, c_counts, natm, n_sig, nb)
             do d = 1, 3
                wsig(:, d) = 2.0_dp*wg*vsigma(g0:g1)*p_grad(:, d)
             end do
-            call d2grad_sigma_term(hess, d_sig, wsig, ao, ao_grad, ao_hess, ao_d3, &
+            call d2grad_sigma_term(hloc, d_sig, wsig, ao, ao_grad, ao_hess, ao_d3, &
                                    c_offsets, c_counts, natm, n_sig, nb)
             do d = 1, 3
                wsig(:, d) = 2.0_dp*wg*vsigma(g0:g1)*rho_grad(g0:g1, d)
             end do
-            call d2grad_sigma_term(hess, p_sig, wsig, ao, ao_grad, ao_hess, ao_d3, &
+            call d2grad_sigma_term(hloc, p_sig, wsig, ao, ao_grad, ao_hess, ao_d3, &
                                    c_offsets, c_counts, natm, n_sig, nb)
          end if
       end do
+      !$omp end do
+      !$omp critical (xc_potential_hessian_reduce)
+      hess = hess + hloc
+      !$omp end critical (xc_potential_hessian_reduce)
+      deallocate (shell_mask, ao_offset, ao_list, c_offsets, c_counts, d_sig, p_sig, hloc)
+      !$omp end parallel
    end subroutine xc_potential_hessian
 
    subroutine d2grad_sigma_term(hess, dens, wsig, ao, ao_grad, ao_hess, ao_d3, &
@@ -1619,6 +1657,7 @@ contains
       !! third-derivative machinery refuses it. `dtilde` must be symmetric --
       !! its gradient on the grid carries the same symmetry factor `eval_rho`
       !! documents for the reference.
+!$    use omp_lib, only: omp_lock_kind, omp_init_lock, omp_set_lock, omp_unset_lock, omp_destroy_lock
       type(xc_context_t), intent(inout) :: ctx
       type(czt_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: density(:, :)   !! The converged reference density
@@ -1644,7 +1683,10 @@ contains
       integer, allocatable :: ao_offset(:), ao_list(:), c_offsets(:), c_counts(:)
       integer :: natm, nao, npts, g0, g1, nb, n_sig, isig, jsig, ia, a, i, ig, d, k
       real(dp) :: acc, acc_t
-      logical :: gga
+      real(dp), allocatable :: hacc(:, :)
+      type(error_t) :: local_error
+      logical :: gga, failed, stop_early
+!$    integer(omp_lock_kind), allocatable :: locks(:, :)
       integer, parameter :: PAIR(3, 3) = reshape([1, 2, 3, 2, 4, 5, 3, 5, 6], [3, 3])
 
       if (error%has_error()) return
@@ -1676,10 +1718,40 @@ contains
 
       allocate (extents(mol%nbas))
       call shell_extents(mol, ctx%screen_tol, extents)
+
+      ! Threaded over blocks of points, writing one shared `h1`, as
+      ! `xc_potential_deriv` is. A block's whole contribution to one
+      ! perturbation is gathered in `hacc`, over the block's significant
+      ! functions, and added into `h1(:, :, a, ia)` once under that
+      ! perturbation's lock. The arithmetic that produces it is many times the
+      ! deposit, so the locks are rarely contended, and no thread holds a
+      ! private copy of an array that is `n_ao^2` per Cartesian coordinate.
+!$    allocate (locks(3, natm))
+!$    do ia = 1, natm
+!$       do a = 1, 3
+!$          call omp_init_lock(locks(a, ia))
+!$       end do
+!$    end do
+      failed = .false.
+      !$omp parallel default(none) &
+      !$omp    shared(ctx, mol, density, dtilde, h1, error, failed, extents, natm, nao, &
+      !$omp           npts, gga, rho, rho_grad, vsigma, frr, frs, fss, grrr, grrs, grss, &
+      !$omp           gsss, locks) &
+      !$omp    private(ao, ao_grad, ao_hess, d_sig, dt_sig, dmu, dmu_t, dmu_d, dmu_td, dchi, &
+      !$omp            dchi_t, dgrad, dgrad_t, dsig, dsig_t, rho_t, rho_t_grad, sig_t, &
+      !$omp            alpha, beta, crho_t, gdot, gtdot, hgdot, htgdot, dgdot, dgtdot, wcol, &
+      !$omp            blk, hacc, shell_mask, ao_offset, ao_list, c_offsets, c_counts, g0, &
+      !$omp            g1, nb, n_sig, isig, jsig, ia, a, i, ig, d, k, acc, acc_t, &
+      !$omp            local_error, stop_early)
       allocate (shell_mask(mol%nbas), ao_offset(mol%nbas), ao_list(nao))
       allocate (c_offsets(natm), c_counts(natm), d_sig(nao, nao), dt_sig(nao, nao))
-
+      ! A private copy is not default-initialised.
+      call local_error%clear()
+      !$omp do schedule(dynamic)
       do g0 = 1, npts, ctx%point_block
+         !$omp atomic read
+         stop_early = failed
+         if (stop_early) cycle
          g1 = min(g0 + ctx%point_block - 1, npts)
          nb = g1 - g0 + 1
          call block_significant_aos(mol, ctx%grid%coords(:, g0:g1), extents, &
@@ -1693,14 +1765,23 @@ contains
             end do
          end do
          if (gga) then
-            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, grad=ao_grad, &
+            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error, grad=ao_grad, &
                                hess=ao_hess, shell_mask=shell_mask, ao_offset=ao_offset, &
                                n_ao_out=n_sig)
          else
-            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, grad=ao_grad, &
+            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, local_error, grad=ao_grad, &
                                shell_mask=shell_mask, ao_offset=ao_offset, n_ao_out=n_sig)
          end if
-         if (error%has_error()) return
+         if (local_error%has_error()) then
+            !$omp critical (xc_kernel_deriv_failure)
+            if (.not. failed) then
+               !$omp atomic write
+               failed = .true.
+               error = local_error
+            end if
+            !$omp end critical (xc_kernel_deriv_failure)
+            cycle
+         end if
 
          ! (D chi) and (Dt chi): one gemm partner per density, as everywhere.
          if (allocated(dmu)) deallocate (dmu, dmu_t)
@@ -1847,8 +1928,8 @@ contains
             end do
          end if
 
-         if (allocated(blk)) deallocate (blk, wcol)
-         allocate (blk(n_sig, n_sig), wcol(nb))
+         if (allocated(blk)) deallocate (blk, wcol, hacc)
+         allocate (blk(n_sig, n_sig), wcol(nb), hacc(n_sig, n_sig))
          if (gga) then
             if (allocated(hgdot)) deallocate (hgdot, htgdot, dgdot, dgtdot)
             allocate (hgdot(nb, n_sig), htgdot(nb, n_sig), &
@@ -1859,16 +1940,17 @@ contains
             if (c_counts(ia) == 0) cycle
             do a = 1, 3
                k = 3*(ia - 1) + a
+               hacc = 0.0_dp
 
                ! Basis-function motion under `c_rho`: minus the position
                ! derivative, on the rows this atom owns, plus the transpose.
                wcol = ctx%grid%weights(g0:g1)*crho_t(1:nb)
                call weighted_overlap(ao_grad(1:nb, 1:n_sig, a), ao(1:nb, 1:n_sig), &
                                      wcol, blk)
-               call deposit_rows(h1, ao_list, n_sig, a, ia, blk, -1.0_dp, &
-                                 c_offsets, c_counts)
-               call deposit_cols(h1, ao_list, n_sig, a, ia, transpose(blk), -1.0_dp, &
-                                 c_offsets, c_counts)
+               call gather_rows(hacc, n_sig, ia, blk, -1.0_dp, &
+                                c_offsets, c_counts)
+               call gather_cols(hacc, n_sig, ia, transpose(blk), -1.0_dp, &
+                                c_offsets, c_counts)
 
                ! The coefficients following the densities. `c_rho`'s derivative
                ! carries the kernel against the moving trial channels and the
@@ -1884,7 +1966,7 @@ contains
                            + grss(g0:g1)*dsig(k, 1:nb)*sig_t(1:nb))
                end if
                call weighted_overlap(ao(1:nb, 1:n_sig), ao(1:nb, 1:n_sig), wcol, blk)
-               call deposit_full(h1, ao_list, n_sig, a, ia, blk, 1.0_dp)
+               call gather_full(hacc, n_sig, blk, 1.0_dp)
 
                if (gga) then
                   ! d alpha / dA, against `grad rho . grad(chi_u chi_v)`.
@@ -1896,16 +1978,16 @@ contains
                            + (grss(g0:g1)*dchi(k, 1:nb) &
                               + gsss(g0:g1)*dsig(k, 1:nb))*sig_t(1:nb))
                   call weighted_overlap(gdot(1:nb, 1:n_sig), ao(1:nb, 1:n_sig), wcol, blk)
-                  call deposit_full(h1, ao_list, n_sig, a, ia, blk, 1.0_dp)
-                  call deposit_full(h1, ao_list, n_sig, a, ia, transpose(blk), 1.0_dp)
+                  call gather_full(hacc, n_sig, blk, 1.0_dp)
+                  call gather_full(hacc, n_sig, transpose(blk), 1.0_dp)
 
                   ! d beta / dA = 2 (f_rs drho + f_ss dsigma), against
                   ! `grad rho_t . grad(chi_u chi_v)`.
                   wcol = 2.0_dp*ctx%grid%weights(g0:g1) &
                          *(frs(g0:g1)*dchi(k, 1:nb) + fss(g0:g1)*dsig(k, 1:nb))
                   call weighted_overlap(gtdot(1:nb, 1:n_sig), ao(1:nb, 1:n_sig), wcol, blk)
-                  call deposit_full(h1, ao_list, n_sig, a, ia, blk, 1.0_dp)
-                  call deposit_full(h1, ao_list, n_sig, a, ia, transpose(blk), 1.0_dp)
+                  call gather_full(hacc, n_sig, blk, 1.0_dp)
+                  call gather_full(hacc, n_sig, transpose(blk), 1.0_dp)
 
                   ! `grad rho` itself moving under alpha, and `grad rho_t`
                   ! under beta.
@@ -1923,12 +2005,12 @@ contains
                   end do
                   wcol = ctx%grid%weights(g0:g1)*alpha(1:nb)
                   call weighted_overlap(dgdot(1:nb, 1:n_sig), ao(1:nb, 1:n_sig), wcol, blk)
-                  call deposit_full(h1, ao_list, n_sig, a, ia, blk, 1.0_dp)
-                  call deposit_full(h1, ao_list, n_sig, a, ia, transpose(blk), 1.0_dp)
+                  call gather_full(hacc, n_sig, blk, 1.0_dp)
+                  call gather_full(hacc, n_sig, transpose(blk), 1.0_dp)
                   wcol = ctx%grid%weights(g0:g1)*beta(1:nb)
                   call weighted_overlap(dgtdot(1:nb, 1:n_sig), ao(1:nb, 1:n_sig), wcol, blk)
-                  call deposit_full(h1, ao_list, n_sig, a, ia, blk, 1.0_dp)
-                  call deposit_full(h1, ao_list, n_sig, a, ia, transpose(blk), 1.0_dp)
+                  call gather_full(hacc, n_sig, blk, 1.0_dp)
+                  call gather_full(hacc, n_sig, transpose(blk), 1.0_dp)
 
                   ! The basis functions inside `grad(chi_u chi_v)` moving, once
                   ! per half of `c_grad`. Four pieces each, two on each index,
@@ -1947,39 +2029,53 @@ contains
                   end do
                   wcol = ctx%grid%weights(g0:g1)*alpha(1:nb)
                   call weighted_overlap(hgdot(1:nb, 1:n_sig), ao(1:nb, 1:n_sig), wcol, blk)
-                  call deposit_rows(h1, ao_list, n_sig, a, ia, blk, -1.0_dp, &
-                                    c_offsets, c_counts)
+                  call gather_rows(hacc, n_sig, ia, blk, -1.0_dp, &
+                                   c_offsets, c_counts)
                   call weighted_overlap(ao(1:nb, 1:n_sig), hgdot(1:nb, 1:n_sig), wcol, blk)
-                  call deposit_cols(h1, ao_list, n_sig, a, ia, blk, -1.0_dp, &
-                                    c_offsets, c_counts)
+                  call gather_cols(hacc, n_sig, ia, blk, -1.0_dp, &
+                                   c_offsets, c_counts)
                   call weighted_overlap(ao_grad(1:nb, 1:n_sig, a), gdot(1:nb, 1:n_sig), &
                                         wcol, blk)
-                  call deposit_rows(h1, ao_list, n_sig, a, ia, blk, -1.0_dp, &
-                                    c_offsets, c_counts)
+                  call gather_rows(hacc, n_sig, ia, blk, -1.0_dp, &
+                                   c_offsets, c_counts)
                   call weighted_overlap(gdot(1:nb, 1:n_sig), ao_grad(1:nb, 1:n_sig, a), &
                                         wcol, blk)
-                  call deposit_cols(h1, ao_list, n_sig, a, ia, blk, -1.0_dp, &
-                                    c_offsets, c_counts)
+                  call gather_cols(hacc, n_sig, ia, blk, -1.0_dp, &
+                                   c_offsets, c_counts)
 
                   wcol = ctx%grid%weights(g0:g1)*beta(1:nb)
                   call weighted_overlap(htgdot(1:nb, 1:n_sig), ao(1:nb, 1:n_sig), wcol, blk)
-                  call deposit_rows(h1, ao_list, n_sig, a, ia, blk, -1.0_dp, &
-                                    c_offsets, c_counts)
+                  call gather_rows(hacc, n_sig, ia, blk, -1.0_dp, &
+                                   c_offsets, c_counts)
                   call weighted_overlap(ao(1:nb, 1:n_sig), htgdot(1:nb, 1:n_sig), wcol, blk)
-                  call deposit_cols(h1, ao_list, n_sig, a, ia, blk, -1.0_dp, &
-                                    c_offsets, c_counts)
+                  call gather_cols(hacc, n_sig, ia, blk, -1.0_dp, &
+                                   c_offsets, c_counts)
                   call weighted_overlap(ao_grad(1:nb, 1:n_sig, a), gtdot(1:nb, 1:n_sig), &
                                         wcol, blk)
-                  call deposit_rows(h1, ao_list, n_sig, a, ia, blk, -1.0_dp, &
-                                    c_offsets, c_counts)
+                  call gather_rows(hacc, n_sig, ia, blk, -1.0_dp, &
+                                   c_offsets, c_counts)
                   call weighted_overlap(gtdot(1:nb, 1:n_sig), ao_grad(1:nb, 1:n_sig, a), &
                                         wcol, blk)
-                  call deposit_cols(h1, ao_list, n_sig, a, ia, blk, -1.0_dp, &
-                                    c_offsets, c_counts)
+                  call gather_cols(hacc, n_sig, ia, blk, -1.0_dp, &
+                                   c_offsets, c_counts)
                end if
+
+!$             call omp_set_lock(locks(a, ia))
+               call deposit_full(h1, ao_list, n_sig, a, ia, hacc, 1.0_dp)
+!$             call omp_unset_lock(locks(a, ia))
             end do
          end do
       end do
+      !$omp end do
+      deallocate (shell_mask, ao_offset, ao_list, c_offsets, c_counts, d_sig, dt_sig)
+      !$omp end parallel
+
+!$    do ia = 1, natm
+!$       do a = 1, 3
+!$          call omp_destroy_lock(locks(a, ia))
+!$       end do
+!$    end do
+!$    deallocate (locks)
    end subroutine xc_kernel_deriv
 
    subroutine vv10_potential_deriv(ctx, mol, density, h1, error)
@@ -2319,6 +2415,48 @@ contains
          end do
       end do
    end subroutine vv10_potential_deriv
+
+   pure subroutine gather_full(hacc, n_sig, blk, scale)
+      !! Add a block's matrix to a perturbation's accumulator, every element
+      real(dp), intent(inout) :: hacc(:, :)   !! (n_sig, n_sig)
+      integer, intent(in) :: n_sig
+      real(dp), intent(in) :: blk(:, :)
+      real(dp), intent(in) :: scale
+
+      hacc(1:n_sig, 1:n_sig) = hacc(1:n_sig, 1:n_sig) + scale*blk(1:n_sig, 1:n_sig)
+   end subroutine gather_full
+
+   pure subroutine gather_rows(hacc, n_sig, ia, blk, scale, offsets, counts)
+      !! As `gather_full`, the rows atom `ia` owns among the block's functions
+      real(dp), intent(inout) :: hacc(:, :)
+      integer, intent(in) :: n_sig, ia
+      real(dp), intent(in) :: blk(:, :)
+      real(dp), intent(in) :: scale
+      integer, intent(in) :: offsets(:), counts(:)
+
+      integer :: r0, r1
+
+      if (counts(ia) == 0) return
+      r0 = offsets(ia) + 1
+      r1 = offsets(ia) + counts(ia)
+      hacc(r0:r1, 1:n_sig) = hacc(r0:r1, 1:n_sig) + scale*blk(r0:r1, 1:n_sig)
+   end subroutine gather_rows
+
+   pure subroutine gather_cols(hacc, n_sig, ia, blk, scale, offsets, counts)
+      !! As `gather_full`, the columns atom `ia` owns among the block's functions
+      real(dp), intent(inout) :: hacc(:, :)
+      integer, intent(in) :: n_sig, ia
+      real(dp), intent(in) :: blk(:, :)
+      real(dp), intent(in) :: scale
+      integer, intent(in) :: offsets(:), counts(:)
+
+      integer :: c0, c1
+
+      if (counts(ia) == 0) return
+      c0 = offsets(ia) + 1
+      c1 = offsets(ia) + counts(ia)
+      hacc(1:n_sig, c0:c1) = hacc(1:n_sig, c0:c1) + scale*blk(1:n_sig, c0:c1)
+   end subroutine gather_cols
 
    subroutine deposit_full(h1, ao_list, n_sig, a, ia, blk, scale)
       !! Add `scale * blk` into every element of one atom's perturbation block

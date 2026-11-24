@@ -334,6 +334,20 @@ The methods:
   same branches with `xc`. SCS/SOS, conventional MP2 over a fitted reference,
   and a frozen-core double hybrid take the semi-numerical path. See
   `mqc_docs/source/analytic_hessians.rst`.
+  **A double hybrid's Hessian spends its time on the functional, not on
+  MP2**, and three of its kernel routines ran one perturbation at a time or
+  on one thread: `ks_dl_pair_kernel` made two passes over the grid per
+  Cartesian coordinate per density, `xc_kernel_deriv` and
+  `xc_potential_hessian` were serial. On 1,3,5-trifluorobenzene, B2PLYP in
+  6-31G, ladder A was 195 s of a 343 s run on four threads, and 75 s on
+  fifty-two. `ks_dl_pair_kernel_many` takes every perturbation in two passes
+  (`xc_kernel_apply_many`, `xc_kernel2_apply_many`), and the other two are
+  threaded over grid blocks as their siblings `xc_potential_deriv` and
+  `xc_hessian` already were: 47 s and 164 s, the Hessian the same to 1e-11.
+  The conventional (not RI) double-hybrid Hessian still calls
+  `ks_dl_pair_kernel` in a loop. **Read the phase lines before assuming
+  which method a slow Hessian is**: plain RI-MP2 on the same molecule has a
+  ladder A of 3 s.
   **Density-fitted Hartree-Fock and Kohn-Sham have their own analytic
   Hessian** (`df_rhf_hessian`, which takes an optional `xc`, with the fitted
   terms in `mqc_czt_df_hessian`): it differentiates the fitted energy as

@@ -92,6 +92,7 @@ module mqc_czt_xc
    public :: xc_kernel_cache_uks_t
    public :: xc_kernel_cache_uks_fill
    public :: xc_kernel2_apply
+   public :: xc_kernel2_apply_many
    public :: xc_grid_kernel_quantities
    public :: KERNEL_RHO_FLOOR   !! Where the kernel's divergence is cut off
    public :: ensure_nlc_grid
@@ -99,6 +100,11 @@ module mqc_czt_xc
    public :: vv10_kernel_apply
 
    real(dp), parameter :: KERNEL_RHO_FLOOR = 1.0e-10_dp
+   real(dp), parameter :: KERNEL2_BUDGET_SHARE = 0.25_dp
+      !! Share of the memory budget the per-thread matrices of
+      !! `xc_kernel2_apply_many` may take together
+   real(dp), parameter :: KERNEL2_BLIND_BUDGET = 2.0e9_dp
+      !! Bytes they plan on where the machine reports nothing
    integer, parameter :: KERNEL_SET_CHUNK = 8
       !! Response densities contracted per gemm in `xc_kernel_apply_many`.
       !! Eight of 250 significant functions makes an inner dimension of two
@@ -3670,6 +3676,42 @@ contains
       real(dp), intent(inout) :: v_kernel(:, :)   !! Accumulated into
       type(error_t), intent(inout) :: error
 
+      real(dp), allocatable :: one_a(:, :, :), one_v(:, :, :)
+
+      if (error%has_error()) return
+      allocate (one_a(size(dtilde_a, 1), size(dtilde_a, 2), 1))
+      allocate (one_v(size(v_kernel, 1), size(v_kernel, 2), 1))
+      one_a(:, :, 1) = dtilde_a
+      one_v = 0.0_dp
+      call xc_kernel2_apply_many(ctx, mol, density, one_a, dtilde_b, one_v, error)
+      if (error%has_error()) return
+      v_kernel = v_kernel + one_v(:, :, 1)
+   end subroutine xc_kernel2_apply
+
+   subroutine xc_kernel2_apply_many(ctx, mol, density, dtildes_a, dtilde_b, v_kernels, error)
+      !! `xc_kernel2_apply` for a stack of first response densities against
+      !! one second, in one pass over the grid
+      !!
+      !!     V_uv(s) = int w chi_u chi_v g_xc drho_a(s) drho_b
+      !!
+      !! for every set `s`, with the coefficients `xc_kernel2_apply`
+      !! documents. The basis functions, the reference density, the second
+      !! response density and the functional's derivatives are the same for
+      !! every set and are evaluated once per block of points; only the
+      !! first response density and the contraction are per set. A nuclear
+      !! Hessian asks for one set per Cartesian coordinate, and a pass each
+      !! was most of a double hybrid's.
+      !!
+      !! Threaded over blocks of points. Every density must be symmetric.
+      !! LDA and GGA, restricted; a meta-GGA is refused.
+      type(xc_context_t), intent(inout) :: ctx
+      type(czt_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: density(:, :)        !! The converged SCF density
+      real(dp), intent(in) :: dtildes_a(:, :, :)   !! (n_ao, n_ao, n_set)
+      real(dp), intent(in) :: dtilde_b(:, :)       !! The second response density
+      real(dp), intent(inout) :: v_kernels(:, :, :)   !! (n_ao, n_ao, n_set), accumulated into
+      type(error_t), intent(inout) :: error
+
 #ifdef MQC_WITH_LIBXC
       real(dp), allocatable :: ao(:, :), ao_grad(:, :, :)
       real(dp), allocatable :: rho(:), rho_grad(:, :)
@@ -3682,13 +3724,17 @@ contains
       real(dp), allocatable :: grrr_i(:), grrs_i(:), grss_i(:), gsss_i(:)
       real(dp), allocatable :: c_rho(:), c_grad(:, :), no_tau(:)
       real(dp), allocatable :: v_sig(:, :), d_sig(:, :), da_sig(:, :), db_sig(:, :)
+      real(dp), allocatable :: v_t(:, :, :)
       real(dp), allocatable :: extents(:)
       logical, allocatable :: shell_mask(:)
       integer, allocatable :: ao_list(:), ao_offset(:)
+      type(error_t) :: block_error
       integer :: n_sig, ia, ja
       integer :: g0, g1, nb, i, ig, id, npts
-      logical :: gga
+      integer :: n_set, iset, first, last, chunk, iblock, n_blocks, nao
+      logical :: gga, failed, stop_early
 
+      if (error%has_error()) return
       if (.not. ctx%active) return
       if (ctx%polarized) then
          call error%set(ERROR_VALIDATION, "the second exchange-correlation kernel is "// &
@@ -3705,182 +3751,247 @@ contains
 
       gga = ctx%any_gga
       npts = ctx%grid%n_points
-
+      nao = mol%nao
+      n_set = size(dtildes_a, 3)
+      n_blocks = (npts + ctx%point_block - 1)/ctx%point_block
       call shell_extents(mol, ctx%screen_tol, extents)
-      allocate (v_sig(mol%nao, mol%nao), d_sig(mol%nao, mol%nao), &
-                da_sig(mol%nao, mol%nao), db_sig(mol%nao, mol%nao))
-      allocate (shell_mask(mol%nbas), ao_offset(mol%nbas), ao_list(mol%nao))
 
-      do g0 = 1, npts, ctx%point_block
-         g1 = min(g0 + ctx%point_block - 1, npts)
-         nb = g1 - g0 + 1
+      ! Every thread sums into matrices of its own, one per set, so the sets
+      ! go through in as many pieces as keeps those within the budget.
+      chunk = int(min(real(n_set, dp), max(1.0_dp, &
+                                           memory_budget(KERNEL2_BLIND_BUDGET, KERNEL2_BUDGET_SHARE) &
+                                           /(8.0_dp*real(nao, dp)**2*real(kernel2_threads(), dp)))))
 
-         ! One screen for all three densities, as the kernel does for its two:
-         ! every one of them is contracted against the same basis at the same
-         ! points, so they share the kept set and one `ao_list` scatters back.
-         call block_significant_aos(mol, ctx%grid%coords(:, g0:g1), extents, &
-                                    shell_mask, ao_list, ao_offset, n_sig)
-         if (n_sig == 0) cycle          ! empty space; no basis function reaches it
+      failed = .false.
+      do first = 1, n_set, chunk
+         last = min(first + chunk - 1, n_set)
 
-         do ja = 1, n_sig
-            do ia = 1, n_sig
-               d_sig(ia, ja) = density(ao_list(ia), ao_list(ja))
-               da_sig(ia, ja) = dtilde_a(ao_list(ia), ao_list(ja))
-               db_sig(ia, ja) = dtilde_b(ao_list(ia), ao_list(ja))
-            end do
-         end do
+         !$omp parallel default(none) &
+         !$omp    shared(ctx, mol, density, dtildes_a, dtilde_b, v_kernels, error, extents, &
+         !$omp           gga, npts, nao, n_blocks, first, last, failed) &
+         !$omp    private(iblock, g0, g1, nb, i, ig, id, ia, ja, n_sig, iset, ao, ao_grad, &
+         !$omp            rho, rho_grad, drho_a, drho_a_grad, drho_b, drho_b_grad, sigma, &
+         !$omp            sig_a, sig_b, s_ab, frs, fss, grrr, grrs, grss, gsss, frr_i, &
+         !$omp            frs_i, fss_i, grrr_i, grrs_i, grss_i, gsss_i, c_rho, c_grad, &
+         !$omp            no_tau, v_sig, d_sig, da_sig, db_sig, v_t, shell_mask, ao_list, &
+         !$omp            ao_offset, block_error, stop_early)
+         allocate (v_sig(nao, nao), d_sig(nao, nao), da_sig(nao, nao), db_sig(nao, nao))
+         allocate (shell_mask(mol%nbas), ao_offset(mol%nbas), ao_list(nao))
+         allocate (v_t(nao, nao, first:last))
+         v_t = 0.0_dp
+         ! A private copy is not default-initialised.
+         call block_error%clear()
+         !$omp do schedule(dynamic)
+         do iblock = 1, n_blocks
+            !$omp atomic read
+            stop_early = failed
+            if (stop_early) cycle
+            g0 = (iblock - 1)*ctx%point_block + 1
+            g1 = min(g0 + ctx%point_block - 1, npts)
+            nb = g1 - g0 + 1
 
-         if (gga) then
-            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, &
-                               grad=ao_grad, shell_mask=shell_mask, &
-                               ao_offset=ao_offset, n_ao_out=n_sig)
-         else
-            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, &
-                               shell_mask=shell_mask, ao_offset=ao_offset, &
-                               n_ao_out=n_sig)
-         end if
-         if (error%has_error()) return
+            ! One screen for every density: all are contracted against the
+            ! same basis at the same points, so they share the kept set.
+            call block_significant_aos(mol, ctx%grid%coords(:, g0:g1), extents, &
+                                       shell_mask, ao_list, ao_offset, n_sig)
+            if (n_sig == 0) cycle          ! empty space; no basis function reaches it
 
-         ! The reference density is what `g_xc` is evaluated at; the two
-         ! response densities are what it multiplies. All three go through the
-         ! same builder, so the symmetry factor in every gradient is the one
-         ! convention `eval_rho` already owns.
-         if (gga) then
-            call eval_rho(ao, d_sig(1:n_sig, 1:n_sig), rho, ao_grad=ao_grad, &
-                          rho_grad=rho_grad)
-            call eval_rho(ao, da_sig(1:n_sig, 1:n_sig), drho_a, ao_grad=ao_grad, &
-                          rho_grad=drho_a_grad)
-            call eval_rho(ao, db_sig(1:n_sig, 1:n_sig), drho_b, ao_grad=ao_grad, &
-                          rho_grad=drho_b_grad)
-         else
-            call eval_rho(ao, d_sig(1:n_sig, 1:n_sig), rho)
-            call eval_rho(ao, da_sig(1:n_sig, 1:n_sig), drho_a)
-            call eval_rho(ao, db_sig(1:n_sig, 1:n_sig), drho_b)
-         end if
-
-         if (allocated(frs)) deallocate (frs, fss, grrr, grrs, grss, gsss, &
-                                         frr_i, frs_i, fss_i, &
-                                         grrr_i, grrs_i, grss_i, gsss_i, &
-                                         sigma, sig_a, sig_b, s_ab, c_rho)
-         allocate (frs(nb), fss(nb), grrr(nb), grrs(nb), grss(nb), gsss(nb), &
-                   frr_i(nb), frs_i(nb), fss_i(nb), &
-                   grrr_i(nb), grrs_i(nb), grss_i(nb), gsss_i(nb), &
-                   sigma(nb), sig_a(nb), sig_b(nb), s_ab(nb), c_rho(nb))
-         frs = 0.0_dp
-         fss = 0.0_dp
-         grrr = 0.0_dp
-         grrs = 0.0_dp
-         grss = 0.0_dp
-         gsss = 0.0_dp
-         ! Zero rather than left alone on the LDA path: their coefficients are
-         ! zero there, and `0 * uninitialised` is a NaN rather than nothing.
-         sigma = 0.0_dp
-         sig_a = 0.0_dp
-         sig_b = 0.0_dp
-         s_ab = 0.0_dp
-         if (gga) then
-            do ig = 1, nb
-               sigma(ig) = rho_grad(ig, 1)**2 + rho_grad(ig, 2)**2 + rho_grad(ig, 3)**2
-               sig_a(ig) = 2.0_dp*(rho_grad(ig, 1)*drho_a_grad(ig, 1) &
-                                   + rho_grad(ig, 2)*drho_a_grad(ig, 2) &
-                                   + rho_grad(ig, 3)*drho_a_grad(ig, 3))
-               sig_b(ig) = 2.0_dp*(rho_grad(ig, 1)*drho_b_grad(ig, 1) &
-                                   + rho_grad(ig, 2)*drho_b_grad(ig, 2) &
-                                   + rho_grad(ig, 3)*drho_b_grad(ig, 3))
-               s_ab(ig) = 2.0_dp*(drho_a_grad(ig, 1)*drho_b_grad(ig, 1) &
-                                  + drho_a_grad(ig, 2)*drho_b_grad(ig, 2) &
-                                  + drho_a_grad(ig, 3)*drho_b_grad(ig, 3))
-            end do
-         end if
-
-         ! Per component, as everywhere else here: a composition may put an LDA
-         ! correlation beside a GGA exchange, and `any_gga` only says that at
-         ! least one of them needs sigma.
-         do i = 1, ctx%n_func
-            select case (ctx%family(i))
-            case (XC_FAMILY_GGA, XC_FAMILY_HYB_GGA)
-               ! `f_rs` and `f_ss` are second derivatives and come from the
-               ! ordinary kernel evaluator. They belong here because the trial
-               ! densities' own sigma cross-terms multiply them -- the two
-               ! pieces of the third variation that are not third derivatives.
-               call xc_f03_gga_fxc(ctx%func(i), int(nb, 8), rho, sigma, &
-                                   frr_i, frs_i, fss_i)
-               call xc_f03_gga_kxc(ctx%func(i), int(nb, 8), rho, sigma, &
-                                   grrr_i, grrs_i, grss_i, gsss_i)
-               frs = frs + ctx%weight(i)*frs_i
-               fss = fss + ctx%weight(i)*fss_i
-               grrr = grrr + ctx%weight(i)*grrr_i
-               grrs = grrs + ctx%weight(i)*grrs_i
-               grss = grss + ctx%weight(i)*grss_i
-               gsss = gsss + ctx%weight(i)*gsss_i
-            case default
-               call xc_f03_lda_kxc(ctx%func(i), int(nb, 8), rho, grrr_i)
-               grrr = grrr + ctx%weight(i)*grrr_i
-            end select
-         end do
-
-         ! The same floor the kernel and the grid quantities apply, at the same
-         ! density: every coefficient here sits at second order or above, and
-         ! the third derivatives diverge faster at the tail than the second
-         ! ones the floor was introduced for.
-         do ig = 1, nb
-            if (rho(ig) < KERNEL_RHO_FLOOR) then
-               frs(ig) = 0.0_dp
-               fss(ig) = 0.0_dp
-               grrr(ig) = 0.0_dp
-               grrs(ig) = 0.0_dp
-               grss(ig) = 0.0_dp
-               gsss(ig) = 0.0_dp
-            end if
-         end do
-
-         do ig = 1, nb
-            c_rho(ig) = grrr(ig)*drho_a(ig)*drho_b(ig) &
-                        + grrs(ig)*(drho_a(ig)*sig_b(ig) + sig_a(ig)*drho_b(ig)) &
-                        + grss(ig)*sig_a(ig)*sig_b(ig) &
-                        + frs(ig)*s_ab(ig)
-         end do
-         if (gga) then
-            if (allocated(c_grad)) deallocate (c_grad)
-            allocate (c_grad(nb, 3))
-            do id = 1, 3
-               do ig = 1, nb
-                  c_grad(ig, id) = 2.0_dp*(grrs(ig)*drho_a(ig)*drho_b(ig) &
-                                           + grss(ig)*(drho_a(ig)*sig_b(ig) &
-                                                       + sig_a(ig)*drho_b(ig)) &
-                                           + gsss(ig)*sig_a(ig)*sig_b(ig) &
-                                           + fss(ig)*s_ab(ig))*rho_grad(ig, id) &
-                                   + 2.0_dp*(frs(ig)*drho_b(ig) &
-                                             + fss(ig)*sig_b(ig))*drho_a_grad(ig, id) &
-                                   + 2.0_dp*(frs(ig)*drho_a(ig) &
-                                             + fss(ig)*sig_a(ig))*drho_b_grad(ig, id)
+            do ja = 1, n_sig
+               do ia = 1, n_sig
+                  d_sig(ia, ja) = density(ao_list(ia), ao_list(ja))
+                  db_sig(ia, ja) = dtilde_b(ao_list(ia), ao_list(ja))
                end do
             end do
-         end if
 
-         ! The same assembly the potential and the kernel use, with this rung's
-         ! coefficients. Writing a second one would be two copies of the
-         ! arithmetic that is hardest to get right here.
-         v_sig(1:n_sig, 1:n_sig) = 0.0_dp
-         call accumulate_xc_matrix(ctx%grid%weights(g0:g1), ao, c_rho, &
-                                   v_sig(1:n_sig, 1:n_sig), &
-                                   ao_grad=ao_grad, grad_coeff=c_grad, vtau=no_tau, &
-                                   any_gga=gga, any_mgga=.false.)
-         do ja = 1, n_sig
-            do ia = 1, n_sig
-               v_kernel(ao_list(ia), ao_list(ja)) = &
-                  v_kernel(ao_list(ia), ao_list(ja)) + v_sig(ia, ja)
+            if (gga) then
+               call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, block_error, &
+                                  grad=ao_grad, shell_mask=shell_mask, &
+                                  ao_offset=ao_offset, n_ao_out=n_sig)
+            else
+               call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, block_error, &
+                                  shell_mask=shell_mask, ao_offset=ao_offset, &
+                                  n_ao_out=n_sig)
+            end if
+            if (block_error%has_error()) then
+               !$omp critical (xc_kernel2_failure)
+               if (.not. failed) then
+                  !$omp atomic write
+                  failed = .true.
+                  error = block_error
+               end if
+               !$omp end critical (xc_kernel2_failure)
+               cycle
+            end if
+
+            ! The reference density is what `g_xc` is evaluated at. Every
+            ! density goes through the same builder, so the symmetry factor
+            ! in every gradient is the one convention `eval_rho` owns.
+            if (gga) then
+               call eval_rho(ao, d_sig(1:n_sig, 1:n_sig), rho, ao_grad=ao_grad, &
+                             rho_grad=rho_grad)
+               call eval_rho(ao, db_sig(1:n_sig, 1:n_sig), drho_b, ao_grad=ao_grad, &
+                             rho_grad=drho_b_grad)
+            else
+               call eval_rho(ao, d_sig(1:n_sig, 1:n_sig), rho)
+               call eval_rho(ao, db_sig(1:n_sig, 1:n_sig), drho_b)
+            end if
+
+            if (allocated(frs)) deallocate (frs, fss, grrr, grrs, grss, gsss, &
+                                            frr_i, frs_i, fss_i, &
+                                            grrr_i, grrs_i, grss_i, gsss_i, &
+                                            sigma, sig_a, sig_b, s_ab, c_rho)
+            allocate (frs(nb), fss(nb), grrr(nb), grrs(nb), grss(nb), gsss(nb), &
+                      frr_i(nb), frs_i(nb), fss_i(nb), &
+                      grrr_i(nb), grrs_i(nb), grss_i(nb), gsss_i(nb), &
+                      sigma(nb), sig_a(nb), sig_b(nb), s_ab(nb), c_rho(nb))
+            frs = 0.0_dp
+            fss = 0.0_dp
+            grrr = 0.0_dp
+            grrs = 0.0_dp
+            grss = 0.0_dp
+            gsss = 0.0_dp
+            ! Zero rather than left alone on the LDA path: their coefficients
+            ! are zero there, and `0 * uninitialised` is a NaN.
+            sigma = 0.0_dp
+            sig_a = 0.0_dp
+            sig_b = 0.0_dp
+            s_ab = 0.0_dp
+            if (gga) then
+               do ig = 1, nb
+                  sigma(ig) = rho_grad(ig, 1)**2 + rho_grad(ig, 2)**2 + rho_grad(ig, 3)**2
+                  sig_b(ig) = 2.0_dp*(rho_grad(ig, 1)*drho_b_grad(ig, 1) &
+                                      + rho_grad(ig, 2)*drho_b_grad(ig, 2) &
+                                      + rho_grad(ig, 3)*drho_b_grad(ig, 3))
+               end do
+            end if
+
+            ! Per component: a composition may put an LDA correlation beside
+            ! a GGA exchange, and `any_gga` only says that one needs sigma.
+            do i = 1, ctx%n_func
+               select case (ctx%family(i))
+               case (XC_FAMILY_GGA, XC_FAMILY_HYB_GGA)
+                  ! `f_rs` and `f_ss` are second derivatives. They belong
+                  ! here because the trial densities' own sigma cross-terms
+                  ! multiply them.
+                  call xc_f03_gga_fxc(ctx%func(i), int(nb, 8), rho, sigma, &
+                                      frr_i, frs_i, fss_i)
+                  call xc_f03_gga_kxc(ctx%func(i), int(nb, 8), rho, sigma, &
+                                      grrr_i, grrs_i, grss_i, gsss_i)
+                  frs = frs + ctx%weight(i)*frs_i
+                  fss = fss + ctx%weight(i)*fss_i
+                  grrr = grrr + ctx%weight(i)*grrr_i
+                  grrs = grrs + ctx%weight(i)*grrs_i
+                  grss = grss + ctx%weight(i)*grss_i
+                  gsss = gsss + ctx%weight(i)*gsss_i
+               case default
+                  call xc_f03_lda_kxc(ctx%func(i), int(nb, 8), rho, grrr_i)
+                  grrr = grrr + ctx%weight(i)*grrr_i
+               end select
+            end do
+
+            ! The floor the kernel and the grid quantities apply, at the same
+            ! density: the third derivatives diverge faster at the tail than
+            ! the second ones the floor was introduced for.
+            do ig = 1, nb
+               if (rho(ig) < KERNEL_RHO_FLOOR) then
+                  frs(ig) = 0.0_dp
+                  fss(ig) = 0.0_dp
+                  grrr(ig) = 0.0_dp
+                  grrs(ig) = 0.0_dp
+                  grss(ig) = 0.0_dp
+                  gsss(ig) = 0.0_dp
+               end if
+            end do
+
+            if (gga) then
+               if (allocated(c_grad)) deallocate (c_grad)
+               allocate (c_grad(nb, 3))
+            end if
+
+            ! Everything above belongs to the block; what follows is per set.
+            do iset = first, last
+               do ja = 1, n_sig
+                  do ia = 1, n_sig
+                     da_sig(ia, ja) = dtildes_a(ao_list(ia), ao_list(ja), iset)
+                  end do
+               end do
+               if (gga) then
+                  call eval_rho(ao, da_sig(1:n_sig, 1:n_sig), drho_a, ao_grad=ao_grad, &
+                                rho_grad=drho_a_grad)
+                  do ig = 1, nb
+                     sig_a(ig) = 2.0_dp*(rho_grad(ig, 1)*drho_a_grad(ig, 1) &
+                                         + rho_grad(ig, 2)*drho_a_grad(ig, 2) &
+                                         + rho_grad(ig, 3)*drho_a_grad(ig, 3))
+                     s_ab(ig) = 2.0_dp*(drho_a_grad(ig, 1)*drho_b_grad(ig, 1) &
+                                        + drho_a_grad(ig, 2)*drho_b_grad(ig, 2) &
+                                        + drho_a_grad(ig, 3)*drho_b_grad(ig, 3))
+                  end do
+               else
+                  call eval_rho(ao, da_sig(1:n_sig, 1:n_sig), drho_a)
+               end if
+
+               do ig = 1, nb
+                  c_rho(ig) = grrr(ig)*drho_a(ig)*drho_b(ig) &
+                              + grrs(ig)*(drho_a(ig)*sig_b(ig) + sig_a(ig)*drho_b(ig)) &
+                              + grss(ig)*sig_a(ig)*sig_b(ig) &
+                              + frs(ig)*s_ab(ig)
+               end do
+               if (gga) then
+                  do id = 1, 3
+                     do ig = 1, nb
+                        c_grad(ig, id) = 2.0_dp*(grrs(ig)*drho_a(ig)*drho_b(ig) &
+                                                 + grss(ig)*(drho_a(ig)*sig_b(ig) &
+                                                             + sig_a(ig)*drho_b(ig)) &
+                                                 + gsss(ig)*sig_a(ig)*sig_b(ig) &
+                                                 + fss(ig)*s_ab(ig))*rho_grad(ig, id) &
+                                         + 2.0_dp*(frs(ig)*drho_b(ig) &
+                                                   + fss(ig)*sig_b(ig))*drho_a_grad(ig, id) &
+                                         + 2.0_dp*(frs(ig)*drho_a(ig) &
+                                                   + fss(ig)*sig_a(ig))*drho_b_grad(ig, id)
+                     end do
+                  end do
+               end if
+
+               ! The assembly the potential and the kernel use, with this
+               ! rung's coefficients.
+               v_sig(1:n_sig, 1:n_sig) = 0.0_dp
+               call accumulate_xc_matrix(ctx%grid%weights(g0:g1), ao, c_rho, &
+                                         v_sig(1:n_sig, 1:n_sig), &
+                                         ao_grad=ao_grad, grad_coeff=c_grad, vtau=no_tau, &
+                                         any_gga=gga, any_mgga=.false.)
+               do ja = 1, n_sig
+                  do ia = 1, n_sig
+                     v_t(ao_list(ia), ao_list(ja), iset) = &
+                        v_t(ao_list(ia), ao_list(ja), iset) + v_sig(ia, ja)
+                  end do
+               end do
             end do
          end do
+         !$omp end do
+         !$omp critical (xc_kernel2_sum)
+         v_kernels(:, :, first:last) = v_kernels(:, :, first:last) + v_t
+         !$omp end critical (xc_kernel2_sum)
+         deallocate (v_t, v_sig, d_sig, da_sig, db_sig, shell_mask, ao_offset, ao_list)
+         !$omp end parallel
+         if (failed) return
       end do
 #else
       call error%set(ERROR_VALIDATION, "no libxc in this build")
-      if (size(density) < 0 .or. size(dtilde_a) < 0 .or. size(dtilde_b) < 0) return
-      if (size(v_kernel) < 0) return
+      if (size(density) < 0 .or. size(dtildes_a) < 0 .or. size(dtilde_b) < 0) return
+      if (size(v_kernels) < 0) return
       if (mol%nao < 0) return
       if (ctx%n_func < 0) return
 #endif
-   end subroutine xc_kernel2_apply
+   end subroutine xc_kernel2_apply_many
+
+   function kernel2_threads() result(n)
+      !! Threads a parallel region here would have, one in a serial build
+!$    use omp_lib, only: omp_get_max_threads
+      integer :: n
+
+      n = 1
+!$    n = omp_get_max_threads()
+   end function kernel2_threads
 
    subroutine vv10_add_potential(ctx, mol, density, v_nl, e_nl, error)
       !! VV10's energy and Fock contribution, entirely on its own coarse grid

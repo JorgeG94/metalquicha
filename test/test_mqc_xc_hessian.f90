@@ -21,7 +21,8 @@ module test_mqc_xc_hessian
    use mqc_czt_xc, only: xc_context_t, xc_context_create, xc_available, &
                          xc_add_potential, vv10_add_potential, &
                          vv10_kernel_apply, xc_grid_kernel_quantities, &
-                         KERNEL_RHO_FLOOR, xc_kernel_apply, xc_kernel2_apply
+                         KERNEL_RHO_FLOOR, xc_kernel_apply, xc_kernel2_apply, &
+                         xc_kernel2_apply_many
    use mqc_czt_hessian, only: ks_hessian
    use mqc_czt_gradient, only: czt_scf_gradient, vv10_gradient_fixed_grid, &
                                xc_potential_gradient
@@ -94,6 +95,8 @@ contains
                                test_kernel2), &
                   new_unittest("second_kernel_on_a_dimer_with_d_functions", &
                                test_kernel2_dimer), &
+                  new_unittest("second_kernel_stack_matches_one_at_a_time", &
+                               test_kernel2_many), &
                   new_unittest("ks_hessian_differences_the_dft_gradient", test_ks_end_to_end) &
                   ]
    end subroutine collect_mqc_xc_hessian
@@ -1768,6 +1771,67 @@ contains
          !! digits. The `g_xc` break test misses by 1.16e-1 here,
          !! step-independent.
    end subroutine test_kernel2_dimer
+
+   subroutine test_kernel2_many(error)
+      !! A stack of first response densities through `xc_kernel2_apply_many`
+      !! gives each set what it gets alone
+      !!
+      !! The stacked routine evaluates the block's basis functions, the
+      !! reference and the functional's derivatives once and then walks the
+      !! sets, reusing its work arrays from one to the next. What can go wrong
+      !! is exactly that reuse: a set reading the density, the sigma or the
+      !! gradient its predecessor left behind. So the three sets are made
+      !! different from one another, the last one a combination no other is
+      !! a multiple of, and each is compared with the same set sent through
+      !! on its own. A GGA, because the gradient channels are where the
+      !! per-set state is; an LDA has only the density.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol
+      type(xc_context_t) :: ctx
+      type(error_t) :: err
+      real(dp), allocatable :: dens(:, :), ta(:, :), tb(:, :)
+      real(dp), allocatable :: stack(:, :, :), together(:, :, :), alone(:, :)
+      real(dp) :: worst, largest
+      logical :: ok
+      integer :: nao, iset
+
+      call scf_for(WATER_Z, WATER_SYM, WATER, "sto-3g", "gga_x_b88", ctx, dens, err, ok)
+      call check(error, ok, "the reference failed")
+      if (allocated(error)) return
+      nao = size(dens, 1)
+      call kernel_trials(dens, ta, tb)
+
+      allocate (stack(nao, nao, 3), together(nao, nao, 3), alone(nao, nao))
+      stack(:, :, 1) = ta
+      stack(:, :, 2) = tb
+      stack(:, :, 3) = 0.5_dp*ta - 2.0_dp*tb + 0.1_dp*dens
+      together = 0.0_dp
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      if (.not. err%has_error()) then
+         call xc_kernel2_apply_many(ctx, mol, dens, stack, tb, together, err)
+      end if
+      call check(error,.not. err%has_error(), "the stacked second kernel failed")
+      if (allocated(error)) return
+
+      worst = 0.0_dp
+      largest = 0.0_dp
+      do iset = 1, 3
+         alone = 0.0_dp
+         call xc_kernel2_apply(ctx, mol, dens, stack(:, :, iset), tb, alone, err)
+         call check(error,.not. err%has_error(), "the second kernel apply failed")
+         if (allocated(error)) return
+         worst = max(worst, maxval(abs(together(:, :, iset) - alone)))
+         largest = max(largest, maxval(abs(alone)))
+      end do
+      call mol%destroy()
+      write (*, "(4x,a,2es10.2)") "stacked second kernel against one at a time, and its size ", &
+         worst, largest
+      call check(error, largest > 1.0e-4_dp, "the second kernel is zero: nothing was compared")
+      if (allocated(error)) return
+      call check(error, worst < 1.0e-12_dp, &
+                 "a set in the stack did not get what it gets alone")
+   end subroutine test_kernel2_many
 
    subroutine kernel2_case(z, sym, coords, basis, functional, hstep, worst, error)
       !! One geometry and functional: every entry of `xc_kernel2_apply`

@@ -74,7 +74,8 @@ module mqc_czt_ri_mp2_hessian
    use mqc_czt_gradient, only: two_centre_deriv
    use mqc_czt_xc, only: xc_context_t
    use mqc_czt_xc_hessian, only: xc_potential_deriv, xc_potential_hessian
-   use mqc_czt_mp2_hessian, only: ks_pair_kernel, ks_kernel_deriv_stack, ks_dl_pair_kernel
+   use mqc_czt_mp2_hessian, only: ks_pair_kernel, ks_kernel_deriv_stack, &
+                                  ks_pair_kernel_many, ks_dl_pair_kernel_many
    use mqc_czt_multipole, only: multipole_matrices, dipole_integral_derivatives
    use mqc_czt_hess_ints, only: hess_1e_block, hess_rinv_block, hess_2e_contract, &
                                 hess_3c2c_contract, h1_contract, &
@@ -714,7 +715,7 @@ contains
          !! Kohn-Sham reference; the total derivative asks for the exchange part
          !! alone because it differentiates the kernel itself.
 
-      real(dp), allocatable :: dens(:, :, :), g(:, :, :), half(:, :), vk(:, :)
+      real(dp), allocatable :: dens(:, :, :), g(:, :, :), half(:, :), vk(:, :, :)
       integer :: first, last, wide, q, nset
       logical :: with_kernel
 
@@ -751,12 +752,11 @@ contains
          first = last + 1
       end do
       if (with_kernel) then
-         allocate (vk(st%n, st%n))
-         do q = 1, nset
-            call ks_pair_kernel(st%xc, st%mol, st%c, st%scf_density, dmo(:, :, q), vk, error)
-            if (error%has_error()) return
-            t1(:, :, q) = t1(:, :, q) + 0.5_dp*vk
-         end do
+         ! One pass over the grid for the whole stack, not one a member.
+         allocate (vk(st%n, st%n, nset))
+         call ks_pair_kernel_many(st%xc, st%mol, st%c, st%scf_density, dmo, vk, error)
+         if (error%has_error()) return
+         t1(:, :, 1:nset) = t1(:, :, 1:nset) + 0.5_dp*vk
       end if
    end subroutine t1_batch
 
@@ -1856,7 +1856,7 @@ contains
       real(dp), intent(in), optional :: kd(:, :, :), ddmat(:, :, :)
 
       real(dp), allocatable :: m(:, :, :), tm(:, :, :), w(:, :), vk(:, :), t1hf(:, :)
-      real(dp), allocatable :: wk(:, :)
+      real(dp), allocatable :: wk(:, :, :)
       integer :: y, n
 
       n = st%n
@@ -1869,7 +1869,7 @@ contains
       if (error%has_error()) return
       t1hf = t1d
       if (st%dh) then
-         allocate (vk(n, n), wk(n, n))
+         allocate (vk(n, n))
          call ks_pair_kernel(st%xc, st%mol, st%c, st%scf_density, d, vk, error)
          if (error%has_error()) return
          t1hf = t1d - 0.5_dp*vk
@@ -1878,14 +1878,15 @@ contains
          call pic_gemm(u_all(:, :, y), t1hf, w, transa="T")
          dt1(:, :, y) = t1x(:, :, y) + tm(:, :, y) + w
          call pic_gemm(t1hf, u_all(:, :, y), dt1(:, :, y), beta=1.0_dp)
-         if (st%dh) then
-            dt1(:, :, y) = dt1(:, :, y) - 0.5_dp*kd(:, :, y)
-            call ks_dl_pair_kernel(st%xc, st%mol, st%c, st%scf_density, d, vk, kd(:, :, y), &
-                                   u_all(:, :, y), ddmat(:, :, y), wk, error)
-            if (error%has_error()) return
-            dt1(:, :, y) = dt1(:, :, y) + 0.5_dp*wk
-         end if
       end do
+      if (st%dh) then
+         ! Every perturbation's kernel shares in two passes over the grid.
+         allocate (wk(n, n, st%n3))
+         call ks_dl_pair_kernel_many(st%xc, st%mol, st%c, st%scf_density, d, vk, kd, &
+                                     u_all, ddmat, wk, error)
+         if (error%has_error()) return
+         dt1 = dt1 - 0.5_dp*kd + 0.5_dp*wk
+      end if
    end subroutine total_derivative_t1
 
    subroutine lagrangian_perturbed(st, df, d, dd, lagc, t1sum, dip)
