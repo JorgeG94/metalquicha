@@ -29,6 +29,7 @@ module mqc_czt_cphf
    !! reference solved without one silently gets the Hartree-Fock response of its
    !! orbitals.
    use, intrinsic :: iso_fortran_env, only: output_unit
+   use, intrinsic :: ieee_arithmetic, only: ieee_is_nan
    use pic_types, only: dp, int64
    use pic_timer, only: timer_type
    use pic_blas_interfaces, only: pic_gemm
@@ -429,6 +430,14 @@ contains
             do k = 1, nact
                member = idx(k)
                pap = sum(p(:, :, member)*ap(:, :, member))
+               if (ieee_is_nan(pap)) then
+                  ! Tested apart from the sign: a NaN fails `pap > 0` too,
+                  ! and is not evidence about the reference.
+                  call error%set(ERROR_VALIDATION, "CPHF: a search direction's "// &
+                                 "curvature is not a number, so the right-hand side "// &
+                                 "or the operator's product was not finite")
+                  return
+               end if
                if (.not. pap > 0.0_dp) then
                   call error%set(ERROR_VALIDATION, "CPHF: the response operator is not "// &
                                  "positive definite along a search direction, which means "// &

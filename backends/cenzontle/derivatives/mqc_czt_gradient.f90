@@ -2459,8 +2459,9 @@ contains
       !! densities against the same integrals
       !!
       !! Each set gets `-(J - K/2)` derivative potentials of its own density,
-      !! full range, as `two_electron_deriv` gives with no optional arguments;
-      !! the exchange-scaling and range-separation options are not offered.
+      !! full range, as `two_electron_deriv` gives with no optional arguments,
+      !! or `-(J - exx K/2)` with `exx_fraction`; range separation is not
+      !! offered.
       !! Screening uses the largest density element over the whole batch, so
       !! a set can pick up quartets it would have screened alone: results
       !! agree with one-at-a-time calls to within the screening threshold, not
@@ -2494,6 +2495,7 @@ contains
       integer, allocatable :: block_lo(:), block_hi(:), block_p_lo(:), block_p_hi(:)
       integer, allocatable :: offsets(:), counts(:)
       real(dp) :: g, tol, bra, est, amax, gmax, exx
+      logical :: with_k
       type(c_ptr) :: opt
       type(eri_shell_table_t) :: tab
       type(eri_grad_dispatch_t) :: disp
@@ -2625,12 +2627,17 @@ contains
          end do
       end do
       gmax = 0.0_dp
+      ! A pure functional has no exchange to scale, and the exchange
+      ! half of the digestion is then half the pass for nothing.
+      exx = 1.0_dp
+      if (present(exx_fraction)) exx = exx_fraction
+      with_k = exx /= 0.0_dp
 
       !$omp parallel default(none) &
       !$omp    shared(mol, tab, densities, opt, vj, vk, mx, nao, nbas, disp, &
       !$omp           dims, offs, bq, bra_bound, dsh, tol, n_set, n_block, block_lo, block_hi, &
       !$omp           block_p_lo, block_p_hi, with_gamma, gamma, gmax, map, shell_atom, &
-      !$omp           n_gamma, gamma_grads) &
+      !$omp           n_gamma, gamma_grads, with_k) &
       !$omp    private(ish, jsh, ksh, lsh, di, dj, dk, dl, io, jo, ko, lo, &
       !$omp            i, j, k, l, comp, ret, idx, g, shls, buf, vj_local, vk_local, &
       !$omp            bra, est, iset, ib, ia, ig, p_off, mi, mj, mk, ml, de_local)
@@ -2691,16 +2698,20 @@ contains
                                        vj_local(io + i, jo + j, comp, iset) = &
                                           vj_local(io + i, jo + j, comp, iset) &
                                           + g*densities(lo + l, ko + k, iset)
-                                       vk_local(io + i, lo + l, comp, iset) = &
-                                          vk_local(io + i, lo + l, comp, iset) &
-                                          + g*densities(jo + j, ko + k, iset)
+                                       if (with_k) then
+                                          vk_local(io + i, lo + l, comp, iset) = &
+                                             vk_local(io + i, lo + l, comp, iset) &
+                                             + g*densities(jo + j, ko + k, iset)
+                                       end if
                                        if (lsh /= ksh) then
                                           vj_local(io + i, jo + j, comp, iset) = &
                                              vj_local(io + i, jo + j, comp, iset) &
                                              + g*densities(ko + k, lo + l, iset)
-                                          vk_local(io + i, ko + k, comp, iset) = &
-                                             vk_local(io + i, ko + k, comp, iset) &
-                                             + g*densities(jo + j, lo + l, iset)
+                                          if (with_k) then
+                                             vk_local(io + i, ko + k, comp, iset) = &
+                                                vk_local(io + i, ko + k, comp, iset) &
+                                                + g*densities(jo + j, lo + l, iset)
+                                          end if
                                        end if
                                     end do
                                  end do
@@ -2756,8 +2767,6 @@ contains
       call libcint_del_optimizer(opt)
 
       allocate (vhfs(nao, nao, 3, n_set))
-      exx = 1.0_dp
-      if (present(exx_fraction)) exx = exx_fraction
       vhfs = -(vj - 0.5_dp*exx*vk)
 
       deallocate (bounds, bq, bra_bound, dsh, dims, offs, vj, vk)

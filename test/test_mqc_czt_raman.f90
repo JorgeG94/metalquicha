@@ -43,7 +43,7 @@ module test_mqc_czt_raman
    real(dp), parameter :: KS_ANALYTIC_TOL = 5.0e-6_dp
       !! Bound on the analytic Kohn-Sham derivatives against the extrapolated
       !! finite-field ones, Bohr^2: the reference's own accuracy, not the
-      !! analytic route's. Fields of 4e-3 and 2e-3 leave it 3e-8 from an LDA
+      !! analytic route's. Fields of 4e-3 and 2e-3 leave it 1e-7 from an LDA
       !! or a GGA and 2e-7 from B3LYP (9e-7 from PBE0), whose exchange build puts
       !! noise in the gradient that a second difference divides by the
       !! field squared: at 2e-3 and 1e-3 B3LYP is 7e-6 off, at 8e-3 and 4e-3
@@ -72,7 +72,8 @@ module test_mqc_czt_raman
       !! between the routes through.
    real(dp), parameter :: INACTIVE_TOL = 1.0e-12_dp
       !! Bound on the derivatives with an inactive context against none at
-      !! all, Bohr^2: the same arithmetic, so the same numbers.
+      !! all, Bohr^2: the same terms, summed over threads in whatever order
+      !! they finish, so the same numbers to round-off.
    real(dp), parameter :: SUM_RULE_TOL = 1.0e-7_dp
       !! What the analytic route leaves of an exact zero
 
@@ -86,7 +87,8 @@ contains
                   new_unittest("finite_field_route_agrees", test_field), &
                   new_unittest("analytic_route_agrees", test_analytic), &
                   new_unittest("kohn_sham_derivatives_obey_the_sum_rule", test_kohn_sham), &
-                  new_unittest("kohn_sham_analytic_route_agrees", test_kohn_sham_analytic) &
+                  new_unittest("kohn_sham_analytic_route_agrees", test_kohn_sham_analytic), &
+                  new_unittest("analytic_route_refuses_a_meta_gga", test_analytic_refusal) &
                   ]
    end subroutine collect_mqc_czt_raman_tests
 
@@ -511,6 +513,44 @@ contains
          call mol%destroy()
       end do
    end subroutine test_kohn_sham_analytic
+
+   subroutine test_analytic_refusal(error)
+      !! A functional the analytic route has no third derivative for is
+      !! refused, not run with the terms it lacks
+      !!
+      !! The bridge keeps such a functional away from the routine and takes
+      !! the finite-field route, so this refusal is the backstop for a caller
+      !! that does not. A meta-GGA stands for the three: its kinetic-energy
+      !! channel is absent from every kernel routine the derivative calls,
+      !! and what came back without the refusal would be a GGA's derivative
+      !! of a meta-GGA's density.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      type(xc_context_t) :: xc
+      type(error_t) :: err
+      real(dp), allocatable :: d(:, :)
+      real(dp) :: c(3, 3), alpha(3, 3)
+
+      if (.not. xc_available()) return
+      c = reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                   0.0_dp, 0.0_dp, 0.9584_dp*ANG, &
+                   0.9268_dp*ANG, 0.0_dp, -0.2400_dp*ANG], [3, 3])
+      call build_czt_molecule([8, 1, 1], ["O ", "H ", "H "], c, "sto-3g", mol, err)
+      call xc_context_create(mol, "tpss", xc, err)
+      call run_czt_rhf(mol, 10, 200, 1.0e-10_dp, 1.0e-8_dp, .false., scf, err, xc=xc)
+      call check(error,.not. err%has_error() .and. scf%converged, &
+                 "TPSS water must converge: "//err%get_full_trace())
+      if (allocated(error)) return
+
+      call polarizability_derivatives_analytic(mol, scf%orbitals, scf%orbital_energies, &
+                                               scf%n_occupied, alpha, d, err, xc=xc)
+      call check(error, err%has_error(), &
+                 "the analytic route ran a meta-GGA it has no third derivative for")
+      call xc%destroy()
+      call mol%destroy()
+   end subroutine test_analytic_refusal
 
 end module test_mqc_czt_raman
 

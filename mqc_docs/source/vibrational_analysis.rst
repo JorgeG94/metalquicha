@@ -525,7 +525,9 @@ Limits
   absorption and wrong near one: there is no resonance Raman here.
 - **Analytic for Hartree-Fock, LDA, GGA and global hybrids.** A meta-GGA, a
   range-separated hybrid and non-local correlation take the finite-field
-  route, since their third derivatives are not built.
+  route, since their third derivatives are not built. An analytic route
+  that fails -- its response solves can, on a reference that is a saddle --
+  falls back to the finite-field one with a warning.
 - **The extra calculations run one after another**, not distributed over MPI
   ranks as the displacements of a semi-numerical Hessian are.
 - **Harmonic, like everything else on this page.**
