@@ -423,7 +423,8 @@ contains
       exchange = 1.0_dp
       if (kohn_sham) then
          functional => xc
-         if (xc%any_mgga .or. xc%range_separated .or. xc%nlc_b /= 0.0_dp) then
+         if (xc%any_mgga .or. xc%range_separated .or. xc%nlc_b /= 0.0_dp &
+             .or. xc%nlc_c /= 0.0_dp) then
             call error%set(ERROR_VALIDATION, "Raman: the analytic polarizability "// &
                            "derivatives are built for LDA, GGA and global hybrid "// &
                            "functionals; a meta-GGA, a range-separated hybrid and "// &

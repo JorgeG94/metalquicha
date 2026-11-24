@@ -3992,7 +3992,8 @@ contains
          ! What the functional's third derivatives are built for.
          analytic_functional = .true.
          if (xc%active) analytic_functional = .not. (xc%any_mgga .or. xc%range_separated &
-                                                     .or. xc%nlc_b /= 0.0_dp)
+                                                     .or. xc%nlc_b /= 0.0_dp &
+                                                     .or. xc%nlc_c /= 0.0_dp)
 
          if (settings%raman_method == RAMAN_METHOD_DISPLACEMENTS) then
             call polarizability_derivatives(settings, fragment%element_numbers, &
@@ -4006,6 +4007,19 @@ contains
                                                      scf%orbital_energies, &
                                                      scf%n_occupied, alpha0, &
                                                      dalpha, raman_error, xc=xc)
+            if (raman_error%has_error()) then
+               ! Its response solves can fail where an SCF in a field does
+               ! not: a reference that is a saddle, or one with no gap.
+               call logger%warning("  Raman: the analytic route failed ("// &
+                                   raman_error%get_message()// &
+                                   "); taking the finite-field one")
+               call raman_error%clear()
+               if (allocated(dalpha)) deallocate (dalpha)
+               call polarizability_derivatives_field(settings, mol, nelec, &
+                                                     scf%density, accel_kind, &
+                                                     diis_size, scf_conv, alpha0, &
+                                                     dalpha, raman_error, xc=xc)
+            end if
          else
             ! The analytic route needs a functional's third derivative,
             ! built for LDA, GGA and their global hybrids, and assumes no
