@@ -44,7 +44,7 @@ module test_mqc_czt_raman
       !! Bound on the analytic Kohn-Sham derivatives against the extrapolated
       !! finite-field ones, Bohr^2: the reference's own accuracy, not the
       !! analytic route's. Fields of 4e-3 and 2e-3 leave it 3e-8 from an LDA
-      !! or a GGA and up to 9e-7 from a hybrid, whose exchange build puts
+      !! or a GGA and 2e-7 from B3LYP (9e-7 from PBE0), whose exchange build puts
       !! noise in the gradient that a second difference divides by the
       !! field squared: at 2e-3 and 1e-3 B3LYP is 7e-6 off, at 8e-3 and 4e-3
       !! everything is 1e-6 off from the next order of truncation.
@@ -70,6 +70,9 @@ module test_mqc_czt_raman
       !! derivatives land 2e-11 apart. `ANALYTIC_TOL` is sized for a
       !! comparison with another program and would let a real difference
       !! between the routes through.
+   real(dp), parameter :: INACTIVE_TOL = 1.0e-12_dp
+      !! Bound on the derivatives with an inactive context against none at
+      !! all, Bohr^2: the same arithmetic, so the same numbers.
    real(dp), parameter :: SUM_RULE_TOL = 1.0e-7_dp
       !! What the analytic route leaves of an exact zero
 
@@ -316,6 +319,42 @@ contains
          if (allocated(error)) return
          call check(error, maxval(abs(d - d_direct)) < ROUTES_TOL, &
                     "the factorized and iterated responses give different derivatives")
+      end block
+
+      ! A context that was never created is what the program hands this
+      ! routine for Hartree-Fock: present, inactive, and saying its exchange
+      ! fraction is zero. It has to mean Hartree-Fock. Read as a functional
+      ! with no exchange it gives derivatives that are wrong in the first
+      ! digit -- activities of 33.8 for 45.8 on this molecule -- with nothing
+      ! else amiss, and that shipped for a day because every test called the
+      ! routine without a context at all. Both routes, since they reach the
+      ! mean field through different calls.
+      block
+         type(xc_context_t) :: never_created
+         real(dp), allocatable :: d_inactive(:, :)
+         real(dp) :: alpha_inactive(3, 3)
+
+         call polarizability_derivatives_analytic(mol, scf%orbitals, scf%orbital_energies, &
+                                                  scf%n_occupied, alpha_inactive, &
+                                                  d_inactive, err, xc=never_created)
+         call check(error,.not. err%has_error(), &
+                    "analytic route, inactive context: "//err%get_full_trace())
+         if (allocated(error)) return
+         call check(error, maxval(abs(d_inactive - d)) < INACTIVE_TOL, &
+                    "an inactive functional context changed the Hartree-Fock derivatives")
+         if (allocated(error)) return
+         call polarizability_derivatives_analytic(mol, scf%orbitals, scf%orbital_energies, &
+                                                  scf%n_occupied, alpha_inactive, &
+                                                  d_inactive, err, integral_direct=.true., &
+                                                  xc=never_created)
+         call check(error,.not. err%has_error(), &
+                    "analytic route, iterated, inactive context: "//err%get_full_trace())
+         if (allocated(error)) return
+         write (*, "(4x,a,es10.2)") "inactive context against none, iterated:   ", &
+            maxval(abs(d_inactive - d))
+         call check(error, maxval(abs(d_inactive - d)) < ROUTES_TOL, &
+                    "an inactive functional context changed the iterated "// &
+                    "Hartree-Fock derivatives")
       end block
    end subroutine test_analytic
 

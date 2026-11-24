@@ -119,8 +119,10 @@ module mqc_czt_cphf
    integer, parameter :: DEFAULT_MAX_ITER = 200  !! CG iterations before giving up
    integer, parameter :: LOCKSTEP_GROUP = 6
       !! Perturbations `cphf_solve` iterates together, sharing each pass over
-      !! the integrals. A pass holds a Fock-sized accumulator per member on
-      !! every thread, which is what keeps this from being all of them.
+      !! the integrals and the grid. A batch size, not a memory bound: the
+      !! direct build holds one matrix per member whatever the thread count.
+      !! Past a handful the members converge at different iterations and
+      !! the later passes carry few of them.
 
    integer, parameter :: HESSIAN_CHUNK = 64
       !! Columns of the Hessian built per pass over the integrals. At 115
@@ -258,6 +260,7 @@ contains
       real(dp) :: rz_new, pap, step, use_tol
       integer :: n_ao, n_mo, n_vir, n_pert, ipert, a, i, iter, worst, limit
       integer :: first, n_group, member, nact, still, k
+      logical :: kohn_sham
       logical :: direct
       character(len=32) :: text
 
@@ -326,7 +329,7 @@ contains
       if (present(bmat)) then
          ! Neither stored nor direct: fitting removes the four-index integrals
          ! rather than choosing where to keep them, so both of the others are
-         ! left empty and `response_operator` takes a third path.
+         ! left empty and `response_product` takes a third path.
          if (present(eri_in)) then
             call error%set(ERROR_VALIDATION, "CPHF: given both a fitted tensor and an "// &
                            "exact one. They are different operators, not two routes to "// &
@@ -362,7 +365,9 @@ contains
       ! iterations, each of which would otherwise re-evaluate the reference
       ! density per grid block and run libxc over it again. They depend on the
       ! reference alone, which does not move here.
-      if (present(xc) .and. present(density)) then
+      kohn_sham = .false.
+      if (present(xc)) kohn_sham = xc%active
+      if (kohn_sham .and. present(density)) then
          call xc_kernel_cache_fill(xc, mol, density, kernel_cache, error, triplet=triplet)
          if (error%has_error()) return
       end if
@@ -474,54 +479,6 @@ contains
          end if
       end function instability_kind
    end subroutine cphf_solve
-
-   subroutine response_operator(mol, direct, eri, bounds, zero_h, c_occ, c_vir, &
-                                gaps, u, au, error, bmat, xc, density, cache, triplet)
-      !! Apply the coupled-perturbed operator to a trial rotation
-      !!
-      !! `(A+B)` on one vector, which is what a conjugate-gradient iteration
-      !! wants. A batch of one through the shared product: the symmetrised
-      !! response density, the two-electron build at the reference's own
-      !! exchange fraction, a range-separated functional's attenuated second
-      !! pass, and the exchange-correlation kernel where there is one.
-      type(czt_molecule_t), intent(in) :: mol
-      logical, intent(in) :: direct          !! Recompute integrals rather than store them
-      real(dp), intent(in) :: eri(:, :, :, :)   !! Zero-sized when `direct`
-      real(dp), intent(in) :: bounds(:, :)      !! Zero-sized when not `direct`
-      real(dp), intent(in) :: zero_h(:, :)   !! Zero, so the build returns only G
-      real(dp), intent(in) :: c_occ(:, :), c_vir(:, :)
-      real(dp), intent(in) :: gaps(:, :)
-      real(dp), intent(in) :: u(:, :)
-      real(dp), intent(out) :: au(:, :)
-      type(error_t), intent(inout) :: error
-      type(xc_context_t), intent(inout), optional :: xc
-         !! Present, the exchange-correlation kernel is added on top of the
-         !! two-electron part, whichever integral source built it, and the
-         !! exchange coefficients come from the context.
-      real(dp), intent(in), optional :: density(:, :)
-         !! The reference density the kernel is evaluated at. Required with `xc`.
-      real(dp), intent(in), optional :: bmat(:, :)
-         !! The fitted tensor `B(mu nu, P)`. Present, the operator is built from
-         !! it and neither `eri` nor the direct build is touched.
-      type(xc_kernel_cache_t), intent(in), optional :: cache
-         !! The reference's kernel coefficients, filled once by the caller.
-         !! An unfilled one is ignored, so it may be passed unconditionally.
-      logical, intent(in), optional :: triplet   !! The triplet operator; off by default
-
-      real(dp), allocatable :: one_u(:, :, :), one_au(:, :, :)
-      integer :: one_idx(1)
-
-      allocate (one_u(size(u, 1), size(u, 2), 1), one_au(size(au, 1), size(au, 2), 1))
-      one_u(:, :, 1) = u
-      one_au = 0.0_dp
-      one_idx = 1
-      call response_product(mol, c_occ, c_vir, gaps, zero_h, one_u, one_idx, 1, &
-                            .false., one_au, error, direct=direct, eri=eri, &
-                            bounds=bounds, xc=xc, reference=density, cache=cache, &
-                            bmat=bmat, triplet=triplet)
-      if (.not. error%has_error()) au = one_au(:, :, 1)
-      deallocate (one_u, one_au)
-   end subroutine response_operator
 
    subroutine fitted_potential_general(b, dens, g, k_scale)
       !! `J - k K/2` from the fitted tensor, for a density with no structure

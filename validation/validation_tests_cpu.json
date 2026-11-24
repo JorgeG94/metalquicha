@@ -1828,8 +1828,10 @@
                 ]
             ],
             "hessian_tolerance": 1e-07,
+            "expected_raman_activities": [7.98516460, 45.84388382, 16.73971997],
+            "raman_tolerance": 0.001,
             "type": "unfragmented",
-            "reference_note": "The energy and Hessian of the plain Hessian case, which asking for Raman activities must not move; the manifest has nowhere to put an activity. What the run exercises is the property end to end: the polarizability's Cartesian derivatives beside the analytic Hessian, their projection on the modes, and the activities and depolarization ratios written to the JSON. The derivatives themselves are pinned against PySCF in test/test_mqc_czt_raman.f90."
+            "reference_note": "expected_raman_activities is the three vibrations' activities from the analytic route, in A^4/amu; the finite-field route gives 7.98516434, 45.84383146 and 16.73967926 and the displacement route the same to that route's truncation, 5e-5 away at most, under a tolerance of 1e-3. They are pinned because the energy and the Hessian do not notice the activities: a mean field built with no exchange gave 8.307, 33.758 and 11.782 here and this case stayed green. The energy and Hessian of the plain Hessian case, which asking for Raman activities must not move; the manifest has nowhere to put an activity. What the run exercises is the property end to end: the polarizability's Cartesian derivatives beside the analytic Hessian, their projection on the modes, and the activities and depolarization ratios written to the JSON. The derivatives themselves are pinned against PySCF in test/test_mqc_czt_raman.f90."
         },
         {
             "name": "B3LYP Hessian with Raman activities H2O sto-3g (CPU)",

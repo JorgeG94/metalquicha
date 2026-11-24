@@ -1159,6 +1159,7 @@ contains
 
          !$omp critical (xc_potential_gradient_failure)
          if (.not. failed) then
+            !$omp atomic write
             failed = .true.
             error = thread_error
          end if
@@ -1453,6 +1454,7 @@ contains
 
          !$omp critical (xc_kernel_gradient_failure)
          if (.not. failed) then
+            !$omp atomic write
             failed = .true.
             error = thread_error
          end if

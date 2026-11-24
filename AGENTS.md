@@ -567,7 +567,13 @@ held and the grid moving. Both are threaded over grid blocks with a private
 gradient per thread; **an internal procedure called from the parallel region
 reaches the host's variable, not the thread's private copy**, so the block's
 error is passed to `report_failure` as an argument. The exchange term is
-`two_electron_deriv_many(..., exx_fraction=)`. No other program gives a
+`two_electron_deriv_many(..., exx_fraction=)`. **A context that was never
+created is present, inactive, and says its exchange fraction is zero**: it is
+what the bridge holds for Hartree-Fock, and passing it down made the mean
+field one with no exchange, activities of 33.8 for 45.8 on water with every
+test green. The routine forwards the context only when it is active, and
+`has_functional` in `mqc_czt_response_product` is the test everywhere there
+-- never `present(xc)` alone. No other program gives a
 Kohn-Sham reference number here, so the check is the finite-field route,
 which shares no formula with it, *extrapolated over two field strengths*:
 1e-7 for an LDA and a GGA, 2e-7 for B3LYP at fields of 4e-3 and 2e-3.

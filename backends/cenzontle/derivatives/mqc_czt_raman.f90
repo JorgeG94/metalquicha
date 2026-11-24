@@ -375,7 +375,7 @@ contains
          !! in memory. Off when absent; the two give the same derivatives.
       logical, intent(out), optional :: stored_response
          !! Whether the solves came from the factorized response matrix
-      type(xc_context_t), intent(inout), optional :: xc
+      type(xc_context_t), intent(inout), optional, target :: xc
          !! The reference's functional. Absent or inactive is Hartree-Fock.
          !! A meta-GGA, a range-separated hybrid and non-local correlation
          !! are refused: their third derivatives are not built.
@@ -396,6 +396,7 @@ contains
       integer :: n_chunk, first_set, last_set
       real(dp) :: exchange
       logical :: kohn_sham
+      type(xc_context_t), pointer :: functional
       real(dp), allocatable :: second(:, :), trial(:, :)
       integer, allocatable :: offsets(:), counts(:)
       real(dp) :: origin(3)
@@ -415,8 +416,13 @@ contains
       ! and third derivatives.
       kohn_sham = .false.
       if (present(xc)) kohn_sham = xc%active
+      ! What goes down to the response routines: the context when it carries
+      ! a functional, and nothing otherwise. An inactive context is present,
+      ! and one that was never created says its exchange fraction is zero.
+      functional => null()
       exchange = 1.0_dp
       if (kohn_sham) then
+         functional => xc
          if (xc%any_mgga .or. xc%range_separated .or. xc%nlc_b /= 0.0_dp) then
             call error%set(ERROR_VALIDATION, "Raman: the analytic polarizability "// &
                            "derivatives are built for LDA, GGA and global hybrid "// &
@@ -490,7 +496,7 @@ contains
       else
          call cphf_solve(mol, orbitals, orbital_energies, n_occ, perturbations=dip, &
                          response=u1, error=error, tol=PROPERTY_RESPONSE_TOL, &
-                         xc=xc, density=d0)
+                         xc=functional, density=d0)
       end if
       if (error%has_error()) return
 
@@ -522,7 +528,7 @@ contains
       ! field of the density it induces.
       scratch = d1
       call response_mean_field(mol, scratch, zero_h, g, error, bounds=bounds, &
-                               xc=xc, reference=d0)
+                               xc=functional, reference=d0)
       if (error%has_error()) return
       do k = 1, 3
          g(:, :, k) = g(:, :, k) + dip(:, :, k)
@@ -548,7 +554,7 @@ contains
 
       scratch = d2
       call response_mean_field(mol, scratch, zero_h, g, error, bounds=bounds, &
-                               xc=xc, reference=d0)
+                               xc=functional, reference=d0)
       if (error%has_error()) return
       allocate (rhs(n_vir, n_occ, N_SYMMETRIC))
       do c = 1, N_SYMMETRIC
@@ -558,7 +564,7 @@ contains
          ! along the two first-order densities is part of `F^kl` whatever
          ! `D^kl` turns out to be.
          if (kohn_sham) then
-            call xc_kernel2_apply(xc, mol, d0, d1(:, :, k), d1(:, :, l), g(:, :, c), error)
+            call xc_kernel2_apply(functional, mol, d0, d1(:, :, k), d1(:, :, l), g(:, :, c), error)
             if (error%has_error()) return
          end if
          call to_mo(g(:, :, c), f2(:, :, c))
@@ -578,7 +584,7 @@ contains
          if (allocated(ipiv)) deallocate (ipiv)
       else
          call cphf_solve(mol, orbitals, orbital_energies, n_occ, response=u2, error=error, &
-                         tol=PROPERTY_RESPONSE_TOL, mo_rhs=rhs, xc=xc, density=d0)
+                         tol=PROPERTY_RESPONSE_TOL, mo_rhs=rhs, xc=functional, density=d0)
       end if
       if (error%has_error()) then
          call error%add_context("Raman: the second-order field response")
@@ -597,7 +603,7 @@ contains
          d2(:, :, c) = d2(:, :, c) + scratch(:, :, c)
       end do
       call response_mean_field(mol, scratch, zero_h, g, error, bounds=bounds, &
-                               xc=xc, reference=d0)
+                               xc=functional, reference=d0)
       if (error%has_error()) return
       do c = 1, N_SYMMETRIC
          call to_mo(g(:, :, c), trial)
@@ -686,8 +692,8 @@ contains
          ! the kernel between `D^k` and `D^l`, each differentiated with the
          ! densities held and the grid moving.
          if (kohn_sham) then
-            call xc_potential_gradient(xc, mol, d0, d2(:, :, c), second, error)
-            call xc_kernel_gradient(xc, mol, d0, d1(:, :, k), d1(:, :, l), second, error)
+            call xc_potential_gradient(functional, mol, d0, d2(:, :, c), second, error)
+            call xc_kernel_gradient(functional, mol, d0, d1(:, :, k), d1(:, :, l), second, error)
             if (error%has_error()) return
          end if
 

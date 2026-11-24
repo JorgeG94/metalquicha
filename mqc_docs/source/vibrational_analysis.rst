@@ -297,9 +297,7 @@ derivative of the functional further than the last. The mean field in every
 response solve keeps the functional's fraction of exchange and gains its
 kernel :math:`f_{xc}`. The second-order Fock matrix gains the potential's
 second variation along the two first-order densities,
-:math:`g_{xc}
-ho^k
-ho^l`, which is there whatever :math:`D^{kl}` turns out to
+:math:`g_{xc}\rho^k\rho^l`, which is there whatever :math:`D^{kl}` turns out to
 be because the potential is not linear in the density. And the gradient gains
 
 .. math::
