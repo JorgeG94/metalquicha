@@ -179,6 +179,65 @@ def extract_raman_activities(json_data: Dict) -> Optional[List[float]]:
     return [float(a) for a in block["raman_activities_A4_amu"]]
 
 
+def resolve_output_path(data, path: str):
+    """Follow a dotted path into the output, `[*]` mapping over a list
+
+    `atomic_charges.atoms[*].charge` is every atom's charge, in order;
+    `stability.lowest_curvature` is one number. Raises KeyError where the
+    output has no such entry, which the caller reports as a failure: a
+    property the deck asked for and the file does not hold is the thing
+    these checks exist to catch.
+    """
+    def walk(node, parts):
+        if not parts:
+            return node
+        head, rest = parts[0], parts[1:]
+        spread = head.endswith("[*]")
+        key = head[:-3] if spread else head
+        if not isinstance(node, dict) or key not in node:
+            raise KeyError(key)
+        child = node[key]
+        if spread:
+            if not isinstance(child, list):
+                raise KeyError(head)
+            return [walk(item, rest) for item in child]
+        return walk(child, rest)
+    return walk(data, path.split("."))
+
+
+def flatten_values(value) -> List:
+    """A scalar, a list or a nested list as one flat list"""
+    if isinstance(value, list):
+        flat = []
+        for item in value:
+            flat.extend(flatten_values(item))
+        return flat
+    return [value]
+
+
+def compare_output_value(calculated, expected, tol: float) -> Optional[str]:
+    """None when the two agree, else what is wrong
+
+    Numbers within `tol`; booleans and strings exactly. A boolean is tested
+    before a number because Python counts it as one.
+    """
+    calc, exp = flatten_values(calculated), flatten_values(expected)
+    if len(calc) != len(exp):
+        return f"{len(calc)} values where {len(exp)} were expected"
+    worst = 0.0
+    for c, e in zip(calc, exp):
+        if isinstance(e, bool) or isinstance(e, str):
+            if c != e:
+                return f"{c!r} where {e!r} was expected"
+        else:
+            if isinstance(c, bool) or not isinstance(c, (int, float)):
+                return f"{c!r} where a number was expected"
+            worst = max(worst, abs(float(c) - float(e)))
+    if worst > tol:
+        return f"largest difference {worst:.2e} (tolerance {tol:.2e})"
+    return None
+
+
 def extract_gradient_norm(json_data: Dict) -> Optional[float]:
     """Extract gradient_norm from JSON output"""
     if not json_data:
@@ -821,6 +880,32 @@ def run_validation_tests(manifest_file: str = "validation_tests.json",
                     else:
                         print(f"    Raman activities: {len(expected_act)} modes within "
                               f"{worst:.2e} A^4/amu")
+
+            # Validate named entries of the output, for a case that pins some
+            #
+            # What a `properties` request produces -- charges, bond orders,
+            # Fukui indices, a stability verdict -- changes no energy, so a
+            # case that pins the energy alone passes whether the property is
+            # right, wrong or absent. `expected_output` maps a path into the
+            # output to the value there, or to {"value": ..., "tolerance": ...}.
+            if "expected_output" in test:
+                top = output_data[list(output_data.keys())[0]] if output_data else {}
+                default_tol = test.get("output_tolerance", 1.0e-6)
+                for path, spec in test["expected_output"].items():
+                    if isinstance(spec, dict) and "value" in spec:
+                        want, path_tol = spec["value"], spec.get("tolerance", default_tol)
+                    else:
+                        want, path_tol = spec, default_tol
+                    try:
+                        problem = compare_output_value(resolve_output_path(top, path), want, path_tol)
+                    except KeyError as missing:
+                        problem = f"no {missing} in the output"
+                    if problem:
+                        print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - {path}: {problem}")
+                        test_passed = False
+                        failure_reasons.append(f"{path}: {problem}")
+                    else:
+                        print(f"    {path}: matches")
 
             # Validate gradient norm if present
             if "expected_gradient_norm" in test:

@@ -1089,6 +1089,18 @@ python3 run_validation.py -t water_sto-3g                       # substring filt
 python3 run_validation.py --mpi --np 4                          # fragmented on 4 ranks
 ```
 
+**A case that pins only the energy says nothing about a property.** What
+`properties` asks for changes no energy, so a deck that requests one and a
+manifest entry holding `expected_energy` alone pass whether the property is
+right, wrong or absent: Hartree-Fock Raman activities were 33.8 for 45.8 for
+a day with the suite green. `expected_output` maps a path into the output to
+its value -- `atomic_charges.atoms[*].charge`, `stability.lowest_curvature`
+-- and a missing path is a failure; `expected_nmr_isotropic` and
+`expected_raman_activities` are the two with their own keys. Every property
+deck that writes its result pins it. **The quasi-atomic bonding analysis
+writes nothing to the output file**, so its seven decks still pin the energy
+alone.
+
 **A build without tblite skips most of the default manifest, and skips are not
 failures.** `-t h3o` on such a build runs zero tests and prints a green summary.
 Check the "Total tests" line, not the colour. `validation_tests_cpu.json` is the

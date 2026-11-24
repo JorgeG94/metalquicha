@@ -348,6 +348,11 @@ MP2_CASES = [
 # energy and no entry in the manifest. Without this they match the cpu_*.json
 # sweep below and vanish on the next regeneration.
 HAND_MAINTAINED = {
+    # A deck here that asks for a property pins the property in its manifest
+    # entry as well as the energy (`expected_output`, or the shielding and
+    # Raman keys): the energy is the same number whether the property came
+    # out right, wrong or not at all. The bonding-analysis decks are the
+    # exception, because that analysis writes nothing to the output file.
     "cpu/mqc/rhf/cpu_peptide46_sto-3g.json",
     # A geometry optimization, which this script does not generate: every case
     # it writes is a single point with a PySCF energy beside it, and there is no
