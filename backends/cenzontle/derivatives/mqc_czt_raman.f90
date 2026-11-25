@@ -40,9 +40,10 @@ module mqc_czt_raman
    use mqc_czt_response_product, only: response_mean_field
    use mqc_czt_gradient, only: czt_scf_gradient, one_electron_deriv, &
                                two_electron_deriv_many, hellmann_feynman_gradient, &
+                               xc_potential_gradient, xc_kernel_gradient, &
                                DERIV_OVLP, DERIV_KIN, DERIV_NUC
    use mqc_czt_multipole, only: multipole_matrices, dipole_integral_derivatives
-   use mqc_czt_xc, only: xc_context_t, xc_context_create
+   use mqc_czt_xc, only: xc_context_t, xc_context_create, xc_kernel2_apply
    use mqc_cuest_iface, only: cuest_scf_settings_t
    use mqc_scf_convergence, only: scf_convergence_t
    implicit none
@@ -144,7 +145,7 @@ contains
 
    subroutine polarizability_derivatives_field(settings, mol, nelec, reference_density, &
                                                accelerator, diis_vectors, convergence, &
-                                               alpha, dalpha, error, xc)
+                                               alpha, dalpha, error, xc, field_strength)
       !! `d alpha / d x` from the analytic gradient in a finite electric field
       !!
       !! In a uniform field `F` the energy is `E0 - mu.F - (1/2) F alpha F`,
@@ -176,6 +177,10 @@ contains
       type(error_t), intent(inout) :: error
       type(xc_context_t), intent(inout), optional :: xc
          !! The reference's functional. Absent or inactive is Hartree-Fock.
+      real(dp), intent(in), optional :: field_strength
+         !! The field the differences are taken at, atomic units.
+         !! `RAMAN_FIELD` when absent. The error falls as its square, so two
+         !! strengths extrapolate.
 
       ! The off-diagonal components, in the packed order xy, xz, yz.
       integer, parameter :: OFF_DIAGONAL(2, 3) = reshape([1, 2, 1, 3, 2, 3], [2, 3])
@@ -186,9 +191,12 @@ contains
       type(rhf_result_t) :: scf
       integer :: natm, k, l, ipair, ifield, iatom, comp, col
       logical :: kohn_sham
+      real(dp) :: step
 
       alpha = 0.0_dp
       if (error%has_error()) return
+      step = RAMAN_FIELD
+      if (present(field_strength)) step = field_strength
       natm = mol%natm
       kohn_sham = .false.
       if (present(xc)) kohn_sham = xc%active
@@ -207,12 +215,12 @@ contains
       ! each pair of axes together.
       fields = 0.0_dp
       do k = 1, 3
-         fields(k, 2*k - 1) = RAMAN_FIELD
-         fields(k, 2*k) = -RAMAN_FIELD
+         fields(k, 2*k - 1) = step
+         fields(k, 2*k) = -step
       end do
       do ipair = 1, 3
-         fields(OFF_DIAGONAL(:, ipair), 5 + 2*ipair) = RAMAN_FIELD
-         fields(OFF_DIAGONAL(:, ipair), 6 + 2*ipair) = -RAMAN_FIELD
+         fields(OFF_DIAGONAL(:, ipair), 5 + 2*ipair) = step
+         fields(OFF_DIAGONAL(:, ipair), 6 + 2*ipair) = -step
       end do
 
       call logger%info("  Raman: differencing the gradient over "//to_char(N_FIELDS)// &
@@ -247,13 +255,13 @@ contains
       ! axis, the mixed ones from the pair fields less the two diagonals.
       allocate (second(3, natm, N_SYMMETRIC))
       do k = 1, 3
-         second(:, :, k) = (g(:, :, 2*k - 1) + g(:, :, 2*k) - 2.0_dp*g0)/RAMAN_FIELD**2
+         second(:, :, k) = (g(:, :, 2*k - 1) + g(:, :, 2*k) - 2.0_dp*g0)/step**2
       end do
       do ipair = 1, 3
          k = OFF_DIAGONAL(1, ipair)
          l = OFF_DIAGONAL(2, ipair)
          second(:, :, 3 + ipair) = 0.5_dp*((g(:, :, 5 + 2*ipair) + g(:, :, 6 + 2*ipair) &
-                                            - 2.0_dp*g0)/RAMAN_FIELD**2 &
+                                            - 2.0_dp*g0)/step**2 &
                                            - second(:, :, k) - second(:, :, l))
       end do
 
@@ -328,8 +336,9 @@ contains
 
    subroutine polarizability_derivatives_analytic(mol, orbitals, orbital_energies, n_occ, &
                                                   alpha, dalpha, error, integral_direct, &
-                                                  stored_response)
-      !! `d alpha / d x` with no finite difference, for closed-shell Hartree-Fock
+                                                  stored_response, xc)
+      !! `d alpha / d x` with no finite difference, for a closed shell under
+      !! Hartree-Fock or a Kohn-Sham LDA, GGA or global hybrid
       !!
       !! The nuclear gradient holds in a uniform field `F` as it does without
       !! one,
@@ -366,6 +375,10 @@ contains
          !! in memory. Off when absent; the two give the same derivatives.
       logical, intent(out), optional :: stored_response
          !! Whether the solves came from the factorized response matrix
+      type(xc_context_t), intent(inout), optional, target :: xc
+         !! The reference's functional. Absent or inactive is Hartree-Fock.
+         !! A meta-GGA, a range-separated hybrid and non-local correlation
+         !! are refused: their third derivatives are not built.
 
       real(dp), allocatable :: dip(:, :, :), ddip(:, :, :, :, :)
       real(dp), allocatable :: aplus(:, :), aminus(:, :), no_eri(:, :, :, :), gaps(:, :)
@@ -381,6 +394,9 @@ contains
       real(dp), allocatable :: stack(:, :, :), vhf(:, :, :, :), vhf_part(:, :, :, :)
       real(dp) :: per_set
       integer :: n_chunk, first_set, last_set
+      real(dp) :: exchange
+      logical :: kohn_sham
+      type(xc_context_t), pointer :: functional
       real(dp), allocatable :: second(:, :), trial(:, :)
       integer, allocatable :: offsets(:), counts(:)
       real(dp) :: origin(3)
@@ -394,6 +410,29 @@ contains
       n_mo = size(orbitals, 2)
       n_vir = n_mo - n_occ
       natm = mol%natm
+
+      ! Under a functional the mean field keeps a fraction of exchange and
+      ! gains the kernel; the energy gains terms in the functional's second
+      ! and third derivatives.
+      kohn_sham = .false.
+      if (present(xc)) kohn_sham = xc%active
+      ! What goes down to the response routines: the context when it carries
+      ! a functional, and nothing otherwise. An inactive context is present,
+      ! and one that was never created says its exchange fraction is zero.
+      functional => null()
+      exchange = 1.0_dp
+      if (kohn_sham) then
+         functional => xc
+         if (xc%any_mgga .or. xc%range_separated .or. xc%nlc_b /= 0.0_dp &
+             .or. xc%nlc_c /= 0.0_dp) then
+            call error%set(ERROR_VALIDATION, "Raman: the analytic polarizability "// &
+                           "derivatives are built for LDA, GGA and global hybrid "// &
+                           "functionals; a meta-GGA, a range-separated hybrid and "// &
+                           "non-local correlation need third derivatives that are not")
+            return
+         end if
+         exchange = xc%exx_fraction
+      end if
 
       origin = sum(mol%coords, 2)/real(natm, dp)
       call multipole_matrices(mol, origin, 1, dip, error)
@@ -415,6 +454,8 @@ contains
       ! with a pass over the integrals per iteration.
       stored = mo_transform_fits(n_ao, n_occ, n_vir, .true.)
       if (present(integral_direct)) stored = stored .and. .not. integral_direct
+      ! The transformed matrix is the Hartree-Fock one: it has no kernel.
+      if (kohn_sham) stored = .false.
       if (present(stored_response)) stored_response = stored
       if (stored) then
          allocate (gaps(n_vir, n_occ), no_eri(0, 0, 0, 0))
@@ -440,6 +481,9 @@ contains
          end if
       end if
 
+      allocate (d0(n_ao, n_ao))
+      d0 = 2.0_dp*matmul(orbitals(:, :n_occ), transpose(orbitals(:, :n_occ)))
+
       ! First order. `U^k` is the virtual-occupied block of the density's
       ! derivative per spin, so the total is twice it, symmetrised.
       if (stored) then
@@ -452,7 +496,8 @@ contains
          deallocate (rhs, trial)
       else
          call cphf_solve(mol, orbitals, orbital_energies, n_occ, perturbations=dip, &
-                         response=u1, error=error, tol=PROPERTY_RESPONSE_TOL)
+                         response=u1, error=error, tol=PROPERTY_RESPONSE_TOL, &
+                         xc=functional, density=d0)
       end if
       if (error%has_error()) return
 
@@ -466,8 +511,6 @@ contains
       do i = 1, n_mo
          f0(i, i) = orbital_energies(i)
       end do
-      allocate (d0(n_ao, n_ao))
-      call to_ao(dm0, d0)
 
       allocate (dm1(n_mo, n_mo, 3), d1(n_ao, n_ao, 3), f1(n_mo, n_mo, 3))
       dm1 = 0.0_dp
@@ -485,7 +528,8 @@ contains
       ! The first-order Fock matrices: the field's own operator and the mean
       ! field of the density it induces.
       scratch = d1
-      call response_mean_field(mol, scratch, zero_h, g, error, bounds=bounds)
+      call response_mean_field(mol, scratch, zero_h, g, error, bounds=bounds, &
+                               xc=functional, reference=d0)
       if (error%has_error()) return
       do k = 1, 3
          g(:, :, k) = g(:, :, k) + dip(:, :, k)
@@ -510,12 +554,20 @@ contains
       end do
 
       scratch = d2
-      call response_mean_field(mol, scratch, zero_h, g, error, bounds=bounds)
+      call response_mean_field(mol, scratch, zero_h, g, error, bounds=bounds, &
+                               xc=functional, reference=d0)
       if (error%has_error()) return
       allocate (rhs(n_vir, n_occ, N_SYMMETRIC))
       do c = 1, N_SYMMETRIC
          k = SYMMETRIC_ROW(c)
          l = SYMMETRIC_COL(c)
+         ! The potential is not linear in the density: its second variation
+         ! along the two first-order densities is part of `F^kl` whatever
+         ! `D^kl` turns out to be.
+         if (kohn_sham) then
+            call xc_kernel2_apply(functional, mol, d0, d1(:, :, k), d1(:, :, l), g(:, :, c), error)
+            if (error%has_error()) return
+         end if
          call to_mo(g(:, :, c), f2(:, :, c))
          ! The commutators `[F^k, P^l] + [F^l, P^k]` in the virtual-occupied
          ! block, `P` being the density per spin.
@@ -533,7 +585,7 @@ contains
          if (allocated(ipiv)) deallocate (ipiv)
       else
          call cphf_solve(mol, orbitals, orbital_energies, n_occ, response=u2, error=error, &
-                         tol=PROPERTY_RESPONSE_TOL, mo_rhs=rhs)
+                         tol=PROPERTY_RESPONSE_TOL, mo_rhs=rhs, xc=functional, density=d0)
       end if
       if (error%has_error()) then
          call error%add_context("Raman: the second-order field response")
@@ -551,7 +603,8 @@ contains
          call to_ao(trial, scratch(:, :, c))
          d2(:, :, c) = d2(:, :, c) + scratch(:, :, c)
       end do
-      call response_mean_field(mol, scratch, zero_h, g, error, bounds=bounds)
+      call response_mean_field(mol, scratch, zero_h, g, error, bounds=bounds, &
+                               xc=functional, reference=d0)
       if (error%has_error()) return
       do c = 1, N_SYMMETRIC
          call to_mo(g(:, :, c), trial)
@@ -607,7 +660,8 @@ contains
       allocate (vhf(n_ao, n_ao, 3, N_STACK))
       do first_set = 1, N_STACK, n_chunk
          last_set = min(first_set + n_chunk - 1, N_STACK)
-         call two_electron_deriv_many(mol, stack(:, :, first_set:last_set), vhf_part, error)
+         call two_electron_deriv_many(mol, stack(:, :, first_set:last_set), vhf_part, error, &
+                                      exx_fraction=exchange)
          if (error%has_error()) return
          vhf(:, :, :, first_set:last_set) = vhf_part
          deallocate (vhf_part)
@@ -634,6 +688,15 @@ contains
          ! `Tr(D^kl G^x[D])` and `Tr(D^k G^x[D^l])`
          call add_pairing(1, 4 + c)
          call add_pairing(1 + k, 1 + l)
+
+         ! The functional's share: the potential traced with `D^kl`, and
+         ! the kernel between `D^k` and `D^l`, each differentiated with the
+         ! densities held and the grid moving.
+         if (kohn_sham) then
+            call xc_potential_gradient(functional, mol, d0, d2(:, :, c), second, error)
+            call xc_kernel_gradient(functional, mol, d0, d1(:, :, k), d1(:, :, l), second, error)
+            if (error%has_error()) return
+         end if
 
          ! The field term's own derivative, at the first-order densities.
          do iatom = 1, natm

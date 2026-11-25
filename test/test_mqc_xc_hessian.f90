@@ -21,8 +21,10 @@ module test_mqc_xc_hessian
    use mqc_czt_xc, only: xc_context_t, xc_context_create, xc_available, &
                          xc_add_potential, vv10_add_potential, &
                          vv10_kernel_apply, xc_grid_kernel_quantities, &
-                         KERNEL_RHO_FLOOR, xc_kernel_apply, xc_kernel2_apply
+                         KERNEL_RHO_FLOOR, xc_kernel_apply, xc_kernel2_apply, &
+                         xc_kernel2_apply_many
    use mqc_czt_hessian, only: ks_hessian
+   use omp_lib, only: omp_set_num_threads, omp_get_max_threads
    use mqc_czt_gradient, only: czt_scf_gradient, vv10_gradient_fixed_grid, &
                                xc_potential_gradient
    use mqc_czt_xc_hessian, only: xc_hessian, xc_gradient_fixed_grid, &
@@ -94,6 +96,9 @@ contains
                                test_kernel2), &
                   new_unittest("second_kernel_on_a_dimer_with_d_functions", &
                                test_kernel2_dimer), &
+                  new_unittest("threaded_kernels_match_one_thread", test_kernel_threads), &
+                  new_unittest("second_kernel_stack_matches_one_at_a_time", &
+                               test_kernel2_many), &
                   new_unittest("ks_hessian_differences_the_dft_gradient", test_ks_end_to_end) &
                   ]
    end subroutine collect_mqc_xc_hessian
@@ -1768,6 +1773,134 @@ contains
          !! digits. The `g_xc` break test misses by 1.16e-1 here,
          !! step-independent.
    end subroutine test_kernel2_dimer
+
+   subroutine test_kernel2_many(error)
+      !! A stack of first response densities through `xc_kernel2_apply_many`
+      !! gives each set what it gets alone
+      !!
+      !! The stacked routine evaluates the block's basis functions, the
+      !! reference and the functional's derivatives once and then walks the
+      !! sets, reusing its work arrays from one to the next. What can go wrong
+      !! is exactly that reuse: a set reading the density, the sigma or the
+      !! gradient its predecessor left behind. So the three sets are made
+      !! different from one another, the last one a combination no other is
+      !! a multiple of, and each is compared with the same set sent through
+      !! on its own. A GGA, because the gradient channels are where the
+      !! per-set state is; an LDA has only the density.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(czt_molecule_t) :: mol
+      type(xc_context_t) :: ctx
+      type(error_t) :: err
+      real(dp), allocatable :: dens(:, :), ta(:, :), tb(:, :)
+      real(dp), allocatable :: stack(:, :, :), together(:, :, :), alone(:, :)
+      real(dp) :: worst, largest
+      logical :: ok
+      integer :: nao, iset
+
+      call scf_for(WATER_Z, WATER_SYM, WATER, "sto-3g", "gga_x_b88", ctx, dens, err, ok)
+      call check(error, ok, "the reference failed")
+      if (allocated(error)) return
+      nao = size(dens, 1)
+      call kernel_trials(dens, ta, tb)
+
+      allocate (stack(nao, nao, 3), together(nao, nao, 3), alone(nao, nao))
+      stack(:, :, 1) = ta
+      stack(:, :, 2) = tb
+      stack(:, :, 3) = 0.5_dp*ta - 2.0_dp*tb + 0.1_dp*dens
+      together = 0.0_dp
+      call build_czt_molecule(WATER_Z, WATER_SYM, WATER, "sto-3g", mol, err)
+      if (.not. err%has_error()) then
+         call xc_kernel2_apply_many(ctx, mol, dens, stack, tb, together, err)
+      end if
+      call check(error,.not. err%has_error(), "the stacked second kernel failed")
+      if (allocated(error)) return
+
+      worst = 0.0_dp
+      largest = 0.0_dp
+      do iset = 1, 3
+         alone = 0.0_dp
+         call xc_kernel2_apply(ctx, mol, dens, stack(:, :, iset), tb, alone, err)
+         call check(error,.not. err%has_error(), "the second kernel apply failed")
+         if (allocated(error)) return
+         worst = max(worst, maxval(abs(together(:, :, iset) - alone)))
+         largest = max(largest, maxval(abs(alone)))
+      end do
+      call mol%destroy()
+      write (*, "(4x,a,2es10.2)") "stacked second kernel against one at a time, and its size ", &
+         worst, largest
+      call check(error, largest > 1.0e-4_dp, "the second kernel is zero: nothing was compared")
+      if (allocated(error)) return
+      call check(error, worst < 1.0e-12_dp, &
+                 "a set in the stack did not get what it gets alone")
+   end subroutine test_kernel2_many
+
+   subroutine test_kernel_threads(error)
+      !! The three kernel routines threaded over grid blocks give on four
+      !! threads what they give on one
+      !!
+      !! ctest and the validation runner both set one thread, so without
+      !! this no parallel region in `xc_kernel_deriv`, `xc_potential_hessian`
+      !! or `xc_kernel2_apply_many` is ever entered by more than one, and a
+      !! work array left shared, or a deposit made outside its lock, would
+      !! pass everything. The thread count is set here, which overrides the
+      !! environment. A GGA on the dimer: the gradient channels carry the
+      !! per-block state, and one water has too few blocks to share out.
+      type(error_type), allocatable, intent(out) :: error
+
+      real(dp), parameter :: THREADS_TOL = 1.0e-11_dp
+         !! The blocks' sums are merged in the order threads finish, so the
+         !! two differ by round-off: measured 1e-13 at most, on numbers of order one
+      integer, parameter :: MANY = 4
+      type(czt_molecule_t) :: mol
+      type(xc_context_t) :: ctx
+      type(error_t) :: err
+      real(dp), allocatable :: dens(:, :), ta(:, :), tb(:, :), stack(:, :, :)
+      real(dp), allocatable :: h1(:, :, :, :, :), hess(:, :, :, :, :), v2(:, :, :, :)
+      real(dp) :: worst(3), largest(3)
+      logical :: ok
+      integer :: natm, nao, before, pass
+
+      call scf_for(DIMER_Z6, DIMER_SYM6, DIMER_XYZ6, "6-31g*", "gga_x_b88", ctx, dens, err, ok)
+      call check(error, ok, "the reference failed")
+      if (allocated(error)) return
+      natm = size(DIMER_Z6)
+      nao = size(dens, 1)
+      call kernel_trials(dens, ta, tb)
+      allocate (stack(nao, nao, 3))
+      stack(:, :, 1) = ta
+      stack(:, :, 2) = tb
+      stack(:, :, 3) = 0.5_dp*ta - 2.0_dp*tb + 0.1_dp*dens
+      allocate (h1(nao, nao, 3, natm, 2), hess(3, 3, natm, natm, 2), v2(nao, nao, 3, 2))
+      h1 = 0.0_dp
+      hess = 0.0_dp
+      v2 = 0.0_dp
+
+      call build_czt_molecule(DIMER_Z6, DIMER_SYM6, DIMER_XYZ6, "6-31g*", mol, err)
+      before = omp_get_max_threads()
+      do pass = 1, 2
+         call omp_set_num_threads(merge(1, MANY, pass == 1))
+         call xc_kernel_deriv(ctx, mol, dens, ta, h1(:, :, :, :, pass), err)
+         call xc_potential_hessian(ctx, mol, dens, ta, hess(:, :, :, :, pass), err)
+         call xc_kernel2_apply_many(ctx, mol, dens, stack, tb, v2(:, :, :, pass), err)
+      end do
+      call omp_set_num_threads(before)
+      call mol%destroy()
+      call check(error,.not. err%has_error(), "a kernel routine failed: "//err%get_full_trace())
+      if (allocated(error)) return
+
+      worst = [maxval(abs(h1(:, :, :, :, 2) - h1(:, :, :, :, 1))), &
+               maxval(abs(hess(:, :, :, :, 2) - hess(:, :, :, :, 1))), &
+               maxval(abs(v2(:, :, :, 2) - v2(:, :, :, 1)))]
+      largest = [maxval(abs(h1(:, :, :, :, 1))), maxval(abs(hess(:, :, :, :, 1))), &
+                 maxval(abs(v2(:, :, :, 1)))]
+      write (*, "(4x,a,3es10.2)") "four threads against one: kernel derivative, potential "// &
+         "Hessian, second kernel ", worst
+      call check(error, minval(largest) > 1.0e-6_dp, "a routine returned zero: nothing was compared")
+      if (allocated(error)) return
+      call check(error, maxval(worst) < THREADS_TOL, &
+                 "a kernel routine gives a different answer on four threads")
+   end subroutine test_kernel_threads
 
    subroutine kernel2_case(z, sym, coords, basis, functional, hstep, worst, error)
       !! One geometry and functional: every entry of `xc_kernel2_apply`

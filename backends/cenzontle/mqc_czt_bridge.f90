@@ -2938,6 +2938,9 @@ contains
             real(dp), allocatable :: hess4(:, :, :, :)
             real(dp), allocatable :: hess_pt2(:, :, :, :), hess_discard(:, :, :, :)
             real(dp), allocatable :: ddip(:, :), ddip_pt2(:, :)
+            real(dp), allocatable :: mo1_ref(:, :, :, :)
+               !! The reference's nuclear responses, kept for the
+               !! perturbative term so it does not solve them again
             type(timer_type) :: hess_clock
             logical :: pt2_built, declined
 
@@ -2952,7 +2955,7 @@ contains
                                    max_iter=settings%hessian_response_max_iter, &
                                    tol=settings%hessian_response_tol, &
                                    batch=settings%hessian_response_batch), &
-                                   dipole_derivatives=ddip, xc=xc)
+                                   dipole_derivatives=ddip, xc=xc, mo1=mo1_ref)
             else if (df_analytic) then
                call df_rhf_hessian(mol, aux, scf%density, scf%orbitals, &
                                    scf%orbital_energies, scf%n_occupied, hess4, error, &
@@ -2960,20 +2963,25 @@ contains
                                    max_iter=settings%hessian_response_max_iter, &
                                    tol=settings%hessian_response_tol, &
                                    batch=settings%hessian_response_batch), &
-                                   dipole_derivatives=ddip)
+                                   dipole_derivatives=ddip, mo1=mo1_ref)
             else if (kohn_sham) then
                call ks_hessian(mol, scf%density, scf%orbitals, &
                                scf%orbital_energies, scf%n_occupied, xc, xc%exx_fraction, &
                                hess4, error, max_iter=settings%hessian_response_max_iter, &
                                tol=settings%hessian_response_tol, &
-                               batch=settings%hessian_response_batch, dipole_derivatives=ddip)
+                               batch=settings%hessian_response_batch, dipole_derivatives=ddip, &
+                               mo1=mo1_ref)
             else
                call rhf_hessian(mol, scf%density, scf%orbitals, &
                                 scf%orbital_energies, scf%n_occupied, hess4, error, &
                                 max_iter=settings%hessian_response_max_iter, &
                                 tol=settings%hessian_response_tol, &
-                                batch=settings%hessian_response_batch, dipole_derivatives=ddip)
+                                batch=settings%hessian_response_batch, dipole_derivatives=ddip, &
+                                mo1=mo1_ref)
             end if
+            ! Kept only for a perturbative term to take in place of its own
+            ! solve.
+            if (.not. dh_analytic .and. allocated(mo1_ref)) deallocate (mo1_ref)
             ! The perturbative term, on top of the Kohn-Sham one, and the same
             ! split the gradient uses: `ks_hessian` is the whole reference --
             ! skeleton, response and nuclear repulsion -- so what is wanted from
@@ -3002,7 +3010,8 @@ contains
                         max_iter=settings%hessian_response_max_iter, &
                         batch=settings%hessian_response_batch, xc=xc, &
                         scf_density=scf%density, pt2_scale=xc%pt2_fraction, &
-                        dipole_derivatives=ddip_pt2, declined=declined, ref_aux=aux)
+                        dipole_derivatives=ddip_pt2, declined=declined, ref_aux=aux, &
+                        mo1_in=mo1_ref)
                      call corr_aux%destroy()
                   else if (.not. error%has_error()) then
                      call ri_mp2_correlation_hessian( &
@@ -3011,7 +3020,7 @@ contains
                         max_iter=settings%hessian_response_max_iter, &
                         batch=settings%hessian_response_batch, xc=xc, &
                         scf_density=scf%density, pt2_scale=xc%pt2_fraction, &
-                        dipole_derivatives=ddip_pt2, declined=declined)
+                        dipole_derivatives=ddip_pt2, declined=declined, mo1_in=mo1_ref)
                      call corr_aux%destroy()
                   end if
                   ! Only the named refusal is differenced instead; any other
@@ -3029,6 +3038,7 @@ contains
                                                dipole_derivatives=ddip_pt2)
                end if
                if (.not. error%has_error() .and. pt2_built) hess4 = hess4 + hess_pt2
+               if (allocated(mo1_ref)) deallocate (mo1_ref)
             end if
             if (error%has_error()) then
                call result%error%set(ERROR_VALIDATION, "Hessian: "//error%get_message())
@@ -3362,6 +3372,9 @@ contains
                 .and. settings%scs_ss == 1.0_dp .and. settings%scs_os == 1.0_dp) then
                block
                   real(dp), allocatable :: hcorr(:, :, :, :), href(:, :, :, :)
+                  real(dp), allocatable :: mo1_ref(:, :, :, :)
+                     !! The reference's nuclear responses, kept for the
+                     !! correlation block so it does not solve them again
                   real(dp), allocatable :: hnuc(:, :, :, :), hresp(:, :, :, :)
                   type(timer_type) :: hess_clock
                   logical :: built, declined
@@ -3380,14 +3393,16 @@ contains
                                             controls=response_controls_t( &
                                             max_iter=settings%hessian_response_max_iter, &
                                             tol=settings%hessian_response_tol, &
-                                            batch=settings%hessian_response_batch))
+                                            batch=settings%hessian_response_batch), &
+                                            mo1=mo1_ref)
                      else
                         call rhf_hessian(mol, scf%density, &
                                          scf%orbitals, scf%orbital_energies, scf%n_occupied, &
                                          href, error, &
                                          max_iter=settings%hessian_response_max_iter, &
                                          tol=settings%hessian_response_tol, &
-                                         batch=settings%hessian_response_batch)
+                                         batch=settings%hessian_response_batch, &
+                                         mo1=mo1_ref)
                      end if
                      if (.not. error%has_error()) then
                         call correlation_aux_basis(settings, fragment, symbols, corr_aux, error)
@@ -3399,7 +3414,7 @@ contains
                            tol=settings%hessian_response_tol, &
                            max_iter=settings%hessian_response_max_iter, &
                            batch=settings%hessian_response_batch, declined=declined, &
-                           ref_aux=aux)
+                           ref_aux=aux, mo1_in=mo1_ref)
                         call corr_aux%destroy()
                      else if (.not. error%has_error()) then
                         call ri_mp2_correlation_hessian( &
@@ -3407,7 +3422,8 @@ contains
                            scf%n_occupied, hcorr, error, n_frozen=frozen, &
                            tol=settings%hessian_response_tol, &
                            max_iter=settings%hessian_response_max_iter, &
-                           batch=settings%hessian_response_batch, declined=declined)
+                           batch=settings%hessian_response_batch, declined=declined, &
+                           mo1_in=mo1_ref)
                         call corr_aux%destroy()
                      end if
                      ! A metric that drops a mode is correct by differences
@@ -3987,6 +4003,13 @@ contains
          type(error_t) :: raman_error
          real(dp), allocatable :: dalpha(:, :)
          real(dp) :: alpha0(3, 3)
+         logical :: analytic_functional
+
+         ! What the functional's third derivatives are built for.
+         analytic_functional = .true.
+         if (xc%active) analytic_functional = .not. (xc%any_mgga .or. xc%range_separated &
+                                                     .or. xc%nlc_b /= 0.0_dp &
+                                                     .or. xc%nlc_c /= 0.0_dp)
 
          if (settings%raman_method == RAMAN_METHOD_DISPLACEMENTS) then
             call polarizability_derivatives(settings, fragment%element_numbers, &
@@ -3995,18 +4018,33 @@ contains
                                             diis_size, scf_conv, alpha0, &
                                             dalpha, raman_error)
          else if (settings%raman_method == RAMAN_METHOD_ANALYTIC &
-                  .and. .not. xc%active .and. full_rank) then
+                  .and. analytic_functional .and. full_rank) then
             call polarizability_derivatives_analytic(mol, scf%orbitals, &
                                                      scf%orbital_energies, &
                                                      scf%n_occupied, alpha0, &
-                                                     dalpha, raman_error)
+                                                     dalpha, raman_error, xc=xc)
+            if (raman_error%has_error()) then
+               ! Its response solves can fail where an SCF in a field does
+               ! not: a reference that is a saddle, or one with no gap.
+               call logger%warning("  Raman: the analytic route failed ("// &
+                                   raman_error%get_message()// &
+                                   "); taking the finite-field one")
+               call raman_error%clear()
+               if (allocated(dalpha)) deallocate (dalpha)
+               call polarizability_derivatives_field(settings, mol, nelec, &
+                                                     scf%density, accel_kind, &
+                                                     diis_size, scf_conv, alpha0, &
+                                                     dalpha, raman_error, xc=xc)
+            end if
          else
             ! The analytic route needs a functional's third derivative,
-            ! which is not built, and assumes no orbital was removed from
-            ! the basis, as the analytic Hessian does.
+            ! built for LDA, GGA and their global hybrids, and assumes no
+            ! orbital was removed from the basis, as the analytic Hessian
+            ! does.
             if (settings%raman_method == RAMAN_METHOD_ANALYTIC) then
-               call logger%info("  Raman: no analytic route under a functional or "// &
-                                "with orbitals removed for linear dependence; "// &
+               call logger%info("  Raman: no analytic route for a meta-GGA, a "// &
+                                "range-separated hybrid or non-local correlation, "// &
+                                "nor with orbitals removed for linear dependence; "// &
                                 "taking the finite-field one")
             end if
             call polarizability_derivatives_field(settings, mol, nelec, &

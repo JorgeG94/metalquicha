@@ -162,6 +162,167 @@ def extract_nmr_isotropic(json_data: Dict) -> Optional[List[float]]:
     return [float(atom["isotropic"]) for atom in block["atoms"]]
 
 
+def extract_raman_activities(json_data: Dict) -> Optional[List[float]]:
+    """Raman activities of every mode, in A^4/amu, from `vibrational_analysis`
+
+    None when the output carries none. A case naming
+    `expected_raman_activities` fails on None, for the reason the shieldings
+    do: the energy and the Hessian are the same numbers whether the
+    activities were computed or not.
+    """
+    if not json_data:
+        return None
+    data = json_data[list(json_data.keys())[0]]
+    block = data.get("vibrational_analysis")
+    if not isinstance(block, dict) or "raman_activities_A4_amu" not in block:
+        return None
+    return [float(a) for a in block["raman_activities_A4_amu"]]
+
+
+def resolve_output_path(data, path: str):
+    """Follow a dotted path into the output, `[*]` mapping over a list
+
+    `atomic_charges.atoms[*].charge` is every atom's charge, in order;
+    `stability.lowest_curvature` is one number. Raises KeyError where the
+    output has no such entry, which the caller reports as a failure: a
+    property the deck asked for and the file does not hold is the thing
+    these checks exist to catch.
+    """
+    def walk(node, parts):
+        if not parts:
+            return node
+        head, rest = parts[0], parts[1:]
+        spread = head.endswith("[*]")
+        key = head[:-3] if spread else head
+        if not isinstance(node, dict) or key not in node:
+            raise KeyError(key)
+        child = node[key]
+        if spread:
+            if not isinstance(child, list):
+                raise KeyError(head)
+            return [walk(item, rest) for item in child]
+        return walk(child, rest)
+    return walk(data, path.split("."))
+
+
+def flatten_values(value) -> List:
+    """A scalar, a list or a nested list as one flat list"""
+    if isinstance(value, list):
+        flat = []
+        for item in value:
+            flat.extend(flatten_values(item))
+        return flat
+    return [value]
+
+
+def list_shape(value) -> Optional[tuple]:
+    """The extents of a nested list, () for a scalar, None when it is ragged"""
+    if not isinstance(value, list):
+        return ()
+    inner = {list_shape(item) for item in value}
+    if len(inner) > 1 or None in inner:
+        return None
+    return (len(value),) + (inner.pop() if inner else ())
+
+
+# Every key a manifest entry may carry. An entry is checked against this
+# before anything runs, because a key the runner does not read is a check that
+# silently never happens: `expected_outputs` for `expected_output` would pass
+# on the energy alone.
+MANIFEST_KEYS = {
+    "name", "input", "type", "requires", "timeout", "reference_note",
+    "tolerance", "expect_converged",
+    "expected_energy", "expected_energies", "expected_interaction_energy",
+    "expected_gradient", "expected_gradient_norm", "gradient_tolerance",
+    "expected_hessian", "expected_hessian_frobenius_norm", "hessian_tolerance",
+    "expected_frequencies", "expected_zpe", "expected_gibbs_correction",
+    "expected_ir_intensities", "ir_tolerance",
+    "expected_raman_activities", "raman_tolerance",
+    "expected_nmr_isotropic", "nmr_tolerance",
+    "expected_excitation_energies", "excitation_tolerance",
+    "expected_oscillator_strengths", "oscillator_tolerance",
+    "expected_state_spins",
+    "expected_distances", "distance_tolerance",
+    "check_translation", "translation_tolerance",
+    "expected_output", "output_tolerance",
+}
+
+# What a multi_molecule entry may carry: its branch compares the energies and
+# nothing else, so any other pin on one would be accepted and never looked at.
+MULTI_MOLECULE_KEYS = {
+    "name", "input", "type", "requires", "timeout", "reference_note",
+    "tolerance", "expected_energies",
+}
+
+
+def is_number(value) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def manifest_problems(tests: List[Dict]) -> List[str]:
+    """What is wrong with the manifest's entries, one line each; empty when nothing is"""
+    problems = []
+    for test in tests:
+        label = test.get("input", test.get("name", "an entry with no input"))
+        allowed = MULTI_MOLECULE_KEYS if test.get("type") == "multi_molecule" else MANIFEST_KEYS
+        for key in sorted(set(test) - allowed):
+            if key in MANIFEST_KEYS:
+                problems.append(f"{label}: '{key}' is not compared for a multi_molecule case")
+            else:
+                problems.append(f"{label}: unknown key '{key}'")
+        if "output_tolerance" in test and not is_number(test["output_tolerance"]):
+            problems.append(f"{label}: output_tolerance is not a number")
+        pins = test.get("expected_output", {})
+        if not isinstance(pins, dict):
+            problems.append(f"{label}: expected_output is not an object")
+            continue
+        for path, spec in pins.items():
+            want = spec
+            if isinstance(spec, dict):
+                if set(spec) - {"value", "tolerance"} or "value" not in spec:
+                    problems.append(f"{label}: {path}: an object here is "
+                                    "{\"value\": ..., \"tolerance\": ...}")
+                    continue
+                if "tolerance" in spec and not is_number(spec["tolerance"]):
+                    problems.append(f"{label}: {path}: tolerance is not a number")
+                want = spec["value"]
+            if any(not (is_number(v) or isinstance(v, (bool, str))) for v in flatten_values(want)):
+                problems.append(f"{label}: {path}: a pinned value is a number, a boolean or a string")
+    return problems
+
+
+def compare_output_value(calculated, expected, tol: float) -> Optional[str]:
+    """None when the two agree, else what is wrong
+
+    Numbers within `tol`; booleans and strings exactly. A boolean is tested
+    before a number because Python counts it as one, and for the same reason
+    a number in the output is not accepted where a boolean was expected. A
+    value that is not finite never agrees: every comparison with a NaN is
+    false, so a test for "greater than the tolerance" alone would pass one.
+    The nesting has to agree as well as the count, or a transposed-and-
+    flattened table would pass as the matrix.
+    """
+    if list_shape(calculated) != list_shape(expected):
+        return f"shape {list_shape(calculated)} where {list_shape(expected)} was expected"
+    calc, exp = flatten_values(calculated), flatten_values(expected)
+    if len(calc) != len(exp):
+        return f"{len(calc)} values where {len(exp)} were expected"
+    worst = 0.0
+    for c, e in zip(calc, exp):
+        if isinstance(e, bool) or isinstance(e, str):
+            if type(c) is not type(e) or c != e:
+                return f"{c!r} where {e!r} was expected"
+        else:
+            if isinstance(c, bool) or not isinstance(c, (int, float)):
+                return f"{c!r} where a number was expected"
+            if not math.isfinite(float(c)):
+                return f"{c!r} is not a finite number"
+            worst = max(worst, abs(float(c) - float(e)))
+    if not worst <= tol:
+        return f"largest difference {worst:.2e} (tolerance {tol:.2e})"
+    return None
+
+
 def extract_gradient_norm(json_data: Dict) -> Optional[float]:
     """Extract gradient_norm from JSON output"""
     if not json_data:
@@ -572,6 +733,14 @@ def run_validation_tests(manifest_file: str = "validation_tests.json",
     tolerance = manifest.get("tolerance", 1.0e-9)
     tests = manifest.get("tests", [])
 
+    # The whole manifest, before the filter: a malformed entry is wrong
+    # whether or not this run would have reached it.
+    problems = manifest_problems(tests)
+    if problems:
+        for problem in problems:
+            print(f"{Colors.RED}{manifest_file}: {problem}{Colors.RESET}")
+        return 0, len(problems), [(manifest_file, problem) for problem in problems]
+
     # Filter tests if requested
     if test_filter:
         tests = [t for t in tests if test_filter.lower() in t["name"].lower() or
@@ -772,6 +941,64 @@ def run_validation_tests(manifest_file: str = "validation_tests.json",
                     else:
                         print(f"    Shieldings: {len(expected_iso)} atoms within "
                               f"{worst:.2e} ppm")
+
+            # Validate the Raman activities, for a case that pins them
+            #
+            # The vibrations' only: the list is compared against the last
+            # modes of the output, which is where they sit, since the
+            # translations and rotations ahead of them carry activities that
+            # are noise divided by a frequency near zero.
+            if "expected_raman_activities" in test:
+                expected_act = test["expected_raman_activities"]
+                raman_tol = test.get("raman_tolerance", 1.0e-3)
+                calculated_act = extract_raman_activities(output_data)
+                if calculated_act is None:
+                    print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - No Raman activities in output")
+                    test_passed = False
+                    failure_reasons.append("No Raman activities in output")
+                elif len(calculated_act) < len(expected_act):
+                    print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - Fewer modes than expected activities")
+                    test_passed = False
+                    failure_reasons.append(
+                        f"Raman mode count mismatch ({len(calculated_act)} < {len(expected_act)})")
+                else:
+                    tail = calculated_act[len(calculated_act) - len(expected_act):]
+                    worst = max(abs(c - e) for c, e in zip(tail, expected_act))
+                    if worst > raman_tol:
+                        print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - Raman activity mismatch")
+                        print(f"    Largest difference: {worst:.2e} A^4/amu "
+                              f"(tolerance: {raman_tol:.2e})")
+                        test_passed = False
+                        failure_reasons.append(f"Raman activity mismatch (diff: {worst:.2e})")
+                    else:
+                        print(f"    Raman activities: {len(expected_act)} modes within "
+                              f"{worst:.2e} A^4/amu")
+
+            # Validate named entries of the output, for a case that pins some
+            #
+            # What a `properties` request produces -- charges, bond orders,
+            # Fukui indices, a stability verdict -- changes no energy, so a
+            # case that pins the energy alone passes whether the property is
+            # right, wrong or absent. `expected_output` maps a path into the
+            # output to the value there, or to {"value": ..., "tolerance": ...}.
+            if "expected_output" in test:
+                top = output_data[list(output_data.keys())[0]] if output_data else {}
+                default_tol = test.get("output_tolerance", 1.0e-6)
+                for path, spec in test["expected_output"].items():
+                    if isinstance(spec, dict) and "value" in spec:
+                        want, path_tol = spec["value"], spec.get("tolerance", default_tol)
+                    else:
+                        want, path_tol = spec, default_tol
+                    try:
+                        problem = compare_output_value(resolve_output_path(top, path), want, path_tol)
+                    except KeyError as missing:
+                        problem = f"no {missing} in the output"
+                    if problem:
+                        print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - {path}: {problem}")
+                        test_passed = False
+                        failure_reasons.append(f"{path}: {problem}")
+                    else:
+                        print(f"    {path}: matches")
 
             # Validate gradient norm if present
             if "expected_gradient_norm" in test:
