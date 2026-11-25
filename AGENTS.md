@@ -1,100 +1,71 @@
-# Metalquicha - agent context
+# AGENTS.md
 
-`CLAUDE.md` imports this file, so there is one copy and any agent that looks for
-either name finds it.
+Guidance for AI coding agents working on metalquicha; humans are welcome to
+read it too. `CLAUDE.md` imports this file, so there is one copy. **Keep it
+under 250 lines**: what every task needs goes here, and what only one
+subsystem needs goes under `.claude/context/` and is linked from the table
+below.
 
-## Project Overview
+## What metalquicha is
 
-**Metalquicha** (Huastec/Tenek word for "sunflower") is a modern Fortran quantum chemistry framework specializing in fragment-based calculations using Many-Body Expansion (MBE) and Generalized Many-Body Expansion (GMBE) methods.
+**Metalquicha** (Huastec/Tenek for "sunflower") is a modern Fortran quantum
+chemistry program built around fragment methods: the many-body expansion
+(MBE) and its generalisation to overlapping fragments (GMBE).
 
-- **Language**: Fortran 2003+ (modern OOP features)
-- **Build Systems**: CMake (primary), FPM (secondary)
-- **Parallelization**: MPI + OpenMP
-- **QC Engine**: tblite (GFN1-xTB, GFN2-xTB)
-- **Code Documentation**: https://jorgeg94.github.io/metalquicha/
-- **User Facing Documentation**: https://metalquicha.readthedocs.io/en/latest/
+- **Language**: Fortran 2003+, object oriented. **Build**: CMake (primary),
+  fpm (secondary). **Parallel**: MPI + OpenMP.
+- **Engines**: tblite for GFN1/GFN2-xTB; **cenzontle** (`backends/cenzontle/`,
+  modules `mqc_czt_*`) for ab initio on the CPU, over the all-Fortran
+  integral library libfint; terco and cuEST on GPUs.
+- **Docs**: code at https://jorgeg94.github.io/metalquicha/, user guide at
+  https://metalquicha.readthedocs.io/en/latest/ (source in `mqc_docs/`).
 
-## Quick Start
+## Layout
+
+| Path | What lives there |
+|---|---|
+| `app/main.f90` | entry point: MPI init, reads the one deck it is given |
+| `src/mqc_driver.f90` | routes to the fragmented and unfragmented workflows |
+| `src/core/` | data types, constants, elements; `mqc_result_types.f90` holds energy, gradient and Hessian |
+| `src/io/` | the deck: `mqc_json_schema.f90` validates it, `mqc_json_config_reader.f90` reads it into `mqc_config_t` (`mqc_config_types.f90`); `mqc_json_writer.f90` writes the output |
+| `src/fragmentation/` | `mqc_mbe.f90` (MBE), `mqc_gmbe_utils.f90` (overlapping fragments), `mqc_physical_fragment.f90` (fragments, hydrogen caps) |
+| `src/methods/` | `dispatch/` (what `model.method` resolves to), `scf/`, `dft/`, `ci/`, `stubs/` (the compiled-out twin of each backend) |
+| `src/vibrational/`, `src/parallel/`, `src/basis/`, `src/utils/` | frequencies and thermochemistry; MPI; basis sets; errors and finite differences |
+| `backends/cenzontle/` | CPU ab initio. `mqc_czt_bridge.f90` is the **only** way in; nothing reaches past it |
+| `backends/terco/`, `backends/cuest/` | GPU backends; `crest/`, `dlfind/`, `hdf5/` are thin adapters |
+| `compat/` | `omp_lib` for the serial build, outside `src/` so fpm never globs it |
+| `test/` | unit tests (test-drive), `test_mqc_*.f90` |
+| `validation/` | decks, manifests and `run_validation.py` |
+| `tools/` | `run.sh`, the CPU validation generator, lint helpers |
+| `cmake/`, `basis_sets/`, `mqc_docs/` | build modules; basis JSON; Sphinx source |
+
+## Build, run, test
 
 ```bash
-# Build (a preset, which is the shortest way to a correct configuration)
-cmake --preset default && cmake --build --preset default
-ctest --preset mqc
+cmake --preset default && cmake --build --preset default   # or: cmake -B build && cmake --build build -j
+ctest --preset mqc                                         # this project's tests only (ctest -R mqc)
 
-# Or by hand
-cmake -B build && cmake --build build -j
+./build/mqc input.json            # one argument, the deck; a second is a hard error
+mpirun -np 4 ./build/mqc input.json
+tools/run.sh -n 4 input.json      # srun inside SLURM, mpirun outside; --dry-run shows the command
 
-# Run (serial)
-./mqc input.json
-
-# Run (parallel)
-mpirun -np 4 ./mqc input.json
-
-# Run on a cluster: srun inside a SLURM job, mpirun outside one, with the
-# rank/thread split and the GPU count worked out from the node.
-tools/run.sh -n 4 input.json
-tools/run.sh --dry-run -n 4 input.json   # show the command, run nothing
-
-# Run tests
-ctest -R "mqc"
+cd validation && python3 run_validation.py                                      # 23 cases, mostly xTB
+cd validation && python3 run_validation.py --manifest validation_tests_cpu.json # the ab initio suite
 ```
 
-## Directory Structure
+- Verbosity is in the deck, `"system": {"logger": {"level": "verbose"}}`;
+  there is no flag for it. Levels: `debug`, `verbose`, `info` (default),
+  `performance`, `warning`, `error`, `knowledge`.
+- The validation runner must be run **from inside `validation/`**, and a
+  build without tblite *skips* most of the default manifest: read the
+  "Total tests" line, not the colour.
+- Coverage is the build type `Coverage-mqc`, not `Coverage`.
+- **ctest and the validation runner both run one thread.** A parallel region
+  is exercised only by a test that sets its own thread count.
+- When timing anything, set `OPENBLAS_NUM_THREADS=1`: the code calls the BLAS
+  from inside its own threads (`.claude/context/performance.md`).
 
-```
-metalquicha/
-├── app/main.f90                 # Entry point
-├── src/
-│   ├── core/                    # Data types, constants, elements
-│   ├── io/                      # Config parsing, XYZ reading, JSON output
-│   ├── fragmentation/           # MBE/GMBE engines, fragment generation
-│   ├── methods/                 # Everything a method is:
-│   │   ├── dispatch/            #   what `model.method` resolves to
-│   │   ├── scf/                 #   convergence, settings, accelerators
-│   │   ├── dft/                 #   XC grid and functional specification
-│   │   ├── ci/                  #   determinants, Davidson, RDMs, ORMAS
-│   │   └── stubs/               #   compiled-out twin of each backend
-│   ├── vibrational/             # Frequency analysis, thermochemistry
-│   ├── parallel/                # MPI utilities
-│   ├── basis/                   # Basis set handling
-│   ├── utils/                   # Error handling, finite differences
-│   └── mqc_driver.f90           # Main calculation dispatcher
-├── backends/
-│   ├── cenzontle/               # CPU ab initio: 57k lines, `mqc_czt_*`
-│   │   ├── integrals/ scf/ dft/ correlation/ mcscf/ derivatives/
-│   │   ├── analysis/ fragments/ efp/ sapt/
-│   │   ├── stability/           #   the electronic Hessian and its eigensolver
-│   │   └── mqc_czt_bridge.f90   #   the ONLY way in; nothing reaches past it
-│   ├── cuest/                   # GPU, via NVIDIA cuEST
-│   └── crest/ dlfind/ hdf5/     # thin adapters to foreign libraries
-├── compat/                      # `omp_lib` for MQC_ENABLE_SERIAL, outside
-│                                #   src/ so fpm never globs it
-├── test/                        # Unit tests (test-drive framework)
-├── validation/                  # Physics validation test cases
-├── cmake/                       # CMake configuration
-├── basis_sets/                  # Basis set data files
-└── mqc_docs/                    # Sphinx documentation source
-```
-
-## Key Source Files
-
-| File | Purpose |
-|------|---------|
-| `app/main.f90` | Entry point, MPI init, input parsing |
-| `src/mqc_driver.f90` | Routes to fragmented/unfragmented workflows |
-| `src/io/mqc_json_config_reader.f90` | Parses JSON input decks |
-| `src/io/mqc_json_schema.f90` | Validates a deck before it is read |
-| `src/io/mqc_config_types.f90` | `mqc_config_t` and the types it is built from |
-| `backends/cenzontle/mqc_czt_bridge.f90` | The whole CPU ab initio backend's entry point |
-| `src/fragmentation/mqc_mbe.f90` | Core MBE implementation (62KB) |
-| `src/fragmentation/mqc_physical_fragment.f90` | Fragment representation, H-capping |
-| `src/fragmentation/mqc_gmbe_utils.f90` | GMBE with PIE (overlapping fragments) |
-| `src/methods/dispatch/mqc_method_xtb.f90` | xTB via tblite library |
-| `src/core/mqc_result_types.f90` | Result containers (energy, gradient, hessian) |
-| `src/vibrational/mqc_vibrational_analysis.f90` | Frequency calculations |
-| `src/vibrational/mqc_thermochemistry.f90` | Thermochemistry (RRHO) |
-
-## Input Format (JSON)
+## The deck
 
 Read by `mqc_json_config_reader.f90` straight into `mqc_config_t`:
 
@@ -127,869 +98,46 @@ different fragments -- that is derived, not declared.
 The `.mqc` format and its `mqc_prep.py` generator were removed in 0.2.0; see
 `mqc_docs/source/input_files.rst` for the migration table.
 
-## Core Concepts
-
-### Many-Body Expansion (MBE)
-- Breaks system into fragments (monomers, dimers, trimers...)
-- E_MBE = ΣE_I - ΣΔE_IJ + ΣΔE_IJK - ...
-- Truncate at level N for O(N^k) scaling
-
-### Generalized MBE (GMBE)
-- Handles overlapping fragments
-- Uses Principle of Inclusion-Exclusion (PIE)
-- Automatically computes intersection terms
-
-### Cutting a covalent bond
-
-`keywords.fragmentation.bond_breaking` is `"none"` by default and refuses a
-partition that severs one. `"afo"` detaches it with an adjusted frozen orbital
-instead: a model system around the bond is solved and localized, the orbital on
-the bond is reduced to the detached atom's own basis functions, and that hybrid
-is frozen -- empty in the fragment that gets nothing of the bond, occupied in
-the one that gets all of it. Runs with `embedding = "none"` and `"ptc"`, and is
-refused with `"exact"`.
-
-**Under a field the detached atom's nucleus is split along with the bond
-pair** -- `Z-1` with the fragment that owns the atom, `+1` on the ghost centre
-its neighbour already carries there -- so both fragments are neutral closed
-shells. That is what a fragment *potential* needs: a net charge per fragment is
-a monopole of order 1/R on every adjacent-residue pair. It leaves an embedded
-FMO total *exactly* unchanged, because the field a group feels is
-`q_all - own_q` and the charge reappears in it at the same point; that
-invariance is asserted by a test rather than believed. With `embedding =
-"none"` the nucleus stays whole, because nothing would supply the other half.
-See `mqc_docs/source/fmo.rst`.
-
-The bookkeeping rule that matters: **a cut belongs to a group, not a fragment.**
-A bond severed between two monomers is whole again inside the dimer holding both
-ends, so that dimer carries no ghost, no frozen orbital and no electron shift
-there. Deciding it per fragment and inheriting it is what made an earlier capped
-version 11 Hartree wrong. See `mqc_czt_afo.f90` and `mqc_docs/source/fmo.rst`.
-
-### Hydrogen Capping
-- Broken covalent bonds get H-cap atoms
-- Forces/Hessian elements redistributed to original heavy atoms
-- Implemented in `mqc_physical_fragment.f90`
-
-### Distance Screening
-- Filter fragments by inter-monomer distance
-- Per-level cutoffs (dimer, trimer, etc.)
-- 5-10x speedup for large systems
-
-## Key Types
-
-```fortran
-! Main result container (src/core/mqc_result_types.f90)
-type :: calculation_result_t
-  type(energy_t) :: energy           ! SCF, MP2, CC energies
-  real(dp), allocatable :: gradient(:,:)
-  real(dp), allocatable :: hessian(:,:)
-  real(dp) :: dipole(3)
-  logical :: has_energy, has_gradient, has_hessian, has_error
-end type
-
-! Fragment representation (src/fragmentation/mqc_physical_fragment.f90)
-type :: physical_fragment_t
-  integer :: n_atoms
-  integer, allocatable :: element_numbers(:)    ! Atomic numbers (Z)
-  real(dp), allocatable :: coordinates(:,:)     ! (3, n_atoms) in Bohr
-  integer :: charge, multiplicity, nelec
-  integer :: n_caps                             ! Number of H-caps
-  integer, allocatable :: cap_replaces_atom(:)  ! Original atom each cap replaces
-  integer, allocatable :: local_to_global(:)    ! Map to system indices
-end type
-
-! System geometry (src/fragmentation/mqc_physical_fragment.f90)
-type :: system_geometry_t
-  integer :: n_monomers, total_atoms
-  integer, allocatable :: element_numbers(:)
-  real(dp), allocatable :: coordinates(:,:)     ! (3, total_atoms) in Bohr
-  integer :: charge, multiplicity
-end type
-
-! QC method base class (src/methods/dispatch/mqc_method_base.f90)
-type, abstract :: qc_method_t
-contains
-  procedure(calc_energy_interface), deferred :: calc_energy
-  procedure(calc_gradient_interface), deferred :: calc_gradient
-  procedure(calc_hessian_interface), deferred :: calc_hessian
-end type
-```
-
-## Calculation Types
-
-- `CALC_TYPE_ENERGY` - Single-point energy
-- `CALC_TYPE_GRADIENT` - First derivatives
-- `CALC_TYPE_HESSIAN` - Second derivatives + vibrational analysis
-- `CALC_TYPE_INTERACTION_ENERGY` - `driver: "InteractionEnergy"`: the MBE
-  terms containing `keywords.fragmentation.reference_fragment` (0-based), from
-  a term list reduced to their closure under subsets. Fragments run as
-  energies; the output has an `interaction_energy` block and **no**
-  `total_energy`. Under `method: "fmo"` at level 2 (FMO2, PIEDA allowed) every
-  monomer is still solved and only the reference's pairs follow; FMO3, EE-MBE
-  and EFMO are refused. See `mqc_docs/source/interaction_energy.rst`
-
-## Methods Available
-
-Semi-empirical, via tblite:
-
-- `GFN1` - GFN1-xTB (faster, older parametrization)
-- `GFN2` - GFN2-xTB (recommended, more accurate)
-
-Ab initio on the CPU is **cenzontle** (`backends/cenzontle/`, modules `mqc_czt_*`,
-built by `-DMQC_ENABLE_CZT=ON`) -- named for the bird of four hundred voices,
-because one backend speaks HF, DFT, MP2, CC, MCSCF, EFP and SAPT.
-
-It is **not** a wrapper around an integral library, which is why it stopped
-being called `libcint`. The integrals come from **libfint**, an all-Fortran port
-of libcint, so there is no C compiler and no second integral backend. libfint
-exports the `libcint_fortran` module and the `libcint_*`/`LIBCINT_*` symbols
-under libcint's own spelling, and sources under `backends/cenzontle/` `use` it
-directly. Those spellings are libfint's export names and are left alone; only our
-own names are `czt`. libfint's own test suite checks it against libcint value for
-value, so this repository does not build against libcint. ECP integrals exist
-only in libfint.
-
-**An ECP has an analytic gradient and no analytic Hessian.** Its first
-derivative enters every gradient through `mqc_czt_gradient` and nowhere
-else: `one_electron_deriv` with `DERIV_NUC` adds `<nabla mu|U|nu>` over every
-centre, and `nuclear_attraction_deriv_at` adds one atom's potential to that
-atom's `-Z/r` (`hellmann_feynman_gradient` does the same for the SCF, without
-storing the matrix). A gradient that builds its
-core-Hamiltonian derivative from those two carries the potential with nothing
-further; one that calls `iprinv_deriv_at` directly does not. The Hessian's
-first-order pieces go through them too (`add_hcore_deriv` in
-`mqc_czt_hessian`), and `nuclear_repulsion_hessian` takes the molecule's
-charges, not atomic numbers. Second derivatives are not in libfint, so every analytic
-Hessian is skipped when `mol%necpbas > 0` and the semi-numerical path
-differences the gradient instead; `ecp_refuses_derivatives` is the backstop
-inside each Hessian routine. MCSCF, SAPT, EFP, MakeFP, FMO and EFMO refuse a
-potential in the schema (`check_ecp_supported`): only `run_czt_hf` passes one
-to the molecule builder, and a new entry point that builds its own molecules
-belongs on that list until it does too.
-**Test with the heavy atom late in the atom list**: `LIBCINT_ATOM_OF` indexes a
-`bas` row directly while the `env` slots want `+ 1`, and confusing the two made
-`ecp_on_atom` right for the first three atoms only, which every molecule with
-its heavy atom first passes.
-
-The methods:
-
-- `HF` - restricted and unrestricted; direct, in-core, or density-fitted
-  The unrestricted fitted build is `build_fock_df_uhf`: the restricted
-  `build_fock_df` called once for J on the total density and once per spin
-  for K, with each spin density's eigenvectors standing in for orbitals, so
-  it is right for a guess or a mixed density too. Always the dense tensor.
-  Coupled cluster and a double hybrid over a fitted unrestricted reference
-  are refused by name; a range-separated open-shell gradient is refused
-  fitted or not.
-  **ROHF and ROKS are `model.restricted_open`, and run inside `run_czt_uhf`**
-  (`restricted_open=`): the two spin Fock matrices are built as for UHF, then
-  replaced by Roothaan's effective matrix (`roothaan_fock`), diagonalised
-  once, with the DIIS error taken against the total density. After
-  convergence each spin's orbitals are rotated to diagonalise that spin's own
-  Fock matrix within its occupied and virtual blocks. **That rotation is why
-  nothing downstream knows about ROHF**: the result is shaped as an
-  unrestricted one, and `C_occ eps C_occ^T` is then `D F D` per spin, whose
-  sum is the ROHF energy-weighted density, so the UHF gradient is the ROHF
-  gradient unchanged. It also means **alpha's first `n_beta` orbitals are not
-  the doubly occupied ones** -- alpha's occupied block mixes closed and open
-  -- so project with `D_b` and `D_a - D_b`, never by orbital index. Anything
-  that assumes a diagonal Fock matrix across occupied and virtual (MP2, CC,
-  double hybrids, TDDFT) is refused in the bridge; GDM and the second-order
-  SCF are refused in the driver. OH under a pure functional does not
-  converge, here or in PySCF: its open orbital is one of a degenerate pair.
-- `DFT` - restricted and unrestricted Kohn-Sham over libxc, through
-  `model.functional`. LDA through double hybrid, including range-separated
-  hybrids, whose long-range exchange needs the direct build
-- `MP2`, `SCS-MP2`, `SOS-MP2`, `RI-MP2` - restricted, or unrestricted as an
-  energy only (`run_czt_ump2`, `run_czt_uri_mp2`, exact or fitted reference;
-  frozen orbitals are counted per spin). Gradients and Hessians are RHF only,
-  with one exception: **RI-MP2 over an exact UHF reference has an analytic
-  gradient**, `czt_uri_mp2_gradient` in `mqc_czt_uri_mp2_gradient`, and its
-  Hessian is that gradient differenced. It is written from the Hylleraas
-  functional per spin, not translated from the closed-shell routine, and its
-  header states the functional. Three things to know: the coupled-perturbed
-  operator is `response_product_uhf`, exact and integral-direct, so a fitted
-  reference is refused rather than given the wrong operator; the Z-vector
-  solve is a Galerkin Krylov one and not conjugate gradients, because **an
-  unrestricted reference is often a saddle** (triplet water in 6-31G is) and
-  its gradient is still defined; and the reference's two-electron term and
-  the cross term come from `two_electron_gradient` called at
-  reference-plus-relaxed and at relaxed alone, the energy being quadratic.
-  PySCF has no analytic gradient for its fitted unrestricted MP2, so the
-  validation references are its energy differenced and extrapolated
-  (`pyscf_uri_mp2_gradient` in the generator), good to 1e-9. **Central
-  differences at 1e-3 bohr are 3e-7 off on a stiff bond**: extrapolate
-  before concluding a gradient is wrong.
-  Analytic Hessians: MP2 and RI-MP2 over an exact RHF reference (frozen core
-  allowed), and a double hybrid's perturbative term, fitted when
-  `model.aux_basis` is named (`mqc_czt_ri_mp2_hessian`, no four-index array).
-  RI-MP2 also over a density-fitted reference (`ref_aux` to
-  `ri_mp2_correlation_hessian`, added to `df_rhf_hessian`): the block reaches
-  the reference's operator in five places -- `t1_batch`, `t1x_stack`,
-  `skeleton_matrices`, `solve_response` and `pass1_reference_share` -- and
-  each has a fitted branch through `df_operator_t`. **A sixth use of the
-  reference's integrals needs a fitted branch too**, or the Hessian is that of
-  no energy. A double hybrid over a fitted Kohn-Sham reference takes the
-  same branches with `xc`. SCS/SOS, conventional MP2 over a fitted reference,
-  and a frozen-core double hybrid take the semi-numerical path. See
-  `mqc_docs/source/analytic_hessians.rst`.
-  **A double hybrid's Hessian spends its time on the functional, not on
-  MP2**, and three of its kernel routines ran one perturbation at a time or
-  on one thread: `ks_dl_pair_kernel` made two passes over the grid per
-  Cartesian coordinate per density, `xc_kernel_deriv` and
-  `xc_potential_hessian` were serial. On 1,3,5-trifluorobenzene, B2PLYP in
-  6-31G, ladder A was 195 s of a 343 s run on four threads, and 75 s on
-  fifty-two. `ks_dl_pair_kernel_many` takes every perturbation in two passes
-  (`xc_kernel_apply_many`, `xc_kernel2_apply_many`), and the other two are
-  threaded over grid blocks as their siblings `xc_potential_deriv` and
-  `xc_hessian` already were: 47 s and 164 s, the Hessian the same to 1e-11.
-  The conventional (not RI) double-hybrid Hessian still calls
-  `ks_dl_pair_kernel` in a loop. **The nuclear responses are solved once**: the
-  reference's Hessian returns its first-order orbitals (`mo1=`) and
-  `ri_mp2_correlation_hessian` takes them (`mo1_in=`) in place of its own
-  solve, for RI-MP2 and for a fitted double hybrid alike. That is right only
-  because both solves had the same equations, operator and tolerance; the
-  conventional MP2 block solves at 1e-13 where the reference solves at the
-  deck's tolerance, so it does not share; a range-separated double hybrid
-  never reaches the analytic path. `test_mqc_ri_mp2_hessian_dh` holds the
-  shared block to the block's own solve, and `test_mqc_xc_hessian` holds the
-  threaded kernel routines to one thread -- **ctest and the validation runner
-  both run one thread**, so nothing else exercises a parallel region. **Read the phase lines before assuming
-  which method a slow Hessian is**: plain RI-MP2 on the same molecule has a
-  ladder A of 3 s.
-  **Density-fitted Hartree-Fock and Kohn-Sham have their own analytic
-  Hessian** (`df_rhf_hessian`, which takes an optional `xc`, with the fitted
-  terms in `mqc_czt_df_hessian`): it differentiates the fitted energy as
-  written, shares `rhf_hessian`'s one-electron terms and assembly, and reaches
-  the response solver through one optional argument, `fit`. Under a functional
-  the fitted terms take its exchange fraction and the kernel is added by
-  `response_xc_kernel`, the same routine the unfitted operator calls; a
-  range-separated hybrid is declined. **Do not check a Kohn-Sham Hessian
-  against differenced gradients**: the gradient carries the grid's response
-  and the Hessian holds the grid fixed, which is 4e-4 on water and looks like
-  a bug. The reference is PySCF's
-  `df.hessian` with `auxbasis_response = 2`; at 1 the fit's second-order
-  response is missing and it is 1e-4 off. The fitted terms are written
-  twice: `df_two_electron_derivatives` in the module is what runs, and
-  `dense_two_electron_derivatives` in `test_mqc_czt_df_hessian` is the
-  formulas as written, one full array per perturbation. **Change the dense
-  one first and make the other agree** -- the test holds them to 1e-9, which
-  is every sign and index convention at once. The solver's operator is `df_response_mo`, in the MO
-  basis, and only the virtual-occupied block of what it returns is read by
-  the solve and only the occupied-occupied block by the assembly.
-- `NEO-HF` - nuclear-electronic orbital Hartree-Fock: `keywords.neo` with
-  `quantum_nuclei` (0-based indices or symbols) and `nuclear_basis` (default
-  `pb4-d`, from `basis_sets/neo/`) gives the named protons orbitals of their
-  own; closed-shell HF or DFT, with `epc` (`17-1`/`17-2`) adding the
-  electron-proton correlation functional. Validated against PySCF-NEO
-  (github.com/theorychemyang/pyscf); see `mqc_docs/source/neo.rst`
-- `CCSD`, `CCSD(T)`, `RI-CCSD`, `RI-CCSD(T)` - RHF reference, spin-adapted
-  (spatial orbitals) by default. `keywords.cc.spin_adapted: false` selects the
-  spin-orbital formulation instead; the two are exact for a closed shell and
-  agree to machine precision, so that flag chooses how a number is computed and
-  not which number. Spatial is the default because it is roughly sixteen times
-  smaller and several times faster.
-  **Analytic gradient: RI-CCSD and RI-CCSD(T) only**, closed shell over an
-  exact reference, frozen core allowed (`mqc_czt_ri_ccsd_gradient`). The Lambda equations
-  (`mqc_czt_rcc_lambda`) and the densities (`mqc_czt_rcc_density`) are PySCF's
-  term for term, written with `contract` from `mqc_tensor_contract` so each
-  line carries the reference's index string. The two places that dominated
-  have been rewritten by hand and the rest left readable: the all-virtual
-  block of the two-particle density, and the triples' terms. The gradient
-  prints its phases; **read them before optimising anything else** -- a Lambda
-  iteration already costs what an amplitude iteration does.
-  The relaxation and assembly are `relaxed_fitted_gradient`, shared with
-  the RI-MP2 gradient. PySCF has no fitted CCSD gradient, so the reference is
-  `tools/cpu_validation/ri_ccsd_gradient.py`, itself held to finite
-  differences. Conventional integrals, open shells and a fitted reference are
-  refused by name. (T) enters as three sets of terms from
-  `mqc_czt_rcc_triples_terms` -- sources in the Lambda equations, a diagonal
-  on the one-particle density, additions to the two-particle density -- built
-  one set of three virtuals at a time, as the energy is, at two and a half
-  to four and a half times the energy's cost (a water tetramer and adenine,
-  both in cc-pVDZ). **(T) is not invariant to a
-  rotation among the occupied orbitals or among the virtuals**, so the
-  gradient takes the off-diagonal relaxed density in those blocks from the
-  Lagrangian, divided by the orbital-energy gap, and skips degenerate pairs;
-  using the amplitudes' value there is right for CCSD and wrong for (T).
-
-**The terco backend runs RI-CCSD and RI-CCSD(T) too** (`trc_run_rccsd`,
-through `run_coupled_cluster` in `mqc_terco_driver`): closed shell over
-Hartree-Fock, energies only. The correlation energy comes back as the CPU
-backend's two parts, `t1 t1` and `t2`, through `trc_rccsd_energy_parts`
-(terco ABI 1.29), so `energy%cc` reads the same from either backend.
-Conventional coupled cluster on that backend is
-refused by name. **The terco bridge is not built in CI or in a default
-build**: compile it with `-DMQC_ENABLE_TERCO=ON -DTERCO_ROOT=<checkout>`; with
-`-DTERCO_LIBRARY` pointed at any file the library target compiles without a
-terco build, which checks the interface and nothing else.
-
-An `RI-`/`DF-` prefix parses to the same method type as the bare name, so the
-intent is recovered in the reader by `method_wants_density_fitting` while the
-spelling still exists. `ccsd` and `ccsd(t)` are separate method types, so the
-triples survive the parse.
-
-Excited states are not a method name and not a driver. `keywords.excited_states`
-on an ordinary energy deck gives linear-response excitation energies -- `tda`
-or `rpa`, singlets, triplets or `both` out of a closed shell, and unrestricted
-roots out of an open one -- over Hartree-Fock or Kohn-Sham up to a
-range-separated hybrid, with transition dipoles and oscillator strengths in
-both gauges and natural transition orbital weights. Amplitudes come back at
-`sum X^2 - sum Y^2 = 1/2` restricted and `sum_sigma (...) = 1` unrestricted,
-and the factor in a transition moment moves with that convention rather than
-separately. meta-GGA, VV10, density fitting, PCM, capped fragments, a
-correlated reference and cuEST are refused by name rather than approximated.
-See `mqc_docs/source/excited_states.rst`.
-
-NMR shieldings are `properties.nmr` on an energy deck: the shielding tensor
-of every nucleus over gauge-including (London) orbitals, closed-shell
-Hartree-Fock or Kohn-Sham (LDA, GGA, global hybrids) with exact integrals,
-everything else refused by name. Two
-modules. `mqc_czt_giao` is the integrals, through the field-derivative
-entry points `libcint_fortran` exports from libfint v0.9.0 on
-(`libcint_1e_igovlp_*` through `libcint_2e_ig1_*`). `mqc_czt_nmr` is the physics, term
-for term `pyscf.prop.nmr.rhf`: the field is an imaginary antisymmetric
-perturbation, so the coupled-perturbed operator is exchange only
-(`response_mean_field` with `minus`), and the occupied-occupied block of the
-first-order coefficients is fixed at `-s1/2`. **The tensor is not
-symmetric**, first index the field and second the nuclear moment, and a
-transposed result passes any symmetric check. The reference is
-`pyscf.prop.nmr.RHF` from the separate `pyscf-properties` package, whose
-packaged response callback assumes three vectors a call and fails under
-current PySCF; pass it one that reshapes to any count.
-**The two-electron field derivative is folded and screened**
-(`giao_coulomb_exchange`): the gauge factor of a pair is `(1/2)(R_i - R_j) x r`,
-so the integral vanishes on one centre, changes sign under `i <-> j` and keeps
-the ordinary symmetry in `k, l` -- a quarter of the quartets at most, each put
-in the four places the full sum would. The screen's estimate of that factor
-grows with the distance from the origin, so **test it with the molecule moved
-off the origin**; `test_folding` holds the routine to the full sum written
-out, to 1e-11, and `test_screen` does the same on three waters seven
-angstroms apart, where the screen skips quartets and says how many -- on one
-water it skips none, and a test there guards nothing. **The field response builds its coupling matrix once**
-(`exchange_coupling`, through `build_hessian_mo`): the operator's two-electron
-part is `(A-B)` less its diagonal, scaled by the exact-exchange fraction, and
-`mo_transform_fits` decides whether it fits, per process, against a
-budget that `set_memory_sharers` divides among the ranks on the node; otherwise every pass recomputes
-the integrals (`integral_direct` forces that, and a test holds the two routes
-together). A profile of a pass is all libfint -- the digestion is a tenth of
-it -- so nothing in the direct route is left to tune but the pass count. Two
-things that did not work: one Krylov subspace shared by the three directions
-took the same fourteen passes as three separate ones, and applying the
-operator to each new vector at its own shrinking length so the build could
-screen on it saved a third and then **failed to converge** on triglycine,
-its noise sitting at the 1e-10 tolerance. Measured on four threads, the
-shielding step of a water hexamer in cc-pVDZ went from 27.7 s to 8.8 s and
-triglycine's in 6-31G* from 78.8 s to 39.5 s direct, 28.9 s stored.
-**Under a functional the potential does not respond to the field**, so a
-pure functional has no coupled equations at all and `exchange_response`
-returns zero without touching an integral; a hybrid scales exchange by
-`xc%exx_fraction` in the first-order Fock matrix and the response alike.
-What the functional adds is `giao_xc_potential`: the potential between a
-function and the gauge derivative of another, `(1/2)(R x r) chi`, less its
-transpose, on the grid, with that derivative's gradient for a GGA.
-`pyscf.prop.nmr.rks`'s own `get_vxc_giao` fails under current PySCF (a block
-size that is not a multiple of the grid's), so the reference is the same
-formulas in one pass, held to the two numbers in that module's self-test --
-and those were made with the old B3LYP, `b3lyp5` now, which is 0.02 ppm from
-today's. **In a continuum the surface charges do not respond either**, to
-the field or to a nucleus's contact field, so the couplings need nothing but
-the solvated orbitals and the shieldings need one term: the gauge derivative
-of the charges' potential, `giao_smeared_charges`. The charges are Gaussians,
-and `int1e_ignuc` sums integer charges over every atom it is told of, so each
-charge is put first in the atom list as a unit Gaussian nucleus and the
-integral told there is one atom -- it still finds each shell's centre further
-down the list. One pass over the shell pairs per surface point. No other
-program here does a shielding in a continuum, so **the check is translation**:
-6e-8 ppm with the term, 87 ppm without.
-**In a fragmented run the shieldings are assembled like a gradient**:
-`compute_mbe` notices that every term carries `nmr_shielding`, and
-`accumulate_fragment_derivatives` folds each term's tensors onto the system
-atoms with the expansion's collapsed weights, dropping caps. Nothing asks for
-it -- the caller allocates nothing, unlike the gradient. The tensors travel
-over MPI flattened to `(9, n_atoms)` after the dipole derivatives, in both
-`send` routines and through `recv_shielding` in both receives; **the four have
-to stay in step**. On four ranks the result is the serial one to 1e-11 ppm. The check that
-needs no reference: at the level that reaches the whole system the result is
-the unfragmented one, 1e-11 ppm on a water trimer. **Overlapping fragments
-(GMBE) assemble them too, and are the way to cut through covalent bonds**:
-`assemble_pie_shieldings` in `mqc_gmbe_fragment_distribution_scheme`, called
-by the serial processor and the MPI coordinator alike, sums each atom over
-the inclusion-exclusion terms that contain it. An intersection carries its
-caps where its two fragments carry theirs, so a cap's disturbance enters
-with both signs; measured on decane, six-carbon windows advancing two leave
-carbon 0.41 ppm off, where disjoint two-carbon fragments at MBE(2) leave
-18. **Reading each atom from the one fragment where it is furthest from a
-cap was tried and is worse** -- 5.5 ppm on the same windows -- because a cap
-two bonds away is still worth ppm to a carbon and nothing cancels it. A
-window that overlaps its neighbour by one atom leaves that atom beside a cap
-in every term. Couplings, counterpoise and embedding are not assembled,
-and **a fragmented Hessian deck with `properties.nmr` is refused**: its terms
-are displaced gradients, which lost the tensors and computed them 6N+1
-times over. The validation manifest can pin shieldings
-(`expected_nmr_isotropic`), because the energy does not notice whether they
-were assembled. See
-`mqc_docs/source/nmr_shielding.rst`.
-
-Spin-spin couplings are `properties.spin_spin_coupling`, a separate request
-from the shieldings: a deck may want either without the other.
-`mqc_czt_spin_coupling` computes **the Fermi-contact term only**, term for
-term `pyscf.prop.ssc`'s `make_fc`: the right-hand side for nucleus `A` is
-`(4 pi / 3) phi_a(R_A) phi_i(R_A)`, from `eval_ao_block` at the nuclei, and
-the response is a *triplet* one, through `cphf_solve(..., triplet=.true.)`.
-**That flag has to reach `xc_kernel_cache_fill` as well as the operator**: a
-cache filled for singlets is refused by the triplet kernel, which is how it
-was found. A triplet-unstable reference makes the operator indefinite and the
-solve says so; at Hartree-Fock that is common and is the method's failure,
-not a bug. What is stored is the reduced coupling in atomic units;
-`mqc_nmr_isotopes` holds the observed isotope and g factor per element (13C,
-not 12C) and turns it into hertz in the writer. **No basis set made for
-couplings is in `basis_sets/`**, and the contact term is the property most
-sensitive to that. See `mqc_docs/source/spin_spin_coupling.rst`.
-
-Raman activities are `properties.raman` on a Hessian deck, closed-shell HF or
-KS with exact integrals. `mqc_czt_raman` has three routes to the polarizability's
-Cartesian derivatives. The default, `polarizability_derivatives_analytic`, is
-Hartree-Fock only and differences nothing: the gradient formula holds in a
-field, so its second field derivative is the same contraction at `D^kl` and
-`W^kl`, plus `Tr(D^k G^x[D^l])`. `D^kl` is six more `cphf_solve`s through
-`mo_rhs`, with its diagonal blocks fixed by idempotency; `W^kl` is the product
-rule on `(1/2) D F D`. **The two-electron terms pair two different
-densities**, `D^kl` with `D` and `D^k` with `D^l`, and come from one
-`two_electron_deriv_many` pass over a stack of all ten: each pairing is then
-two traces over an atom's functions, *both orders*, because the sum over an
-atom is on the first index alone (`add_pairing`). It used to be eighteen
-`two_electron_gradient` calls, a product of two densities taken as the
-difference of the gradient at their sum and at each -- ten times the time,
-and a subtraction of nearly equal numbers. **The nine response solves share
-one `(A+B)`**: `cphf_solve` iterates one right-hand side at a time with an
-integral pass per iteration, about a hundred passes for nine, so where
-`mo_transform_fits` allows the matrix is built once by `build_hessian_mo`,
-factorized, and each solve is a back-substitution (`integral_direct` forces
-the iteration; a test holds the two to 1e-9, where they land 2e-11 apart,
-and asserts each call took the route it was meant to). The factorized route
-refuses what the iterated one does: a reference with no gap, and one where
-`b . (A+B)^-1 b` is not positive, which proves a saddle. The LU goes through
-`factorize_response` in `mqc_czt_cphf`, which is where `MQC_SEQUENTIAL_BLAS`
-is visible. The derivative pass over the ten-density stack holds two
-potentials per density per thread, so it is taken in pieces against
-`memory_budget`. Measured on four threads,
-the Raman step of a Hessian run went from 24.8 s to 2.2 s on propane in
-cc-pVDZ and from 55.2 s to 5.5 s on a water hexamer in 6-31G*. Its
-check is the translational sum rule, 1e-13, and PySCF's differences
-*extrapolated to zero step*; the plain ones are 3e-5 off, their own error. **A
-Kohn-Sham reference takes the same route**, LDA, GGA and global hybrids
-(`xc=` to `polarizability_derivatives_analytic`); a meta-GGA, a
-range-separated hybrid and VV10 take the next one. Three additions, each a
-derivative of the functional further: the kernel in every response solve,
-`xc_kernel2_apply(D; D^k, D^l)` in the second-order Fock matrix -- there
-whatever `D^kl` is, because the potential is not linear in the density -- and
-in the gradient `xc_potential_gradient(D, D^kl)` plus `xc_kernel_gradient(D;
-D^k, D^l)`, the derivative of `Tr(P_a f_xc P_b)` with all three densities
-held and the grid moving. Both are threaded over grid blocks with a private
-gradient per thread; **an internal procedure called from the parallel region
-reaches the host's variable, not the thread's private copy**, so the block's
-error is passed to `report_failure` as an argument. The exchange term is
-`two_electron_deriv_many(..., exx_fraction=)`. **A context that was never
-created is present, inactive, and says its exchange fraction is zero**: it is
-what the bridge holds for Hartree-Fock, and passing it down made the mean
-field one with no exchange, activities of 33.8 for 45.8 on water with every
-test green. The routine forwards the context only when it is active, and
-`has_functional` in `mqc_czt_response_product` is the test everywhere there
--- never `present(xc)` alone. No other program gives a
-Kohn-Sham reference number here, so the check is the finite-field route,
-which shares no formula with it, *extrapolated over two field strengths*:
-1e-7 for an LDA and a GGA, 2e-7 for B3LYP at fields of 4e-3 and 2e-3.
-**Unextrapolated it is 1e-4 off and hides a missing term; at smaller fields
-the hybrid's reference is the noisy one** (7e-6 at 2e-3 and 1e-3), the
-exchange build's noise divided by the field squared. The KS solves are
-iterated, since the factorized matrix has no kernel, and **`cphf_solve` now
-advances its right-hand sides in lockstep**, `LOCKSTEP_GROUP` at a time, one
-`response_product` per iteration for every member still unconverged: each
-member's iterates are the ones it would have had alone, and nine solves cost
-two solves' passes. Every caller of `cphf_solve` gets that. On four
-threads at B3LYP the Raman step is 22 s against the field route's 56 on
-propane in cc-pVDZ, and 50 against 157 on a water hexamer in 6-31G*. `polarizability_derivatives_field`
-differences the analytic gradient twice over twelve electric fields --
-thirteen SCFs and gradients whatever the molecule's size, the field entering
-through `run_czt_rhf`'s `h_extra` and its own gradient term added by hand,
-since `czt_scf_gradient` does not know about it. The other,
-`polarizability_derivatives`, differences `static_polarizability`
-over `6N` displaced geometries, each a fresh molecule, SCF and response solve.
-**The mixed second difference does not vanish where symmetry says the
-derivative does**: its error carries `F_k^2 F_l^2` terms, which are even, so
-a small nonzero `xy` component is truncation and not noise -- it falls by
-four when the field is halved. **A fragmented Hessian run assembles them
-too**: `compute_mbe` sets `compute_raman` when the dipole derivatives are
-being assembled and every term carries `polarizability_derivatives`, and they
-go through `redistribute_cap_dipole_derivatives`, which moves whole columns
-and so takes six rows as it takes three. Over MPI they follow the dipole
-derivatives in both sends and both receives. **The MPI coordinator ordinarily
-flattens a fragmented Hessian into displaced gradients, and a queue of
-gradients never computes a polarizability derivative**: the activities were
-silently absent on more than one rank until `expand_displacements` learned to
-stand down for `properties%raman`, leaving each fragment whole on one rank.
-Found by running it under `mpirun`, not by reading it. The full expansion of a water
-trimer reproduces the unfragmented activities to 8e-10; at the pair level a
-*band's* total is within a per cent while single modes are off by half,
-because the assembled Hessian mixes near-degenerate stretches differently --
-compare bands. The bridge calls any route on the analytic-Hessian branch,
-and the analytic and finite-field ones on a declined Hessian too
-(`raman_derivatives`, contained in `run_czt_hf`): a capped fragment has no
-analytic Hessian, and `hf_calc_hessian` carries the derivatives across the
-`result%destroy()` that precedes the differenced one. **That capped path runs
-and is unvalidated** -- caps change the fragments, so no expansion order
-reproduces the whole molecule to check against;
-`compute_raman_activities` in `mqc_vibrational_analysis` projects the result
-on the modes beside the IR intensities. Two things cost time to find. **The
-displaced SCFs need an orbital gradient of 1e-10**: at 1e-8 the derivatives
-were 3e-6 off, the noise divided by the step. **A reference built from
-another program's Hessian has to project out rotations too**, or a mode that
-mixes with one differs by 0.1 cm-1 and 0.1 in its activity at a geometry
-that is not a stationary point, which every sample geometry is not. The
-reference is PySCF's Hessian with PySCF's own coupled-perturbed
-polarizability differenced, through `cphf.solve`.
-
-RIJCOSX is not a method name either. `keywords.scf.exchange: "cosx"` beside
-`keywords.scf.density_fitting` builds the Coulomb matrix from the fit and the
-exchange matrix by chain-of-spheres quadrature (`mqc_czt_cosx`), for a
-restricted Hartree-Fock or global-hybrid energy on the CPU backend; everything
-else is refused by name. Three things to know before touching it:
-
-- **The reference for it is a fitted Coulomb matrix with exact exchange**
-  (PySCF's `only_dfj`), not Hartree-Fock and not another code's seminumerical
-  exchange. The fit is then common to both numbers and only the quadrature
-  separates them. Its validation tolerances are 5e-5 to 1.5e-4 hartree because
-  they bound an approximation, not an SCF.
-- **It needs a `-jfit` or `-jkfit` auxiliary basis.** With an `-rifit` set it
-  is millihartrees off, because RI-JK's Coulomb and exchange errors cancel and
-  RIJCOSX has no exchange fit to cancel against.
-- **Two thirds of a run is one integral**, `<mu| 1/|r - r_g| |nu>` over
-  batches of grid points, and it does not come from libfint: `mqc_czt_esp_batch`
-  is a McMurchie-Davidson kernel written for it, about three and a half times
-  faster than `int1e_grids` and checked against it to 1e-11 for every shell
-  type through g. Profile before touching it (`perf` with `-e cpu-clock`
-  works here once `linux-tools-generic` is installed): the things that
-  mattered were a logical reduction and a `minval` that do not vectorise, a
-  double-precision `1/sqrt`, and adding Hermite terms one to a pass. Its
-  Coulomb matrix comes from `df_jfit`, the same Coulomb-only fit a pure
-  functional uses. Against RI-JK it is slower on small systems, level by
-  twenty waters in def2-SVP, and runs where the fitted tensor does not fit.
-  See `mqc_docs/source/rijcosx.rst`.
-
-Initial guess is `keywords.scf.guess`: `core`, `gwh`, `sac`, `sad`, or `auto`.
-`auto` resolves per backend - `sad` on the CPU path, `gwh` on cuEST - so the two
-can differ without either knowing what the other chose.
-
-### Wavefunction stability, and the second-order SCF
-
-`keywords.scf.stability` asks whether a converged SCF is a *minimum* rather than
-merely a stationary point, which is not the same question and is not answered by
-any convergence test: a saddle point converges, reports an ordinary energy, and
-says nothing. `keywords.scf.second_order` is the other half: it converges the
-closed-shell reference by trust-region Newton once DIIS has got it close, so it
-can *escape* a saddle rather than only detect one.
-
-**Both are core functionality and work in a default build**, with nothing
-optional fetched. If you are adding to the stability analysis, add to
-`mqc_czt_native_stability`.
-
-Two modules, in `backends/cenzontle/stability/`:
-
-- `mqc_czt_ov_hessian` is `(A+B)` -- the real singlet orbital-rotation Hessian --
-  as a matrix-free operator over the non-redundant occupied-virtual rotations.
-  It needs nothing optional and is always compiled. It is **recovered from the
-  coupled-perturbed operator rather than built**: `nuclear_apply` computes
-  `Delta^-1 K`, so the Hessian is `Delta * (x - apply(x))`, and that module's
-  header derives it. The redundant occupied-occupied rows the response operator
-  carries are excluded, because an eigensolver handed them finds `n_occ^2` exact
-  zeros and calls every reference marginally stable.
-- `mqc_czt_native_stability` diagonalises it with `mqc_davidson` -- the CI
-  solver, unmodified except for two optional labels so a verbose run does not
-  claim to be a CI. `davidson_flat` already works against an abstract
-  `sigma_operator_t` over a flat vector, its preconditioner is exactly the
-  orbital-energy diagonal this wants, and its no-guess start is the unit vector
-  on the smallest diagonal element, which over this space is the HOMO-LUMO
-  rotation. The adapter is one type with one `apply`. Because
-  `sigma_operator_t%apply` carries an `error_t`, this path needs **no module
-  state** and no seed, and it **always reports the eigenvalue**. It is checked
-  against a dense diagonalisation of the same operator, built column by column
-  through it, which is a reference that depends on no eigensolver being right.
-  (A second implementation of this one solve, borrowed from a library rather
-  than written here, exists on a separate branch purely as a cross-check; it is
-  not in this one and nothing here needs it.)
-
-The second-order SCF is two more modules plus a phase:
-
-- `src/methods/scf/mqc_orbital_rotation` holds `rotation_matrix` (the exact
-  matrix exponential by scaling and squaring) and `level_shifted_step` (the
-  level-shifted trust-region Newton step with the saddle escape), plus
-  `MIN_CURVATURE`, `SADDLE_CURVATURE`, `MAX_ROTATION`, `MIN_ROTATION`,
-  `ENERGY_RESOLUTION` and `TRUST_GROWTH`. **Lifted out of `mqc_czt_mcscf`, not
-  copied**: CASSCF's `newton_step` is now just the mapping between its
-  `(rows, cols)` pair list and a flat vector, and its numbers are unchanged.
-  `rotation_matrix` is still public from `mqc_czt_mcscf`, use-associated, so
-  existing callers and tests are untouched.
-- `backends/cenzontle/scf/mqc_czt_soscf` holds the three things specific to an
-  SCF: the gradient out of the Fock matrix, the semicanonicalisation, and the
-  Krylov solve of the Newton equations against the matrix-free Hessian.
-- `run_soscf_phase`, private in `mqc_czt_rhf`, is the loop. It lives there
-  because it needs `assemble_fock`, `commutator` and the `rhf_operators_t` /
-  `rhf_state_t` views, and because convergence must be the *same*
-  `scf_convergence_t` rule the DIIS phase used or the two energies are not
-  comparable.
-
-Things to know before touching any of it:
-
-- **The factor is four, and it cancels out of the step.** The gradient is
-  `4 F_ai` and the Hessian is `4 (A+B)`, so a Newton step `-H^-1 g` is right
-  even with the factor dropped -- and the *curvature* is then a quarter of the
-  truth, which silently retunes `MIN_CURVATURE` and `SADDLE_CURVATURE`.
-  `test_mqc_czt_soscf.f90` differences the energy numerically to fix both the
-  factor and the sign; do not change either on the strength of a comment.
-- **`(A+B)` is the Hessian only at semicanonical orbitals.** Its first term is
-  the orbital-energy gaps, which is `delta_ij F_ab - delta_ab F_ij` only when
-  the Fock matrix is diagonal within each block. A rotation destroys that, so
-  every Newton iteration re-diagonalises the occupied and virtual blocks first.
-  That moves no density and costs no Fock build.
-- **The curvature the SCF reports is an upper bound.** It is a Rayleigh-Ritz
-  value from a Krylov subspace, so a negative one proves a saddle and a positive
-  one proves nothing. The convergence test uses it one-sidedly, to *refuse*
-  convergence at a saddle. `keywords.scf.stability` is what proves a minimum.
-- **DIIS first, always.** A Newton step from an initial guess diverges. The
-  handover is at `keywords.scf.soscf_start` on the commutator, defaulting to
-  1e-2, and the iteration it happened at is reported.
-- **Refused, not approximated**: a continuum solvent (no surface-charge
-  response in the Hessian), and a Fock projector (forbidden rotations are not
-  excluded from the parameter space). Restricted Kohn-Sham *is* supported,
-  through the same kernel the analytic Hessian's coupled-perturbed solve uses.
-- **Unrestricted is `run_soscf_phase_uhf`**, over one vector of alpha's
-  rotations and then beta's. Its Hessian is `uhf_rotation_hessian_t` in
-  `mqc_czt_soscf`: twice `response_product_uhf`'s spin-blocked `(A+B)`, with
-  the gradient `2 F_ai` per spin, both fixed by finite differences in
-  `test_mqc_czt_soscf`. Direct builds only: a fitted or stored-integral
-  unrestricted SCF is refused. It searches the spin-symmetry-breaking
-  rotations, so a singlet run unrestricted can leave the restricted solution:
-  the stretched N2 below goes to -108.7504, 0.179 below the restricted
-  minimum. `keywords.scf.stability` is still closed-shell only.
-
-### Geometric direct minimisation
-
-`keywords.scf.gdm` (or `accelerator: "gdm"`) is the third way to finish an
-SCF, restricted or unrestricted: DIIS opens, and below `gdm_start` (1e-1) an L-BFGS
-minimisation over the orbital rotations takes over, one Fock build per step, a
-step kept only if the energy did not rise. Van Voorhis and Head-Gordon, 2002.
-
-- `src/methods/scf/mqc_scf_gdm` is the numerics -- history, preconditioner,
-  accept rule, step cap -- and is **terco's `trc_scf_gdm`, name for name**. A
-  fix to one belongs in the other; their tests are the same fourteen.
-- `run_gdm_phase`, private in `mqc_czt_rhf` beside `run_soscf_phase` and
-  shaped like it, is the loop. Every Fock build in it is a full one, because
-  the accept rule compares energies to 1e-10.
-- **The orbitals are not semicanonicalised between steps**, unlike the
-  second-order phase. The L-BFGS history compares gradients across successive
-  orbital frames with no transport, which holds only while the frames differ
-  by one small rotation; mixing within the occupied or virtual block would
-  make the history meaningless. Once, at the end.
-- **It is a minimiser, not a saddle escape.** On the stretched N2 below it
-  lands on DIIS's saddle, and `gdm/n2_stretched_gdm` pins that on purpose.
-- `run_gdm_phase_uhf` is the same loop over two spins: one vector, alpha's
-  rotations then beta's, one history, gradient `2 F_ai` per spin with the
-  preconditioner's factor two to match. **A change to one phase's accept or
-  restart logic belongs in the other.**
-- Refused by name: with `second_order`, COSX (the energy is not
-  variational, so the Fock matrix is not its gradient), PCM, a Fock projector
-  and cuEST. On the terco backend the request is forwarded to terco's own GDM
-  (`trc_set_gdm`).
-
-**A real case where DIIS is not enough**, worth keeping in mind as the thing
-these two features are for: N2 at 1.6 A in 6-31G, RHF. DIIS converges from the
-core, GWH and SAD guesses alike, to a stationary point the stability analysis
-reports as a *saddle* -- curvature -1.29e-1 from core, -6.77e-2 from the other
-two. With `second_order: true` the same run reaches -108.5718 hartree, 0.020 to
-0.242 hartree lower, with a curvature of -1e-12: a minimum. It costs 225 Fock
-builds against DIIS's 12, and DIIS's answer is wrong.
-
-## Solvation Models
-
-Through tblite, for xTB only:
-
-- `ALPB` - Analytical Linearized Poisson-Boltzmann
-- `GBSA` - Generalized Born with Solvent-Accessible Surface Area
-
-Continuum solvation on the CPU ab initio path (`mqc_czt_pcm.f90`):
-
-- `CPCM` - conductor-like, the scaled-conductor approximation
-- `IEFPCM` - the integral-equation formalism
-
-Both work with Hartree-Fock and DFT, restricted and unrestricted; see
-`mqc_docs/source/continuum_solvation.rst`. 40+ solvents.
-
-**MP2 in a continuum needs `keywords.pcm.correlation`**, and without it is
-refused: `"pte"` solvates the reference and runs any MP2 on its orbitals;
-`"ptd"` runs the reference and closed-shell `ri-mp2` in the gas phase, then
-solves the continuum once against the relaxed MP2 density and adds that as
-`energy%solvation` (`solvation_energy` in the output). The context is built
-and then switched off for the SCF (`pcm_ctx%enabled = .false.`), so anything
-else that reads it under PTD sees the gas phase. The relaxed density is
-`czt_ri_mp2_gradient(..., relaxed_density=)`, which returns before any
-derivative integral, with `fit_response` following the reference: **the
-gradient's default fitted response is 2.4e-7 hartree off here** and is why an
-exact-reference case would miss PySCF. `test_mqc_czt_mp2` holds the density to
-a finite-field derivative. PTED needs the surface-charge response in the
-Z-vector and is not implemented.
-
-## Analyses on a converged wave function
-
-Under `properties`, beside `keywords`: `bonding_analysis` (the quasi-atomic
-analysis), `charges`, `bond_orders`, `fukui` and `natural_orbitals`. None
-changes an energy, and a failure in one is a warning, not an error.
-
-`properties.natural_orbitals` diagonalises the most complete one-particle
-density the method has (`mqc_czt_natural_orbitals`, density in the AO basis,
-overlap orthogonalised canonically): the spin-summed density of an
-unrestricted reference, or the relaxed density of closed-shell `ri-mp2` --
-the same `relaxed_density` PTD uses, fetched once when both ask. The name of
-the density is stored beside the occupations because occupations of different
-densities are not comparable. **A relaxed density's occupations are not bound
-to [0, 2]**; the summary clamps them for the unpaired-electron counts and the
-report says when one strays. Conventional, spin-scaled and unrestricted MP2,
-coupled cluster, and MP2 under PCM `pte` are refused by name. CASSCF reports
-its own active-space occupations and does not go through this.
-
-`properties.intrinsic_orbitals` is Knizia's IAO/IBO (`mqc_czt_iao`): IAO
-charges and the occupied orbitals localised by Jacobi rotations on
-`sum_i sum_A (Q_A^i)^p`, `p` 4 or 2, HF or KS only. Its formulas
-are `pyscf.lo.iao` and `pyscf.lo.ibo`'s and its tests are pinned to them.
-**An unrestricted reference is two separate analyses**, one per spin
-(`intrinsic_one_spin` in the bridge): the IAOs depend on the occupied space,
-so alpha's and beta's differ, and there is no one set to take a spin density
-into. Charges are the two populations added, spin populations their
-difference.
-**Its minimal basis is `basis_sets/minao/iao.json` (Knizia's MINAO, cc-pVTZ
-contractions), not `minao/minao.json`** (ANO-RCC, the initial guess's): two
-bases share the name upstream and give intrinsic charges 0.03 apart on water.
-**Two orbitals on one atom are indistinguishable to the functional**, so the
-sweep skips a pair whose `A^2 + B^2` vanishes and converges on the gradient;
-converging on the rotation angle never terminates.
-
-Charge schemes are `mulliken`, `lowdin`, `chelpg`, `hirshfeld`, `mbis`; bond
-order schemes are `mayer` and `wiberg_lowdin`. **Lowdin and Wiberg are Mulliken and
-Mayer in the symmetrically orthogonalised basis**: `lowdin_density` in
-`mqc_population_analysis` returns `S^1/2 D S^1/2`, and the existing routines
-are called with it and `identity_overlap`. **The bare `wiberg` is refused by
-the schema, by name**: an NBO analysis means the natural-atomic-orbital index
-by it, which is a different number and is not implemented, so the scheme
-here carries its basis in its name and the bare word is left for that one.
-
-`properties.density: "relaxed"` points `charges` and `bond_orders` at that
-same relaxed density; the default, `"scf"`, is the reference's whatever runs
-on top, and `result%analysis_density` (the `density` field of both output
-sections) says which. **The reference's dipole is withheld after a correlated
-method on purpose**; the relaxed density's is published whenever that density
-is built, through `publish_dipole` in the bridge.
-
-## Dependencies
-
-| Library | Purpose |
-|---------|---------|
-| tblite | xTB quantum chemistry engine |
-| pic | Utility library (sorting, logging, timers) |
-| pic-mpi | MPI wrapper layer |
-| pic-blas | BLAS/LAPACK interface |
-| test-drive | Unit testing framework |
-| jsonfortran | I/O |
-
-## Testing
-
-```bash
-# Run all tests
-cd build && ctest
-
-# Run specific test
-./test_mqc_mbe
-
-# Run the validation suite -- from inside validation/, every default is relative
-cd validation && python3 run_validation.py
-```
-
-Test files follow pattern `test/test_mqc_*.f90`.
-
-## Build System
-
-`CMAKE_STYLE.md` is the guide. The short version: the top-level `CMakeLists.txt`
-is an outline of four `include()`s, every dependency is declared in its own
-`cmake/modules/Find<pkg>.cmake` through `mqc_fetch`, every option lives in
-`cmake/MqcOptions.cmake`, and validation programs go through
-`mqc_add_validation_program`. `CMakePresets.json` carries the configurations
-worth remembering, `perlmutter` among them.
-
-### Building serially
-
-`-DMQC_ENABLE_SERIAL=ON` turns off OpenMP, MPI and tblite together, leaving
-BLAS/LAPACK as the only parallel-adjacent dependency. The three go together
-because they are not independent: tblite is built with OpenMP and cannot be
-configured without it, and a build with neither has no reason to carry MPI.
-
-It exists for a compiler that cannot yet build the parallel forms, not for
-speed -- nothing is threaded, nothing is distributed, and the fragment loop
-runs one fragment at a time. Do not benchmark against it.
-
-Two things it does that are not obvious. It sets
-`CMAKE_DISABLE_FIND_PACKAGE_OpenMP`, because libfint runs its own
-`find_package(OpenMP)` to make its shell-quartet workspace `!$omp
-threadprivate` and would otherwise put the flag back. And it compiles
-`compat/omp_lib_serial.f90`, which answers the OpenMP runtime API as one
-thread: the `!$omp` directives vanish without the flag but the twenty-odd
-unguarded `use omp_lib` statements do not, and gfortran leaves
-`omp_get_max_threads_` in libgomp. Linking libgomp instead would work and would
-be one line, but it restores the dependency the mode exists to remove and
-reports the machine's core count in a build with no parallel region to use it.
-
-The whole CPU validation suite -- 307 cases -- passes on a serial gfortran
-build.
-
-**LFortran** is why this exists. As of 0.66.0 every source file in this project
-compiles and `libmetalquicha.a` links; the `mqc` executable does not, and
-`.github/workflows/lfortran-build.yml` therefore builds the library target and
-stops there. It is a pinned 0.66.0, deliberately -- LFortran moves fast enough
-that a floating version turns the job red for reasons unrelated to the commit.
-
-What stops the executable is two LFortran codegen bugs, both reached only when a
-*program* forces a module's procedures to be instantiated, which is why the
-library goes through and the binary does not:
-`visit_StructConstructor() not implemented`, on a component default initialised
-by a structure constructor -- pic-mpi's serial `comm_t`, `request_t` and `win_t`
--- and `Internal error: x is nullptr`, reached from `run_calculation`. Neither
-is anything in this tree. Reproducers are kept outside this repository.
-
-The widest-reaching gap is still that a continued `!$omp` directive is rejected
--- 359 of them across 23 files -- which is what makes serial the only shape
-worth trying. LFortran also needs `--implicit-interface`,
-`--mangle-underscore-external` and `--legacy-array-sections`, set in
-`cmake/CMakeLists.txt`; each is load-bearing and each is commented there. The
-second of those mangles `bind(c)` binding labels as well as Fortran externals,
-which is what stops libxc's own Fortran examples from linking; the library
-target does not build them.
-
-## Coding Conventions
-
-See `FORTRAN_STYLE.md` for the complete style guide, and `CMAKE_STYLE.md`
-for the build system. Key points:
-
-- Module naming: `mqc_*.f90`
-- Type naming: `*_t` suffix (e.g., `calculation_result_t`)
-- Internal units: Bohr (length), Hartree (energy)
-- Use `to_bohr()` / `to_angstrom()` for conversions
-- Error handling via `error_t` type with `has_error()` / `get_message()`
-- **Linter**: Uses `fortitude check` - all `use` statements must have `only` clause.
-  CI pins fortitude **0.9.2** (`pip install fortitude-lint==0.9.2`); install that
-  to match. 0.10 adds rules `fpm.toml` predates and reports ~1500 findings CI does not.
-- **CI/CD**: GitHub Actions workflows in `.github/workflows/` (build, test, coverage via Codecov)
-- **Environment**: Conda environment defined in `environment.yml`
-
-**Forbidden**: `GOTO`, arithmetic IF, implicit SAVE, COMMON blocks, EQUIVALENCE, fixed-form source, assumed-size arrays
+## Before pushing
+
+Run what CI runs:
+
+- `pre-commit run --all-files` (fprettify may need a second pass).
+- `fortitude check`, pinned to **0.9.2** (`pip install fortitude-lint==0.9.2`);
+  0.10 reports about 1500 findings CI does not. Every `use` needs an `only`.
+- The tests and validation cases your change reaches.
+- CI is GitHub Actions (`.github/workflows/`): build, test, coverage. The
+  conda environment it and you can build from is `environment.yml`.
+- For a review against house style, the `pr-review` skill
+  (`.claude/skills/pr-review/SKILL.md`).
+
+## Rules
+
+**Correctness**
+
+- A number changes only with a reference that justifies it. CPU references
+  are PySCF fed *this repository's* basis JSON; PySCF's own Pople tables
+  differ in the eighth decimal, which looks exactly like a bug.
+- Never loosen a tolerance or edit a reference to make a test pass.
+- A feature that is not implemented is **refused by name**, in the schema or
+  the bridge, never approximated silently.
+- A manifest entry that pins only the energy says nothing about a property:
+  pin what the deck computes (`.claude/context/validation.md`).
+- An optional functional context is tested with `has_functional(xc)`, never
+  `present(xc)` alone: the context the bridge holds for Hartree-Fock is
+  present, inactive, and says its exchange fraction is zero.
+- Measure before optimising, and repeat a timing before believing it.
+
+**Fortran** (`FORTRAN_STYLE.md` is the full guide; `CMAKE_STYLE.md` for CMake)
+
+- Modules `mqc_*`, types `*_t`. Internal units are Bohr and Hartree; convert
+  with `to_bohr()` / `to_angstrom()`. Atom indices in a deck are 0-based.
+- Errors travel in `error_t` (`has_error()`, `get_message()`).
+- **Forbidden**: `GOTO`, arithmetic IF, implicit SAVE, COMMON, EQUIVALENCE,
+  fixed-form source, assumed-size arrays.
+- In an OpenMP region: a private derived type is not default-initialised
+  (clear a private `error_t` yourself), and an internal procedure called from
+  the region reaches the host's variable, not the thread's private copy.
 
 ### Comments
 
@@ -1032,226 +180,47 @@ The same goes for a model name: what wrote a commit is not a fact about the
 code, so keep it out of messages, code comments and anything else committed
 here.
 
-## MPI Architecture
+## Common tasks
 
-- **Global coordinator**: Distributes fragments across nodes
-- **Node coordinator**: Manages workers within a node
-- **Workers**: Compute individual fragments
-- Tags defined in `src/parallel/mqc_mpi_tags.f90`
-- **Hessian parallelization**: Finite difference displacements are distributed across MPI ranks, even for unfragmented systems
+**Add an input keyword.** Check first whether it exists; many did when they
+were asked for. `keywords.scf` is the reference, `keywords.correlation` what
+every post-HF method shares, `keywords.cc` what only an iterative one needs.
 
-## Common Workflows
+1. Add the field, with its default, to its type in `src/io/mqc_config_types.f90`.
+2. Add the key to its object's allow-list in `src/io/mqc_json_schema.f90`.
+   The validator rejects anything it does not know, so a key added anywhere
+   else first is refused before the reader sees it.
+3. Read it in `src/io/mqc_json_config_reader.f90` (`optional_*` leaves the
+   default alone when the key is absent).
+4. Handle it in `src/io/mqc_config_adapter.f90`.
+5. Add a case to `test/test_mqc_json_reader.f90`.
 
-### Add a new QC method
-1. Create `src/methods/dispatch/mqc_method_newmethod.f90`
-2. Extend `qc_method_t` base class
-3. Implement `compute` procedure
-4. Register in method factory
+**Add a method.** Create `src/methods/dispatch/mqc_method_<name>.f90`, extend
+`qc_method_t`, implement its deferred procedures, register it in the factory.
 
-### Add a new input keyword
-Check first whether it already exists. `keywords.scf.density_fitting`,
-`keywords.scf.unrestricted` and most of `correlation_config_t` and `cc_config_t`
-were already present and working when they were asked for.
+**Add a test.** `test/test_mqc_<feature>.f90` on test-drive, registered with
+`ADDTEST(mqc_<feature>)`. `test/` and `validation/` are deliberately verbose;
+do not trim them.
 
-Keyword objects: `keywords.scf` for the reference, `keywords.correlation` for what
-every post-HF method shares, `keywords.cc` for what only an iterative one needs.
+**Add a CPU validation case.** The suite under `validation/inputs/cpu/mqc/` is
+**generated**: edit `tools/cpu_validation/gen_cpu_validation.py`, or a deck
+added by hand is deleted by the next regeneration.
 
-1. Add the field to the relevant type in `mqc_config_types.f90`, with its default
-2. Add the key to its object's allow-list in `mqc_json_schema.f90` — the
-   validator rejects anything it does not know, so a key added anywhere else
-   first will be refused before the reader ever sees it
-3. Read it in `mqc_json_config_reader.f90` (`optional_*` leaves the default alone
-   when the key is absent, so there is no second table of defaults)
-4. Handle in `mqc_config_adapter.f90`
-5. Add a case to `test/test_mqc_json_reader.f90`
+## Read before you touch
 
-### Add a new test
-1. Create `test/test_mqc_feature.f90`
-2. Use test-drive framework
-3. Add to CMakeLists.txt via `ADDTEST(mqc_feature)`
+Each file holds what was learnt the hard way about one area: what is
+implemented, what is refused, which reference to trust, and the mistakes
+already made once. Read the one that matches the code you are about to change.
 
-## Validation Tests
+| Working on | Read |
+|---|---|
+| MBE, GMBE, cutting bonds, caps, result and fragment types, MPI distribution, the JSON output | `.claude/context/fragmentation.md` |
+| HF, ROHF, DFT, MP2, coupled cluster, their gradients and Hessians, ECPs, NEO, terco, solvation | `.claude/context/methods.md` |
+| Excited states, NMR shieldings and couplings, Raman, charges, bond orders, natural and intrinsic orbitals | `.claude/context/properties.md` |
+| Initial guess, RIJCOSX, stability analysis, second-order SCF, direct minimisation | `.claude/context/scf.md` |
+| Validation decks, manifests, the runner, pinning a property | `.claude/context/validation.md` |
+| CMake, presets, the serial build, LFortran, compiler support | `.claude/context/build.md` |
+| Timing, threading, the BLAS, memory budgets, Perlmutter | `.claude/context/performance.md` |
 
-Decks live under `validation/inputs/<hardware>/<engine>/<method>/`, with the
-geometries shared at `validation/inputs/sample_inputs/` and reached from a deck
-with `../../../`. The CPU suite is **generated** - edit
-`tools/cpu_validation/gen_cpu_validation.py` and rerun it; a deck added by hand
-under `cpu/mqc/` is deleted by the next regeneration.
-
-Validation categories under `cpu/mqc/` are `bond_orders ccsd ccsd-t charges cosx counterpoise
-df-dft df-hf df-uhf dft dh ecp efmo efp fmo fukui gdm gradient hessian interaction_energy
-makefp mcscf mp2 neo nmr optimize pcm quao raman rhf ri-ccsd ri-ccsd-t ri-mp2 sapt scs-mp2
-rohf soscf sos-mp2 tddft udft uhf` -- worth checking against before assuming
-something is untested. That list is `ls validation/inputs/cpu/mqc/`; it went stale twice
-because it was maintained by hand, so check the directory rather than this
-line if something is missing from it.
-
-Examples, all under `validation/inputs/cpu/tblite/gfn1/`:
-- `h3o.json` - Unfragmented hydronium
-- `prism.json` - Water prism MBE(2)
-- `overlapping_gly3.json` - Glycine tripeptide GMBE(1)
-- `w20_isomer.json` - Water 20-mer MBE(2)
-
-The CPU ab initio suite is the bulk of 355 decks under `cpu/mqc/`: RHF across H-Ar
-and eight basis sets, UHF, density fitting, MP2, RI-MP2, CCSD(T) and RI-CCSD(T),
-and one fragmented case. References are PySCF fed this repository's own basis
-JSON, not PySCF's internal tables - those differ in the eighth decimal on Pople
-sets, which looks exactly like a bug in whichever code you are checking.
-
-### Running it
-
-`validation/run_validation.py`, and it has to be run **from inside
-`validation/`** -- `--exe` defaults to `../build/mqc` and `--validation-dir` to
-`.`, so it finds nothing from the repository root. There are two manifests and
-the default is the smaller one:
-
-```bash
-cd validation
-python3 run_validation.py                                       # validation_tests.json, 23 cases
-python3 run_validation.py --manifest validation_tests_cpu.json  # 347 cases, the ab initio suite
-python3 run_validation.py -t water_sto-3g                       # substring filter on the test name
-python3 run_validation.py --mpi --np 4                          # fragmented on 4 ranks
-```
-
-**A case that pins only the energy says nothing about a property.** What
-`properties` asks for changes no energy, so a deck that requests one and a
-manifest entry holding `expected_energy` alone pass whether the property is
-right, wrong or absent: Hartree-Fock Raman activities were 33.8 for 45.8 for
-a day with the suite green. `expected_output` maps a path into the output to
-its value -- `atomic_charges.atoms[*].charge`, `stability.lowest_curvature`
--- and a missing path is a failure; `expected_nmr_isotropic` and
-`expected_raman_activities` are the two with their own keys. Every property
-deck that writes its result pins it. Those pins are this program's own
-numbers, there to catch drift and absence; the comparison with another
-program is in the unit test each `reference_note` names. The runner checks
-every entry's keys before it runs anything, so a misspelt key is an error
-and not a check that never happens. **The quasi-atomic bonding analysis
-writes nothing to the output file**, so its seven decks still pin the energy
-alone.
-
-**A build without tblite skips most of the default manifest, and skips are not
-failures.** `-t h3o` on such a build runs zero tests and prints a green summary.
-Check the "Total tests" line, not the colour. `validation_tests_cpu.json` is the
-one that exercises a build with the CPU integrals and no tblite.
-
-The runner deletes every `output_*.json` in `validation/` before it starts.
-Those are working outputs rather than references, but do not leave anything you
-want under that name.
-
-## Output Format
-
-JSON output (`output_<basename>.json`) contains:
-- Total energy and per-fragment breakdown
-- Gradients (if requested)
-- Hessian (if requested)
-- Vibrational frequencies and thermochemistry
-- GMBE coefficients and intersection terms
-
-## Performance
-
-Four things worth knowing before optimising anything here, all of them measured.
-`benchmarks/run_benchmarks.py` checks them on the machine it runs on; see `benchmarks/README.md`.
-
-* **The exchange-correlation quadrature dominates a DFT run** -- 89 per cent of
-  an LDA one and 98 of a meta-GGA one, against a Fock build under two per cent.
-  It is threaded, and scales -- 32 s on one thread, 8 s on four, PBE on ten
-  waters in 6-31G -- **provided the BLAS is sequential**. It calls `dgemm` from
-  inside its own OpenMP threads, so a pthreads OpenBLAS left threaded (what a
-  Debian or Ubuntu system library is) contends with them and the quadrature
-  does not speed up at all: 33 s on four threads. `tools/run.sh` and
-  `benchmarks/run_benchmarks.py` set `OPENBLAS_NUM_THREADS=1` for this; calling
-  `mqc` directly does not. Held to one, PBE costs 3.4x Hartree-Fock on four
-  threads.
-* **Only xTB is pinned to one thread, and not for speed.** `needs_serial_execution`
-  in `src/mqc_method_types.f90` names GFN1 and GFN2 and nothing else: threaded,
-  tblite corrupts a result rather than failing. Every other method -- the whole
-  cenzontle ab initio path -- keeps the threads the launcher gave it, on
-  the unfragmented path and on the fragment workers alike, and a Fock build
-  threads its own quartet loop. Clamping those was an old bug, not a policy:
-  raising `OMP_NUM_THREADS` did nothing and the cause was nowhere near the
-  command line. The measured "threaded MKL competes with the ranks" result --
-  five times faster on one molecule, thirty-one per cent slower on four --
-  was taken on that clamped xTB path; do not carry it over to ab initio.
-* **Structure is a poor guide to where time goes.** Two separate optimisation
-  attempts here were aimed at the wrong file on the strength of reading the
-  code; one VTune hotspots collection settled it in minutes. `perf_event_paranoid`
-  is 4 on the development box, so PMU counters are unavailable -- use
-  `-collect hotspots -knob sampling-mode=sw`.
-* **Repeat before believing a timing.** DFT energies repeat to under one per
-  cent; gradients used to vary by sixteen, and a single-shot comparison across
-  that produced a phantom twenty per cent regression during this work.
-* **On Perlmutter, do not let Cray libsci be the BLAS.** The `ftn` wrapper
-  links it whatever `BLAS_LIBRARIES` says; its `dgetrf` gets slower with every
-  thread (3.8 s on one, 70 s on 64) and is not re-entrant, which segfaulted
-  MakeFP at 128 threads. Use the `perlmutter-cpu` preset (sequential MKL, put
-  ahead of libsci and checked after every link); see `CMAKE_STYLE.md`. The BLAS being
-  sequential means a big GEMM on the unfragmented path has to be split over
-  threads by hand -- `gemm_over_columns` and `gemm_over_inner` in
-  `mqc_czt_gemm_threads`, and `getrf_threaded` for an LU -- or it runs on one
-  core while 127 wait. `perf record -F 49` and binning the samples per second
-  by symbol finds every such phase in minutes; `perf_event_paranoid` is 2 on
-  Perlmutter compute nodes.
-* **Memory decisions read the machine, or the deck.** `memory_budget` in
-  `mqc_memory` returns `system.memory_gb` when the deck set it, else a share of
-  MemAvailable from /proc/meminfo, else the caller's blind constant. The
-  response solver plans on `RESPONSE_BUDGET_SHARE` of the machine's figure.
-  The machine's figure is divided among the ranks sharing the node
-  (`set_memory_sharers`, called once in `main` and in a session), because
-  every fragment worker plans against the same free memory; the deck's figure
-  is per rank and taken whole.
-  Fixed laptop-sized limits sent a 545-function MakeFP on a 500 GB node down a
-  fourteen-hour column build when the transform it refused needed a hundred
-  gigabytes and forty seconds.
-* **`tools/run.sh` runs `build/mqc` unless told otherwise.** `-b <exe>` or
-  `MQC_BINARY` picks another. A LibSci-linked `build/mqc` segfaults in the
-  fitted Coulomb build at 956 functions, because that build calls the BLAS from
-  every thread; the same deck runs on the `perlmutter-cpu` build.
-
-## Compiler Support
-
-| Compiler | Status |
-|----------|--------|
-| gfortran 11+ | Full support |
-| Intel ifort | Full support |
-| Intel ifx | Full support |
-| nvfortran | Partial (no tblite) |
-| LLVM Flang | Partial (no tblite) |
-| LFortran 0.66 | Library only, serial build; see "Building serially" |
-
-## Useful Commands
-
-```bash
-# Rebuild after changes
-cmake --build build -j
-
-# Clean build
-rm -rf build && cmake -B build && cmake --build build -j
-
-# Generate coverage report (requires lcov, GCC only)
-cmake -DCMAKE_BUILD_TYPE=Coverage-mqc -B build && cmake --build build && cmake --build build --target coverage
-
-# Run with verbose output -- mqc has no such flag; it takes the deck and
-# nothing else (a second argument is a hard error, app/main.f90). Verbosity is
-# "system": {"logger": {"level": "verbose"}} in the deck. Levels: debug,
-# verbose, info (default), performance, warning, error, knowledge.
-
-# Run linter
-fortitude check
-
-# Run only metalquicha tests (skip dependency tests)
-ctest --test-dir build -R "mqc"
-```
-
-## Common Issues / Gotchas
-
-1. **Coverage build type**: Must use `Coverage-mqc` (not `Coverage`) - the flags are only applied for this specific build type in `cmake/CMakeLists.txt`
-
-2. **Dependency tests running**: mostly fixed -- `cmake/MqcDependencies.cmake` turns off every dependency test suite that can be turned off, which is all but two. `mctc-lib` and `dftd4` `add_subdirectory("test")` unconditionally and cannot be configured away, so their ~38 cases remain. `ctest --preset mqc`, or `ctest -R "mqc"`, still filters to this project's own.
-
-3. **Linter `only` clause**: The `fortitude` linter requires all `use` statements to have an `only` clause - code will fail CI without this
-
-4. **Units mismatch**: Coordinates are stored in Bohr internally but input files often use Angstrom - always use `to_bohr()` / `to_angstrom()` for conversions
-
-5. **MPI validation tests**: When running `run_validation.py --mpi`, unfragmented tests still use `np=1` while fragmented tests use multiple ranks. To test parallel Hessian on unfragmented systems, mark the test as `"type": "fragmented"` since displacements are distributed across ranks
-
-6. **Coverage on CI**: GitHub Actions uses 2 cores, so MPI validation uses `--np 2`. For local testing with more cores, run validation manually with higher `--np`
+When you learn something of that kind, add it to the matching file, not here.
+A note says what is true and what it cost to find out; it is not a changelog.

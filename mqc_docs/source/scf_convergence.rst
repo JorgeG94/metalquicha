@@ -143,8 +143,8 @@ commutator of 1e-8 through ``sqrt`` would need ``tolerance`` of 1e-16, which is
 below what a molecular energy resolves in double precision, and the SCF then
 never converges at all. The two demands are separate and take separate numbers,
 which is why pyscf exposes ``conv_tol_grad`` rather than only deriving it. The
-paths inside the program that consume a density -- the EFP fragment potentials,
-the charge partitioning -- set it for themselves and say so where they do.
+paths inside the program that consume a density -- the charge partitioning among
+them -- set it for themselves and say so where they do.
 
 **There is a floor.** The commutator cannot be resolved below the scatter that
 unordered OpenMP reduction merges put into it, and that scatter is a band whose
@@ -253,9 +253,8 @@ are met there. The orbitals and orbital energies handed back therefore belong to
 the unshifted Fock operator.
 
 This matters more than it looks. Those eigenvalues are read back downstream as
-MP2 and coupled-cluster denominators, as the weights of the energy-weighted
-density in every analytic gradient, and as the occupied energies and response
-poles of an EFP fragment potential. A shift left in would move all of them by an
+MP2 and coupled-cluster denominators, and as the weights of the
+energy-weighted density in every analytic gradient. A shift left in would move all of them by an
 amount nothing downstream could recognise as a shift, and every one of those
 numbers would be quietly wrong rather than visibly wrong.
 
@@ -545,9 +544,9 @@ or silently demoted to DIIS.
 - **The GPU backend.** There is no orbital-rotation Hessian under cuEST. A GPU
   deck naming ``soscf``, or setting ``second_order``, is refused rather than
   answered with a DIIS run that says nothing about it.
-- **The MCSCF reference SCF, the Fukui ions, and the EFP fragment potentials.**
+- **The MCSCF reference SCF and the Fukui ions.**
   The first has its own second-order orbital optimiser; the second is open
-  shell; the third is not implemented.
+  shell.
 
 A restricted Kohn-Sham reference **is** supported -- the exchange-correlation
 kernel enters the Hessian through the same operator the analytic Hessian's

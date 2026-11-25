@@ -568,13 +568,16 @@ all under ``keywords.hessian``, and ``method`` chooses the route:
      - Iteration cap for that solve. A solve that hits it is reported rather
        than quietly returning its last iterate.
 
-Two things worth knowing before reaching for these.
+One thing worth knowing before reaching for these.
 
-``keywords.efp`` has its own ``response_batch``, a different key on a different
-group driving the EFP polarization response. Setting one and watching the other
-is the easy mistake.
+..
+   Hidden until the feature is announced:
 
-And ``response_batch`` is a **performance dial, not an accuracy one** -- with
+   ``keywords.efp`` has its own ``response_batch``, a different key on a different
+   group driving the EFP polarization response. Setting one and watching the other
+   is the easy mistake.
+
+``response_batch`` is a **performance dial, not an accuracy one** -- with
 one exception worth naming. Changing it reorders floating-point accumulation,
 which moves a double-hybrid derivative by around 5e-10. That is the noise floor
 those quantities already carry rather than anything the batch introduces, so

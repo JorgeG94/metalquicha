@@ -9,13 +9,17 @@ the named SAPT terms, strongest interaction first.
 Why this route exists
 =====================
 
-Three fragmented methods could in principle answer "what is this ligand's
-interaction with each residue, broken into physical terms", and none of them
+Two fragmented methods could in principle answer "what is this ligand's
+interaction with each residue, broken into physical terms", and neither of them
 does today.
 
-* **EFMO** has the named terms per pair -- electrostatics, exchange repulsion,
-  dispersion, charge transfer -- and **cannot cut a protein at all**.
-  ``efmo_options_t`` carries no bond-breaking option.
+..
+   Hidden until the feature is announced:
+
+   * **EFMO** has the named terms per pair -- electrostatics, exchange repulsion,
+     dispersion, charge transfer -- and **cannot cut a protein at all**.
+     ``efmo_options_t`` carries no bond-breaking option.
+
 * **FMO** cuts a protein and reports a pair energy that is a single number.
   Decomposing it is a structural change, not a keyword.
 * **SAPT** decomposes the interaction of *exactly two* monomers, and reports

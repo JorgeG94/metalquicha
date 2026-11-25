@@ -226,7 +226,7 @@ by name, not run with a different exchange:
 * excited states, the stability analysis, the second-order SCF and quantum
   nuclei (``keywords.neo``);
 * Fukui functions and the bonding energy decomposition;
-* FMO and EFMO fragment SCFs;
+* FMO fragment SCFs;
 * the cuEST and terco backends.
 
 A pure functional has no exact exchange, so ``exchange: "cosx"`` changes

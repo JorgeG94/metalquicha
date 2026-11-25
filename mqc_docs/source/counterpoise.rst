@@ -340,8 +340,8 @@ generates. Three things do not read that list, and a deck combining them with
 
 * **GMBE** (``"method": "gmbe"``) builds its terms by
   inclusion--exclusion over overlapping primaries instead.
-* **FMO**, **EE-MBE** and **EFMO** (``"method"``) build their own term lists.
-* **GFN1**, **GFN2** and **EFP** have no ghost centre to construct -- see below.
+* **FMO** and **EE-MBE** (``"method"``) build their own term lists.
+* **GFN1** and **GFN2** have no ghost centre to construct -- see below.
 
 The first two would have returned a valid *uncorrected* energy, which is the
 number the deck asked this program not to produce, and nothing about it would
@@ -397,8 +397,11 @@ absent -- not an approximation but a different molecule, with the wrong charge.
 A water dimer at GFN2 came back ``+0.0073`` Hartree that way before this was
 refused.
 
-The same holds for EFP, which describes a fragment by a classical potential
-rather than by a basis at all.
+..
+   Hidden until the feature is announced:
+
+   The same holds for EFP, which describes a fragment by a classical potential
+   rather than by a basis at all.
 
 Where it is checked
 -------------------

@@ -17,7 +17,8 @@ release = '0.3.0'
 extensions = ['sphinx_rtd_theme']
 
 templates_path = ['_templates']
-exclude_patterns = []
+# Written, not yet published: the pages stay in the tree and out of the build.
+exclude_patterns = ['efmo.rst', 'makefp.rst']
 
 
 

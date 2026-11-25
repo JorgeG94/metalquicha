@@ -39,7 +39,6 @@ The API docs for the code itself can be found here: https://jorgeg94.github.io/m
    geometry_optimization
    conformer_sampling
    fmo
-   efmo
    counterpoise
    interaction_energy
    continuum_solvation
@@ -50,7 +49,6 @@ The API docs for the code itself can be found here: https://jorgeg94.github.io/m
    bonding_analysis
    natural_orbitals
    intrinsic_orbitals
-   makefp
    sapt
    sapt_ligand_scan
    neo

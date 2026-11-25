@@ -194,7 +194,7 @@ Running
 
 Threads come from ``OMP_NUM_THREADS`` and are used by the ab initio path, by
 the fragment workers, and by CREST's sampling. xTB is the one method pinned to
-a single thread, and not for speed -- see ``AGENTS.md``.
+a single thread, and not for speed -- see ``.claude/context/performance.md``.
 
 .. code-block:: bash
 

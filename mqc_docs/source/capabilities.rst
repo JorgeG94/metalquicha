@@ -230,12 +230,16 @@ is GAMESS. The work is threaded with OpenMP throughout.
   ``sapt2`` is the next one that exists, there being no SAPT1. Everything is in
   the dimer-centred basis, which is what makes the terms counterpoise-corrected
   by construction. Two fragments exactly -- see :doc:`sapt`.
-- **EFP and MakeFP**: MakeFP builds a complete effective fragment potential
-  from one closed-shell SCF and writes it as a ``.efp`` file GAMESS can read.
-  The potential has multipoles, polarizabilities, dispersion, exchange-repulsion
-  and charge transfer. An EFP run evaluates the EFP2 interaction energy of a
-  system made entirely of such fragments. A mixed quantum/EFP system is not
-  supported. EFMO uses both on the fly; see :doc:`makefp` and :doc:`efmo`.
+
+..
+   Hidden until the feature is announced:
+
+   - **EFP and MakeFP**: MakeFP builds a complete effective fragment potential
+     from one closed-shell SCF and writes it as a ``.efp`` file GAMESS can read.
+     The potential has multipoles, polarizabilities, dispersion, exchange-repulsion
+     and charge transfer. An EFP run evaluates the EFP2 interaction energy of a
+     system made entirely of such fragments. A mixed quantum/EFP system is not
+     supported. EFMO uses both on the fly; see the makefp page and the efmo page.
 
 Basis sets come from the Basis Set Exchange data shipped in ``basis_sets/``, and
 whether a set is Cartesian or spherical is taken from the file rather than assumed.
@@ -379,7 +383,7 @@ What has a gradient on the CPU backend, at a glance:
      - ``model.ecp``, a separate file from the basis. Energies and analytic
        gradients, for every method that has a gradient without one. There
        are no analytic second derivatives, so a Hessian is differenced from
-       gradients. MCSCF, SAPT, EFP, MakeFP, FMO, EFMO, xTB and the GPU
+       gradients. MCSCF, SAPT, FMO, xTB and the GPU
        backend refuse a potential, as does an automatically counted frozen
        core
    * - Kohn-Sham: range-separated hybrid
@@ -717,8 +721,8 @@ restriction there is the entry point rather than the schemes, which take a
 density matrix and do not care what produced it.
 
 Two more exist as machinery without a user-facing surface: distributed multipole
-analysis, which builds the EFP fragment potentials, and orbital localization
-(Boys/Foster and Edmiston-Ruedenberg), used by AFO and the EFP potentials.
+analysis, and orbital localization (Boys/Foster and Edmiston-Ruedenberg),
+used by AFO.
 
 Hydrogen Capping
 ================
@@ -1019,25 +1023,29 @@ does not apply.
    either. All the aids are CPU-path: the
    cuEST backend refuses every accelerator but ``diis``, and refuses
    ``level_shift``, by name. See :doc:`scf_convergence`
-9. **Embedded fragment methods** (FMO, EE-MBE, EFMO): energies only and closed
+9. **Embedded fragment methods** (FMO, EE-MBE): energies only and closed
    shell. Under FMO and EE-MBE a fragment can be solved with Hartree-Fock,
    restricted Kohn-Sham, or the MP2 family. Double hybrids and coupled cluster
-   are refused there, as is MP2 across an AFO cut. EFMO takes Hartree-Fock and
-   MP2 only. PIEDA is FMO only. See :doc:`fmo` and :doc:`efmo`
+   are refused there, as is MP2 across an AFO cut. PIEDA is FMO only. See :doc:`fmo`
 10. **GPU backends**: cuEST covers Hartree-Fock and Kohn-Sham energies and
     gradients. terco covers Hartree-Fock and Kohn-Sham energies and gradients,
     density fitting, RI-MP2, double-hybrid, RI-CCSD and RI-CCSD(T) energies,
     continuum solvation and Fukui indices. Exact MP2, conventional coupled
     cluster, every correlated gradient, excited states and ECPs are CPU
     only. See `Ab Initio (GPU)`_ above
-11. **EFP**: an EFP run covers systems made entirely of effective fragments. A
-    mixed quantum/EFP system is refused, and there is no EFP gradient
-12. **Periodic boundaries**: not implemented
-13. **AIMD**: the ``keywords.aimd`` keys are accepted and reach the driver
+
+..
+   Hidden until the feature is announced:
+
+   11. **EFP**: an EFP run covers systems made entirely of effective fragments. A
+       mixed quantum/EFP system is refused, and there is no EFP gradient
+
+11. **Periodic boundaries**: not implemented
+12. **AIMD**: the ``keywords.aimd`` keys are accepted and reach the driver
     configuration, but there is no propagator behind them. This is the one
     item here that is **silently ignored** rather than refused
-14. **Polarizabilities**: static and dynamic polarizabilities are computed
-    internally for MakeFP, but no deck can ask for one
+13. **Polarizabilities**: static and dynamic polarizabilities are computed
+    internally, but no deck can ask for one
 
 Planned Features
 ----------------
@@ -1067,8 +1075,8 @@ Planned Features
    reference. See :doc:`analytic_hessians` for the table and for the four
    double-hybrid cases that still fall back
 
-3. **Fragment methods**: gradients and open-shell fragments under FMO, EE-MBE
-   and EFMO, and coupled cluster as a fragment method
+3. **Fragment methods**: gradients and open-shell fragments under FMO and
+   EE-MBE, and coupled cluster as a fragment method
 
 4. **Advanced dynamics**:
 
@@ -1079,7 +1087,7 @@ Planned Features
 5. **Property calculations**:
 
    - Polarizabilities as a deck property -- the coupled-perturbed solve exists
-     and MakeFP already uses it
+     already
    - NMR chemical shifts
 
 Performance Notes
