@@ -375,7 +375,7 @@ What is not assembled:
 - The spin-spin couplings, under any fragmentation: the deck is refused. A
   coupling joins two nuclei that may sit in different fragments; ask for them
   on an unfragmented run.
-- With FMO, EE-MBE or EFMO: the deck is refused.
+- With FMO or EE-MBE: the deck is refused.
 - On a fragmented Hessian run: the deck is refused. A term's Hessian is
   differenced from displaced gradients, which carry no shieldings to
   assemble. Ask for them on an Energy or Gradient deck. (An unfragmented

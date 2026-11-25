@@ -390,7 +390,7 @@ split ones, with the monomer loop converged to 1e-10. The two runs are in the un
 by side, as ``the_charge_convention_does_not_move_an_embedded_total``.
 
 So the reason to split the nucleus is not the FMO energy at all. It is that a
-fragment *potential* -- an EFMO far pair, an effective fragment -- is an
+fragment *potential* is an
 expansion about the fragment's own charge distribution, with no own-share
 subtraction anywhere to undo a net charge. A unit charge per fragment is then a
 monopole term of order ``1/R`` on every adjacent-residue pair of a protein,
@@ -684,8 +684,7 @@ and the output JSON an ``fmo`` object beside ``total_energy``:
    are fragments.
 ``distance``
    The closest approach of any atom of one to any atom of the other, in
-   **Angstrom**, real atoms only. EFMO's ``distance`` is a unitless vdW-scaled
-   ``R_IJ``; this one is not.
+   **Angstrom**, real atoms only.
 ``delta_energy``
    The pair's term of the expansion in Hartree, after both monomers are taken
    off: ``E'_IJ - E'_I - E'_J + Tr(dD_IJ u_IJ)`` under the FMO expansion. On
@@ -734,8 +733,7 @@ on the hydrogen bond. The ranking of residues agrees.
   distant ligand pair reads tens of kcal/mol from nothing. The rows are written
   with ``delta_energy`` only, and a ``pair_note`` says so. Use
   ``method: "fmo"`` for pair analysis.
-* **Not decomposed, unless ``pieda`` is on.** See below. EFMO's far pairs
-  always carry four terms; an FMO pair does not unless asked.
+* **Not decomposed, unless ``pieda`` is on.** See below.
 * **Not counterpoise-corrected.**
 
 .. _fmo-pieda:
@@ -744,7 +742,7 @@ PIEDA: decomposing a pair
 --------------------------
 
 ``keywords.fragmentation.pieda`` (default ``false``), FMO only (refused under
-EE-MBE, EFMO, GMBE and plain MBE, and under any driver but ``Energy`` and
+EE-MBE, GMBE and plain MBE, and under any driver but ``Energy`` and
 ``InteractionEnergy``),
 splits each near, unconnected pair's ``delta_energy`` into three parts (four
 under the MP2 family, see below) -- GAMESS's ``IPIEDA=1``:
@@ -996,7 +994,7 @@ at full level the terms telescope to ``E_D`` of the whole system.
 * Under EE-MBE the same corrections enter the total energies that expansion
   sums.
 * It is refused with Hartree-Fock (no functional to take damping parameters
-  from), with the MP2 family, and with EFMO, and a build without the library
+  from) and with the MP2 family, and a build without the library
   is refused at the deck, naming ``MQC_ENABLE_DFTD3`` or ``MQC_ENABLE_DFTD4``.
 * **PIEDA** with dispersion on reports the pair's ``E_D(IJ) - E_D(I) - E_D(J)``
   as ``edi``, **inside** the pair energy exactly as the MP2 family's is
@@ -1006,7 +1004,7 @@ at full level the terms telescope to ``E_D`` of the whole system.
   the interaction twice.
 
 ``keywords.fragmentation.pieda`` runs with Hartree-Fock, Kohn-Sham and the
-MP2 family, under FMO only: EE-MBE and EFMO refuse it by name, and a double
+MP2 family, under FMO only: EE-MBE refuses it by name, and a double
 hybrid is refused as it is without PIEDA.
 
 **Energies only.** No gradients yet, so geometry optimization and frequencies are

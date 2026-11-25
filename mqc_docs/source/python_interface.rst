@@ -143,7 +143,7 @@ The partition
 -------------
 
 A partition into monomers is required whether or not an expansion will use it:
-the validator wants one, and for SAPT0 and EFP2 the monomers *are* the
+the validator wants one, and for SAPT0 the monomers *are* the
 physics. ``auto_monomers()`` finds the connected components under a
 covalent-radius criterion -- exactly right for a cluster of intact molecules,
 and it returns one monomer for anything held together by covalent bonds,
@@ -210,11 +210,14 @@ real SCF, and they agree on which pairs are bonds while disagreeing on the
 magnitudes. Ask ``bond_order_scheme`` before comparing two runs. See
 :doc:`charges_and_bond_orders`.
 
-Effective fragment potentials
------------------------------
+..
+   Hidden until the feature is announced:
 
-``set_fragment_potentials`` names one ``.efp`` file per monomer, which is what
-makes ``method="efp2"`` mean anything -- see `Interaction energies`_ below.
+   Effective fragment potentials
+   -----------------------------
+
+   ``set_fragment_potentials`` names one ``.efp`` file per monomer, which is what
+   makes ``method="efp2"`` mean anything -- see Interaction energies below.
 
 Asking for a calculation
 ========================
@@ -236,7 +239,7 @@ crosses to the other ranks:
      - The model. Same spellings a deck uses.
    * - ``driver``
      - ``"energy"``, ``"gradient"``, ``"hessian"``, ``"optimize"``,
-       ``"makefp"``, ``"conformers"``, and the aliases the Fortran side
+       ``"conformers"``, and the aliases the Fortran side
        accepts. Case-insensitive, and checked here: a misspelling raises
        ``ValueError`` at the call rather than after the deck has been built.
        ``mqc.DRIVERS`` is the set.
@@ -248,7 +251,7 @@ crosses to the other ranks:
      - ``"cuest"``/``"gpu"``, ``"libcint"``/``"cpu"``, or omitted for the
        build's default.
    * - ``scf``, ``correlation``, ``cc``, ``mcscf``, ``dft``, ``guess``,
-       ``xtb``, ``pcm``, ``hessian``, ``optimization``, ``efp``
+       ``xtb``, ``pcm``, ``hessian``, ``optimization``
      - One dict per keyword block of the deck, taking that block's own keys.
        The last three follow the driver that needs them.
    * - ``properties``
@@ -336,9 +339,6 @@ format accepts is reachable here by name:
    * - ``sapt0``
      - ``basis``, two monomers
      - Interaction energy, decomposed
-   * - ``efp2``
-     - a potential per monomer
-     - No SCF: the wave functions were solved when the potentials were made
 
 A name the parser does not know, and one it knows but nothing implements, are
 both refused when the settings are read -- with the accepted spellings listed
@@ -350,7 +350,7 @@ can only stop the process:
    >>> mqc.MBE(water, level=0, method="mp3", basis="sto-3g").run()
    MQCError: unknown model.method 'mp3'. Accepted: gfn1, gfn2, hf, dft, mp2
    (also scs-, sos-, ri-, df-), ccsd, ccsd(t) (also ri-, df-), casscf, casci,
-   mcscf, sapt0, efp2
+   mcscf, sapt0, ...
 
 Kohn-Sham takes the functional as its own argument, because the functional is a
 separate field from the method:
@@ -379,7 +379,7 @@ The keyword blocks
 
 Each of the deck's ``keywords`` blocks is a named argument taking a dict of
 that block's own keys: ``scf``, ``correlation``, ``cc``, ``mcscf``, ``dft``,
-``guess``, ``xtb``, ``pcm``, ``hessian``, ``optimization`` and ``efp``. They are dicts rather than a scalar per
+``guess``, ``xtb``, ``pcm``, ``hessian`` and ``optimization``. They are dicts rather than a scalar per
 setting, so a key added to the schema is reachable without the signature
 moving, and named rather than left to ``keywords`` because what a method needs
 should be visible from ``help(mqc.MBE)`` -- an active space is not an obscure
@@ -484,8 +484,8 @@ determinants and benzene is out of reach.
 Interaction energies
 --------------------
 
-SAPT0 and EFP2 return the interaction between two systems rather than the
-energy of one, so for both of them the partition *is* the physics -- the
+SAPT0 returns the interaction between two systems rather than the
+energy of one, so the partition *is* the physics -- the
 monomers are the interacting pieces, and ``level=0`` is right because there is
 nothing for an expansion to expand.
 
@@ -508,24 +508,27 @@ The names are the ones another program quotes its terms in, which is the point
 of keeping them: a term can only be checked against the same term. A cluster is
 one SAPT calculation per pair -- see :doc:`sapt`.
 
-EFP2 solves no wave function of its own: each fragment carries one already,
-computed when its potential was made. So it needs a potential per monomer,
-named on the system, and ``driver="makefp"`` is what writes them -- it builds
-one for the whole system it is given and names it after the label:
+..
+   Hidden until the feature is announced:
 
-.. code-block:: python
+   EFP2 solves no wave function of its own: each fragment carries one already,
+   computed when its potential was made. So it needs a potential per monomer,
+   named on the system, and ``driver="makefp"`` is what writes them -- it builds
+   one for the whole system it is given and names it after the label:
 
-   monomer.set_monomers([[0, 1, 2]])
-   mqc.MBE(monomer, level=0, method="hf", basis="6-31g",
-           driver="makefp").run(label="water", write_to_file=False)
+   .. code-block:: python
 
-   dimer.auto_monomers()
-   dimer.set_fragment_potentials(["water.efp", "water.efp"])
-   mqc.MBE(dimer, level=0, method="efp2").run(write_to_file=False).energy
+      monomer.set_monomers([[0, 1, 2]])
+      mqc.MBE(monomer, level=0, method="hf", basis="6-31g",
+              driver="makefp").run(label="water", write_to_file=False)
 
-Every monomer needs one. A mixed quantum/EFP system is a deck-only feature, and
-a system with no potentials at all is refused rather than returning the zero it
-used to. See :doc:`makefp`.
+      dimer.auto_monomers()
+      dimer.set_fragment_potentials(["water.efp", "water.efp"])
+      mqc.MBE(dimer, level=0, method="efp2").run(write_to_file=False).energy
+
+   Every monomer needs one. A mixed quantum/EFP system is a deck-only feature, and
+   a system with no potentials at all is refused rather than returning the zero it
+   used to. See the makefp page.
 
 Density fitting
 ---------------
@@ -622,7 +625,7 @@ rest available.
    * - Attribute
      - What it is
    * - ``energy``
-     - The total, in Hartree. For SAPT0 and EFP2, the interaction.
+     - The total, in Hartree. For SAPT0, the interaction.
    * - ``fingerprint``
      - Identity of the calculation: geometry, partition, bonds, method,
        thresholds -- and deliberately not the logging or the rank count. The
@@ -840,11 +843,11 @@ there going quietly stale:
    Every method the backends implement, checked against PySCF fed this
    repository's own basis data -- Hartree-Fock, unrestricted, Kohn-Sham through
    the double hybrids, the MP2 family, coupled cluster with and without the
-   triples and with and without fitting, CASCI, CASSCF, ORMAS, AVAS, SAPT0 and
-   EFP2. Where an identity says more than a reference would, the identity is
+   triples and with and without fitting, CASCI, CASSCF, ORMAS, AVAS and
+   SAPT0. Where an identity says more than a reference would, the identity is
    checked instead: RI against conventional, spin-adapted against spin-orbital,
    CASSCF against CASCI on the same space. The last cases are the refusals --
-   an unknown method, ``driver="optimize"``, EFP2 with no potentials -- which
+   an unknown method, ``driver="optimize"`` -- which
    are there because each of them used to return a plausible number or take the
    interpreter down. The energy decomposition is checked against itself: its
    atoms and pairs must add back up to the energy the run reported.
@@ -1038,8 +1041,6 @@ Session
      - One RHF, kept on the system. Closed shell only.
    * - ``charges()`` / ``charge_on(i)`` / ``charge_scheme`` / ``has_charges``
      - The partial charges, one atom, which scheme produced them.
-   * - ``set_fragment_potentials(paths)``
-     - One ``.efp`` file per monomer, for ``method="efp2"``.
    * - ``n_atoms`` / ``n_monomers`` / ``n_bonds`` / ``bonds_declared``
      - Counts, and whether bonds were stated at all.
 

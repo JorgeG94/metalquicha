@@ -292,11 +292,10 @@ the keys involved, rather than approximated or ignored:
   needs the pair of its other two fragments, which the monomer field does not
   give, so nothing would be saved. FMO2 runs; see
   :ref:`interaction-energy-fmo2`.
-- ``"method"`` ``ee-mbe`` and ``efmo``. EE-MBE's pair term counts the
+- ``"method"`` ``ee-mbe``. Its pair term counts the
   point-charge interaction of its two fragments twice and is a correction, not
-  an interaction energy; EFMO assembles its own expansion inside the backend
-  and has no reduced list to run.
-- EFP, SAPT and NEO, which never reach the many-body expansion.
+  an interaction energy.
+- SAPT and NEO, which never reach the many-body expansion.
 - A multi-molecule deck. A fragment index names a different fragment -- or
   none -- in each molecule.
 - A supplied term list, through the Python or C interface: the reduction is

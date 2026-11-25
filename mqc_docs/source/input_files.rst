@@ -404,13 +404,10 @@ the output to notice.
    * - CASSCF, CASCI or ORMAS
      - Refused. The MCSCF path does not carry a potential yet and would run
        all-electron without saying so.
-   * - SAPT, the ``MakeFP`` driver, or an ``fmo`` or ``efmo`` fragmentation
+   * - SAPT, or an ``fmo`` fragmentation
      - Refused, for the same reason: each builds its own molecules and none
        hands them the potential. A many-body expansion (``MBE``, ``GMBE``)
        does carry it, since its fragments are ordinary calculations.
-   * - an EFP calculation
-     - Refused. The fragments are potentials read from file, so there are no
-       electrons for an ECP to act on.
    * - GFN1, GFN2 or any xTB method
      - Refused. A semiempirical method has its own parameterised core and no
        all-electron basis for a potential to replace, so naming one means the
@@ -928,9 +925,14 @@ Specifies the calculation type:
   step. ``Optimization`` and ``Opt`` are accepted for the same thing. Needs a build
   with the optimizer, and a method that has gradients. See
   :doc:`geometry_optimization`.
-- ``MakeFP``: Build an effective fragment potential and write it as a ``.efp``
-  file, computing no energy. ``MakeEFP`` is accepted for the same thing. See
-  :doc:`makefp`.
+
+..
+   Hidden until the feature is announced:
+
+   - ``MakeFP``: Build an effective fragment potential and write it as a ``.efp``
+     file, computing no energy. ``MakeEFP`` is accepted for the same thing. See
+     the makefp page.
+
 - ``InteractionEnergy``: The many-body interaction terms that contain one
   fragment, named by ``keywords.fragmentation.reference_fragment``, from a
   many-body expansion reduced to the terms they need. Reports that fragment's
@@ -1318,8 +1320,7 @@ The same goes for the places the accelerator name can be written but the
 Newton phase cannot run. ``soscf`` is refused by name -- not quietly demoted to
 DIIS -- by the GPU backend, which has no orbital-rotation Hessian; by the
 reference SCF under an MCSCF, whose orbitals are reoptimised by the MCSCF's own
-second-order step; by the Fukui ions, which are open shell; and by the EFP
-fragment potentials. The one place it is accepted and deliberately ignored is
+second-order step; and by the Fukui ions, which are open shell. The one place it is accepted and deliberately ignored is
 the ``basis_set_projection`` guess ladder: those rungs are a guess for the
 target SCF and are about to be projected into a larger basis, so there is
 nothing for a Newton step to add. The target SCF still runs second order.
@@ -1690,8 +1691,11 @@ The three ``response_*`` keys act on the analytic Hessian and are ignored where
 a deck falls back to differences; see :doc:`analytic_hessians` for which
 methods take which path, and for what ``response_batch`` costs in memory.
 
-Note that ``keywords.efp`` carries its own ``response_batch``, driving the EFP
-polarization response. They are different keys on different groups.
+..
+   Hidden until the feature is announced:
+
+   Note that ``keywords.efp`` carries its own ``response_batch``, driving the EFP
+   polarization response. They are different keys on different groups.
 
 Excited State Options
 ^^^^^^^^^^^^^^^^^^^^^
@@ -1799,8 +1803,7 @@ Fragmentation Options
 - ``method``: **which expansion to run.** One of ``"mbe"``, ``"ee-mbe"``,
   ``"gmbe"`` or ``"fmo"``. Case and separator are not significant, so ``MBE``
   and ``EE_MBE`` read the same as ``mbe`` and ``ee-mbe``. A name this program
-  does not know is refused, and ``"efmo"`` is refused separately as a method
-  whose name is reserved and whose implementation does not exist yet.
+  does not know is refused.
 
   - ``mbe`` -- the many-body expansion over disjoint fragments
   - ``ee-mbe`` -- electrostatically embedded MBE; see :doc:`fmo`
@@ -2077,12 +2080,12 @@ Memory
    }
 
 How much memory this run may plan on, in gigabytes, for the decisions that
-trade memory for time: which route builds the response Hessian a MakeFP needs,
+trade memory for time: which route builds a response Hessian,
 whether its operator is formed at all or solved matrix-free, and how many
 frequencies factorize at once. Absent, the machine decides -- 60 per cent of
 what it reports available, divided among the MPI ranks of the run on that
 node -- which is right on a dedicated node and is why a
-545-function MakeFP takes a minute and a half there rather than the fourteen
+545-function response calculation takes a minute and a half there rather than the fourteen
 hours a fixed limit once sent it into. Set it when the node is shared, or
 when a run should be held to less than it could take. The figure is per MPI
 rank and taken whole: it is what you have decided each rank may have.
